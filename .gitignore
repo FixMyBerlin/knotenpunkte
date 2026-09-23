@@ -1,0 +1,10 @@
+node_modules
+dist
+.tsbuildinfo-app
+playwright-report
+test-results
+*.local
+.DS_Store
+
+# The committed `.env` holds the public KV project selector, not an admin secret.
+!.env

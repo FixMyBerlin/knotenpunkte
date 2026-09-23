@@ -1,0 +1,20 @@
+[
+  {
+    "id": "32580001",
+    "attribute": "KP_HVS",
+    "value": 1,
+    "confidence": 0.86
+  },
+  {
+    "id": "32580001",
+    "attribute": "Furt_rot",
+    "value": "teilweise",
+    "confidence": 0.72
+  },
+  {
+    "id": "32580002",
+    "attribute": "LSA_KP",
+    "value": 0,
+    "confidence": 0.64
+  }
+]

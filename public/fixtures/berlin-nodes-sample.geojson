@@ -1,0 +1,52 @@
+{
+  "type": "FeatureCollection",
+  "metadata": {
+    "schema": "junction-nodes/v1",
+    "dataset": "berlin-sample",
+    "region": "Berlin",
+    "generated_at": "2026-09-23T12:00:00.000Z",
+    "source": "hand-drawn test fixture (not the official Verbindungspunkte file)"
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [13.3115, 52.5076] },
+      "properties": {
+        "NUMMER": "32580001",
+        "okstra_id": "OK-32580001",
+        "Bezirksnummer": "04",
+        "ist_radvorrangnetz": "1"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [13.312, 52.5078] },
+      "properties": {
+        "NUMMER": "32580002",
+        "okstra_id": "OK-32580002",
+        "Bezirksnummer": "04",
+        "ist_radvorrangnetz": "0"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [13.311, 52.5072] },
+      "properties": {
+        "NUMMER": "32580003",
+        "okstra_id": "OK-32580003",
+        "Bezirksnummer": "04",
+        "ist_radvorrangnetz": "1"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [13.3125, 52.5074] },
+      "properties": {
+        "NUMMER": "32580004",
+        "okstra_id": "OK-32580004",
+        "Bezirksnummer": "04",
+        "ist_radvorrangnetz": "0"
+      }
+    }
+  ]
+}
