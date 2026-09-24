@@ -56,7 +56,8 @@ export function QaPanel({ record, displayName, onConfirm, onMarkProblematic, cor
       </div>
       {correcting ? (
         <Callout tone="warning" title="Korrektur">
-          Vollmaske ausfüllen und absenden, damit die Korrektur in die Historie geschrieben wird.
+          Werte anpassen und Speichern und weiter, damit die Korrektur in die Historie geschrieben
+          wird.
         </Callout>
       ) : null}
       {record.history.length > 0 ? (

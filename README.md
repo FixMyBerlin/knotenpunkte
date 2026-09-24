@@ -43,9 +43,9 @@ Progress is **bewertet/gesamt**. Completeness ignores virtual, Mapillary, and co
 
 Optional JSON per area: `{ id, attribute, value, confidence }` with confidence 0–1. Re-upload replaces suggestions for that area. Prefills empty rapid attributes; the cursor jumps to the first empty one. If all seven are suggested, Enter accepts them. Each suggested attribute is stored as `{ suggested, confidence, accepted }`. A mismatch shows “Vorschlag A, gewählt B”.
 
-## Full mask
+## Weitere Angaben
 
-Every stored field, including virtual (`ist_virtuell`), Mapillary-ID, and Kommentar. Completeness still ignores those three.
+**Weitere Angaben** (disclosure) has virtual (`ist_virtuell`), Mapillary-ID, and Kommentar. Completeness still ignores those three. They save with Speichern und weiter.
 
 ## Overview
 
@@ -85,7 +85,7 @@ Rapid form (required for complete unless skipped):
 - Rad-Aufstellflächen für Linksabbiegen vorhanden — `Fl_Linksab` — keine / teilweise / gänzlich (`E` / `R` / `T`)
 - Vorgezogene Aufstellflächen vorhanden — `vorgez_Fl` — keine / teilweise / gänzlich (`D` / `F` / `G`)
 
-Also: skip `X` (`KP_Nichtbetrachten`), previous `J`, next `K`, Enter save-and-next. Shown read-only from the point: Laufende Nummer, Referenz im Detailnetz (`okstra_id`), Bezirksnummer, Radverkehrsnetz (`ist_radvorrangnetz`).
+Also: skip `X` (`KP_Nichtbetrachten`), previous `J`, next `K`, Enter save-and-next. The node heading can open compact read-only fields from the point: Referenz im Detailnetz (`okstra_id`), Bezirksnummer, Radverkehrsnetz (`ist_radvorrangnetz`).
 
 ## Deploy
 

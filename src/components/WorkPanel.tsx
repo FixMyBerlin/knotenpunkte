@@ -1,17 +1,14 @@
+import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/20/solid'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { FullMask } from '@/components/FullMask'
 import { QaPanel } from '@/components/QaPanel'
 import { RapidActions, RapidForm } from '@/components/RapidForm'
+import { MotionCollapse } from '@/components/shared/motion/MotionCollapse'
+import { Tooltip } from '@/components/shared/Tooltip/Tooltip'
 import { useOsmAuth } from '@/components/shared/use-osm-auth'
-import { Button } from '@/components/ui/button'
 import { Callout } from '@/components/ui/callout'
-import {
-  DescriptionDetails,
-  DescriptionList,
-  DescriptionTerm,
-} from '@/components/ui/description-list'
 import { Subheading } from '@/components/ui/heading'
 import { SidebarBody, SidebarFooter } from '@/components/ui/sidebar'
 import { Text } from '@/components/ui/text'
@@ -37,6 +34,14 @@ import { resolveStatusFilter } from '@/shared/routing/search-schema'
 import { applySuggestions } from '@/shared/suggestions/apply'
 import { suggestionsForNode } from '@/shared/suggestions/schema'
 
+function revealFullMask() {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      document.getElementById('full-mask')?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+    })
+  })
+}
+
 export function WorkPanel() {
   const queryClient = useQueryClient()
   const navigate = useNavigate({ from: Route.fullPath })
@@ -45,6 +50,7 @@ export function WorkPanel() {
   const statusFilter = resolveStatusFilter(search)
   const auth = useOsmAuth()
   const [fullOpen, setFullOpen] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false)
   const [correcting, setCorrecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [draftByNode, setDraftByNode] = useState<Record<string, RapidDraft>>({})
@@ -119,7 +125,7 @@ export function WorkPanel() {
       await queryClient.invalidateQueries({ queryKey: ratingsQueryKey(dataset) })
       await queryClient.invalidateQueries({ queryKey: allRatingsQueryKey })
       await queryClient.invalidateQueries({ queryKey: datasetSummariesQueryKey })
-      if (variables.kind === 'save') {
+      if (variables.kind === 'save' || variables.kind === 'corrected') {
         const refreshed = await ratingStore.list(dataset)
         const next = nextNodeId(nodeIds, currentId, refreshed, statusFilter)
         if (currentId) {
@@ -173,24 +179,52 @@ export function WorkPanel() {
   }
   const previous = () => goToNode(previousNodeId(nodeIds, currentId, records, statusFilter))
   const next = () => goToNode(nextNodeId(nodeIds, currentId, records, statusFilter))
-  const save = () => saveMutation.mutate({ kind: 'save', draft })
+  const save = () => saveMutation.mutate({ kind: correcting ? 'corrected' : 'save', draft })
 
   return (
     <>
       <SidebarBody>
         <section className="space-y-4" data-testid="work-panel">
-          <Subheading data-testid="selected-node-id">Knoten {readonly.nummer}</Subheading>
-          <Text data-testid="progress-count">
-            {rated}/{total} bewertet
-          </Text>
-          <DescriptionList>
-            <DescriptionTerm>Referenz im Detailnetz</DescriptionTerm>
-            <DescriptionDetails>{readonly.okstraId || '—'}</DescriptionDetails>
-            <DescriptionTerm>Bezirksnummer</DescriptionTerm>
-            <DescriptionDetails>{readonly.bezirksnummer || '—'}</DescriptionDetails>
-            <DescriptionTerm>Radverkehrsnetz</DescriptionTerm>
-            <DescriptionDetails>{readonly.radvorrangnetz || '—'}</DescriptionDetails>
-          </DescriptionList>
+          <div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-1">
+                <Subheading data-testid="selected-node-id">Knoten {readonly.nummer}</Subheading>
+                <Tooltip text={detailsOpen ? 'Knoten-Angaben schließen' : 'Knoten-Angaben'}>
+                  <button
+                    type="button"
+                    aria-expanded={detailsOpen}
+                    aria-controls="node-details"
+                    data-testid="node-details-toggle"
+                    className="rounded p-0.5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"
+                    aria-label={detailsOpen ? 'Knoten-Angaben schließen' : 'Knoten-Angaben'}
+                    onClick={() => setDetailsOpen((open) => !open)}
+                  >
+                    {detailsOpen ? (
+                      <ChevronDownIcon className="size-4" aria-hidden />
+                    ) : (
+                      <ChevronRightIcon className="size-4" aria-hidden />
+                    )}
+                  </button>
+                </Tooltip>
+              </div>
+              <Text data-testid="progress-count">
+                {rated}/{total} bewertet
+              </Text>
+            </div>
+            <MotionCollapse open={detailsOpen}>
+              <dl
+                id="node-details"
+                className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 pt-2 text-xs text-zinc-400"
+              >
+                <dt>Referenz</dt>
+                <dd className="min-w-0 truncate">{readonly.okstraId || '—'}</dd>
+                <dt>Bezirk</dt>
+                <dd>{readonly.bezirksnummer || '—'}</dd>
+                <dt>Radverkehrsnetz</dt>
+                <dd>{readonly.radvorrangnetz || '—'}</dd>
+              </dl>
+            </MotionCollapse>
+          </div>
 
           <RapidForm
             draft={draft}
@@ -202,24 +236,34 @@ export function WorkPanel() {
             onSave={save}
           />
 
-          <Button
-            type="button"
-            outline
-            data-testid="toggle-full-mask"
-            onClick={() => setFullOpen((open) => !open)}
-          >
-            {fullOpen ? 'Vollmaske schließen' : 'Vollmaske öffnen'}
-          </Button>
-          {fullOpen || correcting ? (
-            <FullMask
-              draft={draft}
-              onChange={setDraft}
-              submitLabel={correcting ? 'Korrektur speichern' : 'Vollmaske speichern'}
-              onSubmit={() =>
-                saveMutation.mutate({ kind: correcting ? 'corrected' : 'save', draft })
-              }
-            />
-          ) : null}
+          <div>
+            <button
+              type="button"
+              data-testid="toggle-full-mask"
+              aria-expanded={fullOpen || correcting}
+              aria-controls="full-mask"
+              className="flex items-center gap-1 text-sm font-medium text-white"
+              onClick={() => {
+                setFullOpen((open) => {
+                  const next = !open
+                  if (next) revealFullMask()
+                  return next
+                })
+              }}
+            >
+              {fullOpen || correcting ? (
+                <ChevronDownIcon className="size-4" aria-hidden />
+              ) : (
+                <ChevronRightIcon className="size-4" aria-hidden />
+              )}
+              Weitere Angaben
+            </button>
+            <MotionCollapse open={fullOpen || correcting}>
+              <div className="pt-2">
+                <FullMask draft={draft} onChange={setDraft} />
+              </div>
+            </MotionCollapse>
+          </div>
 
           {record?.status === 'complete' ? (
             <QaPanel
@@ -232,6 +276,7 @@ export function WorkPanel() {
               onMarkProblematic={() => {
                 setCorrecting(true)
                 setFullOpen(true)
+                revealFullMask()
               }}
             />
           ) : null}
