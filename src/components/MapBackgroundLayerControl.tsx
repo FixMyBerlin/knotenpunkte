@@ -8,7 +8,6 @@ import { useState } from 'react'
 import { useMapUiActions, usePrivateRasterUrl } from '@/components/shared/map-ui-store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Text } from '@/components/ui/text'
 import { Route } from '@/routes/index'
 import { cn } from '@/shared/cn'
 import { ignorePasswordManagerProps } from '@/shared/form-ignore-password-manager'
@@ -17,6 +16,7 @@ import {
   isPrivateRasterTemplate,
   POSITRON_BG,
   PRIVATE_BG,
+  privateRasterDisplayName,
   writePrivateRasterUrl,
 } from '@/shared/map/private-raster'
 
@@ -62,6 +62,7 @@ export function MapBackgroundLayerControl({
   const privateUrl = usePrivateRasterUrl()
   const { setPrivateRasterUrl } = useMapUiActions()
   const [draftUrl, setDraftUrl] = useState(privateUrl)
+  const [editingPrivateUrl, setEditingPrivateUrl] = useState(false)
   const centerCountry = countryCoder.iso1A2Code([lng, lat])
 
   const { layers, status } = useEditorLayerIndex({
@@ -99,11 +100,17 @@ export function MapBackgroundLayerControl({
     })
   }
 
+  function beginPrivateUrlEdit() {
+    setDraftUrl(privateUrl)
+    setEditingPrivateUrl(true)
+  }
+
   function savePrivateUrl() {
     const trimmed = draftUrl.trim()
     if (trimmed && !isPrivateRasterTemplate(trimmed)) return
     writePrivateRasterUrl(trimmed)
     setPrivateRasterUrl(trimmed)
+    setEditingPrivateUrl(false)
     if (trimmed) {
       void navigate({
         search: (previous) => ({ ...previous, bg: undefined }),
@@ -115,7 +122,7 @@ export function MapBackgroundLayerControl({
   const label = selectedLayer
     ? selectedLayer.name
     : value === PRIVATE_BG
-      ? 'Privates Raster'
+      ? privateRasterDisplayName(privateUrl)
       : 'Hintergrundkarte'
 
   return (
@@ -134,7 +141,7 @@ export function MapBackgroundLayerControl({
       >
         <ListboxOption
           value={POSITRON_BG}
-          className="flex cursor-default items-center gap-2 rounded-md px-2 py-1.5 data-focus:bg-white/10"
+          className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 data-focus:bg-white/10"
         >
           <CheckIcon
             className={cn('size-4 shrink-0', value === POSITRON_BG ? '' : 'opacity-0')}
@@ -142,41 +149,19 @@ export function MapBackgroundLayerControl({
           />
           <span>OpenFreeMap Positron</span>
         </ListboxOption>
-        <ListboxOption
-          value={PRIVATE_BG}
-          className="flex cursor-default items-center gap-2 rounded-md px-2 py-1.5 data-focus:bg-white/10"
-        >
-          <CheckIcon
-            className={cn('size-4 shrink-0', value === PRIVATE_BG ? '' : 'opacity-0')}
-            aria-hidden
+        <div className="mt-1 border-t border-white/10 pt-1">
+          <div className="px-2 py-1 text-[11px] font-semibold tracking-wide text-white/50 uppercase">
+            Private background layer
+          </div>
+          <PrivateRasterRow
+            editing={editingPrivateUrl}
+            selected={value === PRIVATE_BG}
+            url={privateUrl}
+            draftUrl={draftUrl}
+            onDraftUrl={setDraftUrl}
+            onBeginEdit={beginPrivateUrlEdit}
+            onSave={savePrivateUrl}
           />
-          <span>Privates Raster (dieses Gerät)</span>
-        </ListboxOption>
-        <div className="mt-1 space-y-2 border-t border-white/10 px-2 py-2">
-          <Text className="text-xs text-white/70">
-            Raster-URL mit {'{z}/{x}/{y}'}. Der Schlüssel in der URL bleibt auf diesem Rechner und
-            wird nie mitgeteilt. Einmal gesetzt, ist sie hier der Standard.
-          </Text>
-          <Input
-            value={draftUrl}
-            placeholder="https://…/{z}/{x}/{y}.png?key=…"
-            aria-label="Private Raster-Kachel-URL"
-            {...ignorePasswordManagerProps}
-            onChange={(event) => setDraftUrl(event.currentTarget.value)}
-            onClick={(event) => event.stopPropagation()}
-          />
-          <Button
-            type="button"
-            color="sky"
-            className="w-full"
-            onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
-              event.preventDefault()
-              event.stopPropagation()
-              savePrivateUrl()
-            }}
-          >
-            URL auf diesem Gerät speichern
-          </Button>
         </div>
 
         {status === 'loading' && groups.length === 0 ? (
@@ -195,7 +180,7 @@ export function MapBackgroundLayerControl({
               <ListboxOption
                 key={layer.id}
                 value={layer.id}
-                className="flex cursor-default items-start gap-2 rounded-md px-2 py-1.5 data-focus:bg-white/10"
+                className="flex cursor-pointer items-start gap-2 rounded-md px-2 py-1.5 data-focus:bg-white/10"
               >
                 <CheckIcon
                   className={cn('mt-0.5 size-4 shrink-0', layer.id === bg ? '' : 'opacity-0')}
@@ -215,5 +200,100 @@ export function MapBackgroundLayerControl({
         ) : null}
       </ListboxOptions>
     </Listbox>
+  )
+}
+
+function stopMenuEvent(event: { preventDefault: () => void; stopPropagation: () => void }) {
+  event.preventDefault()
+  event.stopPropagation()
+}
+
+function PrivateRasterRow({
+  editing,
+  selected,
+  url,
+  draftUrl,
+  onDraftUrl,
+  onBeginEdit,
+  onSave,
+}: {
+  editing: boolean
+  selected: boolean
+  url: string
+  draftUrl: string
+  onDraftUrl: (value: string) => void
+  onBeginEdit: () => void
+  onSave: () => void
+}) {
+  if (editing) {
+    return (
+      <div
+        className="flex items-center gap-2 px-2 py-1.5"
+        onMouseDown={stopMenuEvent}
+        onClick={stopMenuEvent}
+      >
+        <Input
+          autoFocus
+          value={draftUrl}
+          placeholder="https://…/{z}/{x}/{y}.png?key=…"
+          aria-label="Private Raster-Kachel-URL"
+          className="min-w-0 flex-1"
+          {...ignorePasswordManagerProps}
+          onChange={(event) => onDraftUrl(event.currentTarget.value)}
+          onKeyDown={(event) => event.stopPropagation()}
+        />
+        <Button
+          type="button"
+          color="sky"
+          className="shrink-0"
+          onMouseDown={stopMenuEvent}
+          onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+            stopMenuEvent(event)
+            onSave()
+          }}
+        >
+          Speichern
+        </Button>
+      </div>
+    )
+  }
+
+  if (!url) {
+    return (
+      <button
+        type="button"
+        className="w-full rounded-md px-2 py-1.5 text-left hover:bg-white/10"
+        onMouseDown={stopMenuEvent}
+        onClick={(event) => {
+          stopMenuEvent(event)
+          onBeginEdit()
+        }}
+      >
+        URL angeben und auswählen
+      </button>
+    )
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-2 pr-2">
+      <ListboxOption
+        value={PRIVATE_BG}
+        className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 data-focus:bg-white/10"
+      >
+        <CheckIcon className={cn('size-4 shrink-0', selected ? '' : 'opacity-0')} aria-hidden />
+        <span className="truncate">{privateRasterDisplayName(url)}</span>
+      </ListboxOption>
+      <button
+        type="button"
+        className="shrink-0 rounded-md px-2 py-1 text-xs font-medium ring-1 ring-white/20 hover:bg-white/10"
+        onMouseDown={stopMenuEvent}
+        onClick={(event) => {
+          stopMenuEvent(event)
+          onBeginEdit()
+        }}
+      >
+        Bearbeiten
+      </button>
+    </div>
   )
 }

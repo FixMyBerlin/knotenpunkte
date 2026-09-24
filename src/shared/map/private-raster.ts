@@ -14,6 +14,11 @@ export function writePrivateRasterUrl(url: string) {
   localStorage.setItem(STORAGE_KEY, trimmed)
 }
 
+/** Host and path, without a leading `https://www.` (or `http://`). */
+export function privateRasterDisplayName(url: string) {
+  return url.trim().replace(/^https?:\/\/(?:www\.)?/i, '')
+}
+
 export function isPrivateRasterTemplate(url: string) {
   return url.includes('{z}') && url.includes('{x}') && url.includes('{y}')
 }
