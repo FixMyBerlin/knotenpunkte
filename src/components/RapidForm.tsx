@@ -1,4 +1,11 @@
+import {
+  ArrowRightIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ForwardIcon,
+} from '@heroicons/react/20/solid'
 import { useHotkeys } from '@tanstack/react-hotkeys'
+import { Tooltip } from '@/components/shared/Tooltip/Tooltip'
 import { Button } from '@/components/ui/button'
 import { Callout } from '@/components/ui/callout'
 import { cn } from '@/shared/cn'
@@ -33,7 +40,6 @@ type Props = {
   onNext: () => void
   onSave: () => void
   suggestions: SuggestionRow[]
-  saveDisabled?: boolean
 }
 
 export function RapidForm({
@@ -44,7 +50,6 @@ export function RapidForm({
   onNext,
   onSave,
   suggestions,
-  saveDisabled,
 }: Props) {
   const textEntryFocused = useTextEntryFocused()
   const focused = firstEmptyRapidKey(draft)
@@ -86,6 +91,7 @@ export function RapidForm({
 
   return (
     <form
+      id="rapid-form"
       data-testid="rapid-form"
       className="space-y-3"
       onSubmit={(event) => {
@@ -156,24 +162,90 @@ export function RapidForm({
           </fieldset>
         )
       })}
-      <div className="flex flex-wrap gap-2">
-        <Button type="button" outline data-testid="skip-node" onClick={onSkip}>
-          Überspringen ({skipHotkey})
-        </Button>
-        <Button type="button" outline data-testid="prev-node" onClick={onPrevious}>
-          Zurück ({previousHotkey})
-        </Button>
-        <Button type="button" outline data-testid="next-node" onClick={onNext}>
-          Weiter ({nextHotkey})
-        </Button>
-        <Button type="submit" color="sky" data-testid="save-next" disabled={saveDisabled}>
-          Speichern und weiter (Enter)
-        </Button>
-      </div>
       <p className="sr-only">
         {binaryAttributeKeys.join(', ')}, {ternaryAttributeKeys.join(', ')}
       </p>
     </form>
+  )
+}
+
+export function RapidActions({
+  onSkip,
+  onPrevious,
+  onNext,
+  onSave,
+  saveDisabled,
+}: Pick<Props, 'onSkip' | 'onPrevious' | 'onNext' | 'onSave'> & { saveDisabled?: boolean }) {
+  return (
+    <div className="@container flex w-full gap-1">
+      <ActionButton testId="skip-node" label={`Überspringen (${skipHotkey})`} onClick={onSkip}>
+        <ForwardIcon data-slot="icon" aria-hidden />
+      </ActionButton>
+      <ActionButton testId="prev-node" label={`Zurück (${previousHotkey})`} onClick={onPrevious}>
+        <ChevronLeftIcon data-slot="icon" aria-hidden />
+      </ActionButton>
+      <ActionButton testId="next-node" label={`Weiter (${nextHotkey})`} onClick={onNext}>
+        <ChevronRightIcon data-slot="icon" aria-hidden />
+      </ActionButton>
+      <ActionButton
+        testId="save-next"
+        label="Speichern und weiter (Enter)"
+        onClick={onSave}
+        disabled={saveDisabled}
+        submit
+      >
+        <ArrowRightIcon data-slot="icon" aria-hidden />
+      </ActionButton>
+    </div>
+  )
+}
+
+function ActionButton({
+  testId,
+  label,
+  onClick,
+  disabled,
+  submit,
+  children,
+}: {
+  testId: string
+  label: string
+  onClick: () => void
+  disabled?: boolean
+  submit?: boolean
+  children: React.ReactNode
+}) {
+  const labelNode = <span className="hidden truncate @[32rem]:inline">{label}</span>
+  const button = submit ? (
+    <Button
+      type="submit"
+      form="rapid-form"
+      color="sky"
+      data-testid={testId}
+      aria-label={label}
+      disabled={disabled}
+      className="w-full min-w-0"
+    >
+      {children}
+      {labelNode}
+    </Button>
+  ) : (
+    <Button
+      type="button"
+      outline
+      data-testid={testId}
+      aria-label={label}
+      onClick={onClick}
+      className="w-full min-w-0"
+    >
+      {children}
+      {labelNode}
+    </Button>
+  )
+  return (
+    <Tooltip text={label} className="min-w-0 flex-1">
+      {button}
+    </Tooltip>
   )
 }
 

@@ -49,7 +49,7 @@ Every stored field, including virtual (`ist_virtuell`), Mapillary-ID, and Kommen
 
 ## Overview
 
-All uploaded nodes, colored like the Knoten legend: unrated `#f59e0b`, complete `#22c55e`, skipped `#6b7280`, virtual `#a855f7`, confirmed darker green stroke, corrected `#38bdf8`. Same status filter as the work list (`Alle`, `Offen`, `Bewertet`, `Bestätigt`, `Korrigiert`). Click opens the work view. Node-id labels from zoom 15.
+The **Übersicht** step sits between Bewerten and Export. The map shows every uploaded node, colored like the Knoten legend: unrated `#f59e0b`, complete `#22c55e`, skipped `#6b7280`, virtual `#a855f7`, confirmed darker green stroke, corrected `#38bdf8`. The sidebar is the status filter (`Alle`, `Offen`, `Bewertet`, `Bestätigt`, `Korrigiert`) and the matching node list. Choosing a node opens it in Bewerten. Node-id labels from zoom 15.
 
 ## Review
 
@@ -63,7 +63,7 @@ JSON of full records (audit included). GeoJSON of local points with the result-f
 
 OpenFreeMap Positron, Editor Layer Index backgrounds, and a private raster URL template (`{z}/{x}/{y}`) kept in this browser’s localStorage. Once set, that URL is the default here; `bg` can still pick Positron or an ELI layer. The key inside the URL stays on this machine and is never committed.
 
-Street network (always on): [Berlin Straßenabschnitte](https://tilda-geo.de/api/uploads/strassennetz-berlin-strassenabschnitte.pmtiles), source-layer `default`, colored by `strassenklasse1`. Attribution: Geoportal Berlin / Detailnetz Berlin Straßenabschnitte, DL-DE/BY-2.0.
+Street network: [Berlin Straßenabschnitte](https://tilda-geo.de/api/uploads/strassennetz-berlin-strassenabschnitte.pmtiles), source-layer `default`, colored by `strassenklasse1`. The legend starts closed. **An / Aus** toggles the layer and is stored in the URL (`streets=false` when off; omitted when on). Opening the color list stays in this browser session. Attribution: Geoportal Berlin / Detailnetz Berlin Straßenabschnitte, DL-DE/BY-2.0.
 
 Fallback camera: zoom 14.6, lat 52.5076, lng 13.3115.
 

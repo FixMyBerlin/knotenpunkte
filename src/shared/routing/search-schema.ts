@@ -15,8 +15,24 @@ const optionalTrimmedSearchString = optionalSearchString.transform((value) => {
   return trimmed ? trimmed : undefined
 })
 
-export const appViews = ['work', 'overview'] as const
-export type AppView = (typeof appViews)[number]
+/** Absent or any “on” value stays off the URL. Only an explicit off is stored. */
+const streetsSearchFlag = z
+  .union([
+    z.literal('1'),
+    z.literal('true'),
+    z.literal('0'),
+    z.literal('false'),
+    z.literal(1),
+    z.literal(0),
+    z.boolean(),
+  ])
+  .optional()
+  .transform((value) => {
+    if (value === undefined) return undefined
+    const on = value === true || value === 1 || value === '1' || value === 'true'
+    return on ? undefined : false
+  })
+  .catch(undefined)
 
 export const indexSearchSchema = z.object({
   map: optionalSearchString
@@ -41,8 +57,11 @@ export const indexSearchSchema = z.object({
     .union([z.string(), z.number()])
     .optional()
     .transform((value) =>
-      value === 'dataset' || value === 'work' || value === 'export' ? value : undefined,
+      value === 'dataset' || value === 'work' || value === 'overview' || value === 'export'
+        ? value
+        : undefined,
     ),
+  streets: streetsSearchFlag,
 })
 
 export const dataSearchSchema = z.object({
@@ -62,14 +81,12 @@ export function serializeIndexSearchMap(map: MapParam) {
   return serializeMapParam(map)
 }
 
-export function resolveView(search: Pick<IndexSearch, 'view' | 'step'>): AppView {
-  if (search.view) return search.view
-  if (search.step === 'work') return 'work'
-  return 'work'
+export function resolveStreetsOn(search: Pick<IndexSearch, 'streets'>) {
+  return search.streets !== false
 }
 
-export function resolveStatusFilter(search: Pick<IndexSearch, 'status' | 'view' | 'step'>) {
+export function resolveStatusFilter(search: Pick<IndexSearch, 'status' | 'step'>) {
   if (search.status) return search.status
-  if (resolveView(search) === 'work') return 'unrated' as const
-  return 'all' as const
+  if (search.step === 'overview') return 'all' as const
+  return 'unrated' as const
 }

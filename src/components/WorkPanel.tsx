@@ -3,9 +3,8 @@ import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { FullMask } from '@/components/FullMask'
 import { QaPanel } from '@/components/QaPanel'
-import { RapidForm } from '@/components/RapidForm'
+import { RapidActions, RapidForm } from '@/components/RapidForm'
 import { useOsmAuth } from '@/components/shared/use-osm-auth'
-import { StatusFilterControl } from '@/components/StatusFilterControl'
 import { Button } from '@/components/ui/button'
 import { Callout } from '@/components/ui/callout'
 import {
@@ -14,6 +13,7 @@ import {
   DescriptionTerm,
 } from '@/components/ui/description-list'
 import { Subheading } from '@/components/ui/heading'
+import { SidebarBody, SidebarFooter } from '@/components/ui/sidebar'
 import { Text } from '@/components/ui/text'
 import { Route } from '@/routes/index'
 import { loadNodes, loadSuggestions } from '@/shared/datasets/dataset-idb'
@@ -33,7 +33,7 @@ import {
   ratingsQueryKey,
 } from '@/shared/ratings/ratings-query'
 import { emptyRapidDraft, rapidValuesFromRecord, type RapidDraft } from '@/shared/ratings/schema'
-import { resolveStatusFilter, resolveView } from '@/shared/routing/search-schema'
+import { resolveStatusFilter } from '@/shared/routing/search-schema'
 import { applySuggestions } from '@/shared/suggestions/apply'
 import { suggestionsForNode } from '@/shared/suggestions/schema'
 
@@ -43,7 +43,6 @@ export function WorkPanel() {
   const search = Route.useSearch()
   const { dataset, node } = search
   const statusFilter = resolveStatusFilter(search)
-  const view = resolveView(search)
   const auth = useOsmAuth()
   const [fullOpen, setFullOpen] = useState(false)
   const [correcting, setCorrecting] = useState(false)
@@ -85,12 +84,11 @@ export function WorkPanel() {
     setDraftByNode((previous) => ({ ...previous, [currentId]: next }))
   }
 
-  function goToNode(nextId: string | undefined, nextView = view) {
+  function goToNode(nextId: string | undefined) {
     void navigate({
       search: (previous) => ({
         ...previous,
         node: nextId,
-        view: nextView,
         step: 'work',
       }),
       replace: true,
@@ -140,14 +138,26 @@ export function WorkPanel() {
   })
 
   if (!dataset) {
-    return <Callout title="Kein Gebiet">Wähle zuerst ein Gebiet.</Callout>
+    return (
+      <SidebarBody>
+        <Callout title="Kein Gebiet">Wähle zuerst ein Gebiet.</Callout>
+      </SidebarBody>
+    )
   }
   if (!nodes) {
-    return <Callout title="Keine Knoten">Importiere eine Knoten-Datei für {dataset}.</Callout>
+    return (
+      <SidebarBody>
+        <Callout title="Keine Knoten">Importiere eine Knoten-Datei für {dataset}.</Callout>
+      </SidebarBody>
+    )
   }
   if (!feature || !currentId) {
     return (
-      <Callout title="Keine Knoten in diesem Filter">Filter ändern oder Datei importieren.</Callout>
+      <SidebarBody>
+        <Callout title="Keine Knoten in diesem Filter">
+          Filter ändern oder Datei importieren.
+        </Callout>
+      </SidebarBody>
     )
   }
 
@@ -156,93 +166,89 @@ export function WorkPanel() {
   const canSave =
     auth.authenticated &&
     (isRatingComplete(draft) || (hasAllRapidAttributes(draft) && draft.KP_Nichtbetrachten !== 1))
+  const skip = () => {
+    const skipped = { ...emptyRapidDraft(), KP_Nichtbetrachten: 1 as const }
+    setDraft(skipped)
+    saveMutation.mutate({ kind: 'save', draft: skipped })
+  }
+  const previous = () => goToNode(previousNodeId(nodeIds, currentId, records, statusFilter))
+  const next = () => goToNode(nextNodeId(nodeIds, currentId, records, statusFilter))
+  const save = () => saveMutation.mutate({ kind: 'save', draft })
 
   return (
-    <section className="space-y-4" data-testid="work-panel">
-      <div className="flex items-center justify-between gap-2">
-        <Subheading>Knoten {readonly.nummer}</Subheading>
-        <Button
-          type="button"
-          outline
-          data-testid="toggle-overview"
-          onClick={() => {
-            void navigate({
-              search: (previous) => ({
-                ...previous,
-                view: view === 'overview' ? 'work' : 'overview',
-                step: 'work',
-              }),
-              replace: true,
-            })
-          }}
-        >
-          {view === 'overview' ? 'Zur Arbeit' : 'Übersicht'}
-        </Button>
-      </div>
-      <Text data-testid="progress-count">
-        {rated}/{total} bewertet
-      </Text>
-      <StatusFilterControl />
-      <DescriptionList>
-        <DescriptionTerm>Laufende Nummer</DescriptionTerm>
-        <DescriptionDetails data-testid="selected-node-id">{readonly.nummer}</DescriptionDetails>
-        <DescriptionTerm>Referenz im Detailnetz</DescriptionTerm>
-        <DescriptionDetails>{readonly.okstraId || '—'}</DescriptionDetails>
-        <DescriptionTerm>Bezirksnummer</DescriptionTerm>
-        <DescriptionDetails>{readonly.bezirksnummer || '—'}</DescriptionDetails>
-        <DescriptionTerm>Radverkehrsnetz</DescriptionTerm>
-        <DescriptionDetails>{readonly.radvorrangnetz || '—'}</DescriptionDetails>
-      </DescriptionList>
+    <>
+      <SidebarBody>
+        <section className="space-y-4" data-testid="work-panel">
+          <Subheading data-testid="selected-node-id">Knoten {readonly.nummer}</Subheading>
+          <Text data-testid="progress-count">
+            {rated}/{total} bewertet
+          </Text>
+          <DescriptionList>
+            <DescriptionTerm>Referenz im Detailnetz</DescriptionTerm>
+            <DescriptionDetails>{readonly.okstraId || '—'}</DescriptionDetails>
+            <DescriptionTerm>Bezirksnummer</DescriptionTerm>
+            <DescriptionDetails>{readonly.bezirksnummer || '—'}</DescriptionDetails>
+            <DescriptionTerm>Radverkehrsnetz</DescriptionTerm>
+            <DescriptionDetails>{readonly.radvorrangnetz || '—'}</DescriptionDetails>
+          </DescriptionList>
 
-      <RapidForm
-        draft={draft}
-        suggestions={suggestionRows}
-        saveDisabled={!canSave || saveMutation.isPending}
-        onChange={setDraft}
-        onSkip={() => {
-          const skipped = { ...emptyRapidDraft(), KP_Nichtbetrachten: 1 as const }
-          setDraft(skipped)
-          saveMutation.mutate({ kind: 'save', draft: skipped })
-        }}
-        onPrevious={() => goToNode(previousNodeId(nodeIds, currentId, records, statusFilter))}
-        onNext={() => goToNode(nextNodeId(nodeIds, currentId, records, statusFilter))}
-        onSave={() => saveMutation.mutate({ kind: 'save', draft })}
-      />
+          <RapidForm
+            draft={draft}
+            suggestions={suggestionRows}
+            onChange={setDraft}
+            onSkip={skip}
+            onPrevious={previous}
+            onNext={next}
+            onSave={save}
+          />
 
-      <Button
-        type="button"
-        outline
-        data-testid="toggle-full-mask"
-        onClick={() => setFullOpen((open) => !open)}
-      >
-        {fullOpen ? 'Vollmaske schließen' : 'Vollmaske öffnen'}
-      </Button>
-      {fullOpen || correcting ? (
-        <FullMask
-          draft={draft}
-          onChange={setDraft}
-          submitLabel={correcting ? 'Korrektur speichern' : 'Vollmaske speichern'}
-          onSubmit={() => saveMutation.mutate({ kind: correcting ? 'corrected' : 'save', draft })}
+          <Button
+            type="button"
+            outline
+            data-testid="toggle-full-mask"
+            onClick={() => setFullOpen((open) => !open)}
+          >
+            {fullOpen ? 'Vollmaske schließen' : 'Vollmaske öffnen'}
+          </Button>
+          {fullOpen || correcting ? (
+            <FullMask
+              draft={draft}
+              onChange={setDraft}
+              submitLabel={correcting ? 'Korrektur speichern' : 'Vollmaske speichern'}
+              onSubmit={() =>
+                saveMutation.mutate({ kind: correcting ? 'corrected' : 'save', draft })
+              }
+            />
+          ) : null}
+
+          {record?.status === 'complete' ? (
+            <QaPanel
+              record={record}
+              displayName={auth.displayName}
+              correcting={correcting}
+              onConfirm={() =>
+                saveMutation.mutate({ kind: 'confirmed', draft: rapidValuesFromRecord(record) })
+              }
+              onMarkProblematic={() => {
+                setCorrecting(true)
+                setFullOpen(true)
+              }}
+            />
+          ) : null}
+
+          {error ? <Callout tone="error">{error}</Callout> : null}
+          {!auth.authenticated ? <Callout>Zum Speichern mit OSM anmelden.</Callout> : null}
+        </section>
+      </SidebarBody>
+      <SidebarFooter>
+        <RapidActions
+          onSkip={skip}
+          onPrevious={previous}
+          onNext={next}
+          onSave={save}
+          saveDisabled={!canSave || saveMutation.isPending}
         />
-      ) : null}
-
-      {record?.status === 'complete' ? (
-        <QaPanel
-          record={record}
-          displayName={auth.displayName}
-          correcting={correcting}
-          onConfirm={() =>
-            saveMutation.mutate({ kind: 'confirmed', draft: rapidValuesFromRecord(record) })
-          }
-          onMarkProblematic={() => {
-            setCorrecting(true)
-            setFullOpen(true)
-          }}
-        />
-      ) : null}
-
-      {error ? <Callout tone="error">{error}</Callout> : null}
-      {!auth.authenticated ? <Callout>Zum Speichern mit OSM anmelden.</Callout> : null}
-    </section>
+      </SidebarFooter>
+    </>
   )
 }

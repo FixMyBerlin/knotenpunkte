@@ -28,6 +28,13 @@ describe('routerSearch', () => {
     expect(search.bg).toBe('osm-mapnik')
   })
 
+  it('keeps streets on unless the URL turns them off', () => {
+    expect(roundTrip({}).streets).toBeUndefined()
+    expect(roundTrip({ streets: true }).streets).toBeUndefined()
+    expect(roundTrip({ streets: false }).streets).toBe(false)
+    expect(roundTrip({ streets: 'nope' }).streets).toBeUndefined()
+  })
+
   it('drops empty bg and unknown status', () => {
     expect(roundTrip({ bg: '' }).bg).toBeUndefined()
     expect(roundTrip({ status: 'nope' }).status).toBeUndefined()

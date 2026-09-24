@@ -2,13 +2,14 @@ import type { JunctionNodesGeoJSON } from '@/shared/nodes/schema'
 import { ratingProgress } from '@/shared/ratings/completeness'
 import type { RatingRecord } from '@/shared/ratings/schema'
 
-export const appSteps = ['dataset', 'work', 'export'] as const
+export const appSteps = ['dataset', 'work', 'overview', 'export'] as const
 
 export type AppStep = (typeof appSteps)[number]
 
 export const appStepLabels: Record<AppStep, { label: string }> = {
   dataset: { label: 'Datensatz' },
   work: { label: 'Bewerten' },
+  overview: { label: 'Übersicht' },
   export: { label: 'Export' },
 }
 
@@ -49,6 +50,9 @@ export function stepDescription({
         return `${rated}/${total} Knoten`
       }
       if (dataset && remoteCount > 0) return `${remoteCount} in der Datenbank`
+      return 'Keine Knoten'
+    case 'overview':
+      if (nodes) return `${nodes.features.length} Knoten`
       return 'Keine Knoten'
     case 'export':
       if (dataset) return ratingLabel(Object.keys(records).length)

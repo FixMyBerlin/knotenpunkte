@@ -39,7 +39,7 @@ import type { RatingRecord } from '@/shared/ratings/schema'
 import { resolveStep } from '@/shared/routing/app-step'
 import {
   resolveStatusFilter,
-  resolveView,
+  resolveStreetsOn,
   searchMapParam,
   serializeIndexSearchMap,
 } from '@/shared/routing/search-schema'
@@ -77,8 +77,8 @@ export function RatingMap() {
   const map = searchMapParam(search)
   const { dataset, node, bg } = search
   const currentStep = resolveStep(search)
-  const view = resolveView(search)
   const statusFilter = resolveStatusFilter(search)
+  const streetsOn = resolveStreetsOn(search)
   const { setHoveredNodeId, setMapBearing, setMapPitch, setPrivateRasterUrl } = useMapUiActions()
   const storedPrivateUrl = usePrivateRasterUrl()
 
@@ -101,7 +101,7 @@ export function RatingMap() {
   })
   const records = ratingsQuery.data ?? {}
   const features = nodesQuery.data?.collection.features ?? []
-  const overview = view === 'overview' || currentStep === 'dataset'
+  const overview = currentStep === 'overview' || currentStep === 'dataset'
 
   const geojson = {
     type: 'FeatureCollection' as const,
@@ -190,7 +190,6 @@ export function RatingMap() {
             search: (previous) => ({
               ...previous,
               node: id,
-              view: 'work',
               step: 'work',
             }),
             replace: true,
@@ -199,7 +198,7 @@ export function RatingMap() {
       >
         <AttributionControl compact position="bottom-right" />
         <MapBackgroundLayerSource backgroundLayerId={eliId} />
-        <StreetsLayer />
+        {streetsOn ? <StreetsLayer /> : null}
         {flyTo ? <FlyToSelected lng={flyTo[0]} lat={flyTo[1]} /> : null}
         <Source id={NODES_SOURCE_ID} type="geojson" data={geojson}>
           <Layer
@@ -254,9 +253,15 @@ export function RatingMap() {
       <div className="pointer-events-none absolute top-3 right-3 z-10 flex flex-col items-end gap-2 *:pointer-events-auto">
         <MapResetNorthPitchButton />
         <MapBackgroundLayerControl bg={bg ?? null} lat={map.lat} lng={map.lng} />
-      </div>
-      <div className="pointer-events-none absolute bottom-8 left-3 z-10 *:pointer-events-auto">
-        <StreetsLegend />
+        <StreetsLegend
+          streetsOn={streetsOn}
+          onStreetsChange={(on) => {
+            void navigate({
+              search: (previous) => ({ ...previous, streets: on ? undefined : false }),
+              replace: true,
+            })
+          }}
+        />
       </div>
     </div>
   )

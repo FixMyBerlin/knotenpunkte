@@ -46,6 +46,11 @@ describe('stepDescription', () => {
     )
   })
 
+  it('describes overview from the node count', () => {
+    expect(stepDescription({ step: 'overview', nodes })).toBe('2 Knoten')
+    expect(stepDescription({ step: 'overview' })).toBe('Keine Knoten')
+  })
+
   it('describes export', () => {
     expect(stepDescription({ step: 'export' })).toBe('Kein Datensatz')
     expect(stepDescription({ step: 'export', dataset: 'x', records: {} })).toBe('0 Bewertungen')
