@@ -1,6 +1,6 @@
 # Knotenpunkte
 
-Web mask to rate junction nodes one after another (Zustand nach OSM). Campaigns are area slugs. Berlin Infravelo is the first campaign. Ratings persist in the shared key-value database after OSM login, under KV project `knotenpunkte`.
+Web app to rate junction nodes one after another. Ratings persist in the shared [key-value database](https://github.com/FixMyBerlin/key-value-db) after OSM login, under KV project `knotenpunkte`.
 
 Dev server: [http://127.0.0.1:33479](http://127.0.0.1:33479) (fixed host and port so OSM OAuth redirect URIs stay stable). OSM only accepts `http` redirects on `127.0.0.1`.
 
