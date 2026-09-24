@@ -46,7 +46,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
-    "@playwright/test": "1.62.1",
+    "@playwright/test": "1.63.0",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/router-plugin": "^1.168.35",
     "@types/geojson": "^7946.0.16",
@@ -62,9 +62,9 @@
     "husky": "^9.1.7",
     "knip": "^6.34.0",
     "oxc-transform-react": "^0.148.0",
-    "oxfmt": "0.66.0",
-    "oxlint": "1.81.0",
-    "oxlint-tsgolint": "7.0.2001",
+    "oxfmt": "0.68.0",
+    "oxlint": "1.83.0",
+    "oxlint-tsgolint": "7.0.2002",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
     "vite": "^8.2.2",
