@@ -1,6 +1,7 @@
 import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react'
 import { XMarkIcon } from '@heroicons/react/20/solid'
 import { useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
+import { Tooltip } from '@/components/shared/Tooltip/Tooltip'
 import {
   MAX_SIDEBAR_WIDTH,
   MIN_SIDEBAR_WIDTH,
@@ -46,14 +47,16 @@ export function SidebarLayout({ header, sidebar, children }: SidebarLayoutProps)
             >
               <div className="flex h-full w-full flex-col bg-zinc-900 ring-1 ring-white/10">
                 <div className="flex justify-end px-3 pt-3">
-                  <button
-                    type="button"
-                    className="rounded-lg p-2 text-zinc-400 hover:bg-white/10 hover:text-white"
-                    aria-label="Seitenleiste schließen"
-                    onClick={() => setShowSidebar(false)}
-                  >
-                    <XMarkIcon className="size-5" aria-hidden="true" />
-                  </button>
+                  <Tooltip text="Seitenleiste schließen">
+                    <button
+                      type="button"
+                      className="rounded-lg p-2 text-zinc-400 hover:bg-white/10 hover:text-white"
+                      aria-label="Seitenleiste schließen"
+                      onClick={() => setShowSidebar(false)}
+                    >
+                      <XMarkIcon className="size-5" aria-hidden="true" />
+                    </button>
+                  </Tooltip>
                 </div>
                 <div className="min-h-0 flex-1 overflow-hidden">{sidebar}</div>
               </div>

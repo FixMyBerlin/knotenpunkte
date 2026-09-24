@@ -1,6 +1,7 @@
 import { ArrowUpIcon } from '@heroicons/react/20/solid'
 import { useMap } from 'react-map-gl/maplibre'
 import { useMapBearing, useMapPitch } from '@/components/shared/map-ui-store'
+import { Tooltip } from '@/components/shared/Tooltip/Tooltip'
 import { Button } from '@/components/ui/button'
 import { MAIN_MAP_ID } from '@/shared/map/map-ids'
 
@@ -21,17 +22,18 @@ export function MapResetNorthPitchButton() {
   if (!visible) return null
 
   return (
-    <Button
-      plain
-      type="button"
-      title="Nach Norden / flach"
-      aria-label="Nach Norden / flach"
-      className="bg-zinc-900/90! text-white! shadow-lg ring-1 ring-white/10 hover:bg-zinc-800! data-active:bg-zinc-800! data-hover:bg-zinc-800!"
-      onClick={() => {
-        maps[MAIN_MAP_ID]?.getMap().resetNorthPitch({ duration: 500 })
-      }}
-    >
-      <ArrowUpIcon data-slot="icon" style={{ transform: `rotate(${-bearing}deg)` }} aria-hidden />
-    </Button>
+    <Tooltip text="Nach Norden / flach">
+      <Button
+        plain
+        type="button"
+        aria-label="Nach Norden / flach"
+        className="bg-zinc-900/90! text-white! shadow-lg ring-1 ring-white/10 hover:bg-zinc-800! data-active:bg-zinc-800! data-hover:bg-zinc-800!"
+        onClick={() => {
+          maps[MAIN_MAP_ID]?.getMap().resetNorthPitch({ duration: 500 })
+        }}
+      >
+        <ArrowUpIcon data-slot="icon" style={{ transform: `rotate(${-bearing}deg)` }} aria-hidden />
+      </Button>
+    </Tooltip>
   )
 }

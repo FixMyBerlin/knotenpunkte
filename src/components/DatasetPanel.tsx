@@ -4,6 +4,7 @@ import { useNavigate } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { useState } from 'react'
 import { MotionCollapse } from '@/components/shared/motion/MotionCollapse'
+import { Tooltip } from '@/components/shared/Tooltip/Tooltip'
 import { useOsmAuth } from '@/components/shared/use-osm-auth'
 import { Button } from '@/components/ui/button'
 import { Callout } from '@/components/ui/callout'
@@ -214,17 +215,19 @@ export function DatasetPanel() {
       <Fieldset>
         <div className="flex items-center justify-between gap-2">
           <Subheading>Gebiet auswählen</Subheading>
-          <Button
-            outline
-            type="button"
-            aria-label="Neues Gebiet anlegen"
-            aria-expanded={createOpen}
-            aria-controls="create-project-panel"
-            data-testid="create-project-toggle"
-            onClick={() => setCreateOpen((open) => !open)}
-          >
-            <PlusIcon className="size-4" aria-hidden="true" />
-          </Button>
+          <Tooltip text="Neues Gebiet anlegen">
+            <Button
+              outline
+              type="button"
+              aria-label="Neues Gebiet anlegen"
+              aria-expanded={createOpen}
+              aria-controls="create-project-panel"
+              data-testid="create-project-toggle"
+              onClick={() => setCreateOpen((open) => !open)}
+            >
+              <PlusIcon className="size-4" aria-hidden="true" />
+            </Button>
+          </Tooltip>
         </div>
 
         <MotionCollapse open={createOpen}>
@@ -235,16 +238,18 @@ export function DatasetPanel() {
               <Field>
                 <div className="flex items-center gap-1.5">
                   <Label>Gebietsname</Label>
-                  <button
-                    type="button"
-                    className={infoIconButtonClassName}
-                    aria-expanded={projectNameHelpOpen}
-                    aria-controls="project-name-help"
-                    aria-label="Erklärung zum Gebietsnamen"
-                    onClick={() => setProjectNameHelpOpen((open) => !open)}
-                  >
-                    <InformationCircleIcon className="size-4" aria-hidden="true" />
-                  </button>
+                  <Tooltip text="Erklärung zum Gebietsnamen">
+                    <button
+                      type="button"
+                      className={infoIconButtonClassName}
+                      aria-expanded={projectNameHelpOpen}
+                      aria-controls="project-name-help"
+                      aria-label="Erklärung zum Gebietsnamen"
+                      onClick={() => setProjectNameHelpOpen((open) => !open)}
+                    >
+                      <InformationCircleIcon className="size-4" aria-hidden="true" />
+                    </button>
+                  </Tooltip>
                 </div>
                 <MotionCollapse open={projectNameHelpOpen}>
                   <div id="project-name-help" className="pt-2">
@@ -359,16 +364,18 @@ export function DatasetPanel() {
       <Fieldset>
         <div className="flex items-center gap-1.5">
           <Subheading>{importHeadline}</Subheading>
-          <button
-            type="button"
-            className={infoIconButtonClassName}
-            aria-expanded={importHelpOpen}
-            aria-controls="import-help"
-            aria-label="Hinweise zum Knotenimport"
-            onClick={() => setImportHelpOpen((open) => !open)}
-          >
-            <InformationCircleIcon className="size-4" aria-hidden="true" />
-          </button>
+          <Tooltip text="Hinweise zum Knotenimport">
+            <button
+              type="button"
+              className={infoIconButtonClassName}
+              aria-expanded={importHelpOpen}
+              aria-controls="import-help"
+              aria-label="Hinweise zum Knotenimport"
+              onClick={() => setImportHelpOpen((open) => !open)}
+            >
+              <InformationCircleIcon className="size-4" aria-hidden="true" />
+            </button>
+          </Tooltip>
         </div>
         <MotionCollapse open={importHelpOpen}>
           <div id="import-help" className="space-y-2 pt-2">

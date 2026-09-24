@@ -19,14 +19,16 @@ export function AppHeader({ steps, onSelect, onOpenSidebar, dataPage = false }: 
       <div className="flex min-h-11 items-stretch">
         {onOpenSidebar ? (
           <div className="flex shrink-0 items-center pl-1 lg:hidden">
-            <button
-              type="button"
-              className="rounded-lg p-2 text-zinc-400 hover:bg-white/10 hover:text-white"
-              aria-label="Seitenleiste öffnen"
-              onClick={onOpenSidebar}
-            >
-              <Bars3Icon className="size-5" aria-hidden="true" />
-            </button>
+            <Tooltip text="Seitenleiste öffnen">
+              <button
+                type="button"
+                className="rounded-lg p-2 text-zinc-400 hover:bg-white/10 hover:text-white"
+                aria-label="Seitenleiste öffnen"
+                onClick={onOpenSidebar}
+              >
+                <Bars3Icon className="size-5" aria-hidden="true" />
+              </button>
+            </Tooltip>
           </div>
         ) : null}
         <StepNav steps={steps} onSelect={onSelect} />
