@@ -1,6 +1,7 @@
 # Source: tech-stack skill — examples/dependabot.yml.template (tilda-geo).
 # Schedule is the private-OSS one: first Friday of the month.
 # No docker ecosystem (no Dockerfile) and no `ignore` block (no nitro/TanStack Start here).
+# Keep bun.lock lockfileVersion at 1 (tilda-geo / OSM bun apps). GitHub's bun updater still rejects v2.
 version: 2
 updates:
   - package-ecosystem: bun
