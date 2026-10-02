@@ -1,3 +1,7 @@
+import {
+  streetImageryInteractiveLayerIds,
+  VIEWPOINT_DIRECTION_LAYER_ID,
+} from '@osm-editor-kit/street-imagery-react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import type { MapLayerMouseEvent, MapLibreEvent } from 'maplibre-gl'
@@ -14,6 +18,9 @@ import {
 } from 'react-map-gl/maplibre'
 import { MapBackgroundLayerControl } from '@/components/MapBackgroundLayerControl'
 import { MapBackgroundLayerSource } from '@/components/MapBackgroundLayerSource'
+import { MapillaryLayers, useMapillaryMapClick } from '@/components/mapillary/MapillaryLayers'
+import { MapillaryToggle } from '@/components/mapillary/MapillaryToggle'
+import { NodePhotoViewer } from '@/components/mapillary/NodePhotoViewer'
 import { MapResetNorthPitchButton } from '@/components/MapResetNorthPitchButton'
 import { useMapUiActions, usePrivateRasterUrl } from '@/components/shared/map-ui-store'
 import { StreetsLayer } from '@/components/StreetsLayer'
@@ -32,12 +39,14 @@ import {
 import { nodeStatusColors, OPENFREEMAP_POSITRON, privateRasterStyle } from '@/shared/map/node-style'
 import { readPrivateRasterUrl, resolveBackgroundChoice } from '@/shared/map/private-raster'
 import { usePmtilesProtocol } from '@/shared/map/use-pmtiles-protocol'
+import { mapillaryProviders } from '@/shared/mapillary/junction'
 import { nodeLngLat, type JunctionNodeFeature } from '@/shared/nodes/schema'
-import { matchesStatusFilter } from '@/shared/ratings/queue'
+import { defaultWorkNodeId, matchesStatusFilter } from '@/shared/ratings/queue'
 import { ratingStore, ratingsQueryKey } from '@/shared/ratings/ratings-query'
 import type { RatingRecord } from '@/shared/ratings/schema'
 import { resolveStep } from '@/shared/routing/app-step'
 import {
+  resolvePhotosOn,
   resolveStatusFilter,
   resolveStreetsOn,
   searchMapParam,
@@ -70,6 +79,11 @@ function nodeStroke(record: RatingRecord | undefined) {
   return '#b45309'
 }
 
+const photoLayerIds = [
+  VIEWPOINT_DIRECTION_LAYER_ID,
+  ...streetImageryInteractiveLayerIds(mapillaryProviders),
+]
+
 export function RatingMap() {
   usePmtilesProtocol()
   const navigate = useNavigate({ from: Route.fullPath })
@@ -79,6 +93,8 @@ export function RatingMap() {
   const currentStep = resolveStep(search)
   const statusFilter = resolveStatusFilter(search)
   const streetsOn = resolveStreetsOn(search)
+  const photosOn = resolvePhotosOn(search) && currentStep === 'work'
+  const handleMapillaryClick = useMapillaryMapClick()
   const { setHoveredNodeId, setMapBearing, setMapPitch, setPrivateRasterUrl } = useMapUiActions()
   const storedPrivateUrl = usePrivateRasterUrl()
 
@@ -103,6 +119,16 @@ export function RatingMap() {
   const features = nodesQuery.data?.collection.features ?? []
   const overview = currentStep === 'overview' || currentStep === 'dataset'
 
+  // Without a node in the URL the work panel rates the first open node; show that one.
+  const workNodeId =
+    currentStep === 'work'
+      ? defaultWorkNodeId(
+          features.map((feature) => feature.properties.id),
+          records,
+          node,
+        )
+      : node
+
   const geojson = {
     type: 'FeatureCollection' as const,
     features: features
@@ -119,17 +145,19 @@ export function RatingMap() {
           geometry: { type: 'Point' as const, coordinates: [lng, lat] },
           properties: {
             id: feature.properties.id,
-            selected: feature.properties.id === node ? 1 : 0,
+            selected: feature.properties.id === workNodeId ? 1 : 0,
             color: nodeColor(record),
             stroke: nodeStroke(record),
-            workDim: !overview && feature.properties.id !== node ? 1 : 0,
+            workDim: !overview && feature.properties.id !== workNodeId ? 1 : 0,
           },
         }
       }),
   }
 
-  const selectedFeature = features.find((feature) => feature.properties.id === node)
+  const selectedFeature = features.find((feature) => feature.properties.id === workNodeId)
   const flyTo = selectedFeature && currentStep === 'work' ? nodeLngLat(selectedFeature) : null
+  const photoNode =
+    selectedFeature && flyTo ? { id: selectedFeature.properties.id, lngLat: flyTo } : null
 
   const background = resolveBackgroundChoice(bg, storedPrivateUrl)
   const mapStyle =
@@ -148,7 +176,7 @@ export function RatingMap() {
         }}
         style={{ width: '100%', height: '100%' }}
         attributionControl={false}
-        interactiveLayerIds={[...interactiveNodeLayerIds]}
+        interactiveLayerIds={[...interactiveNodeLayerIds, ...(photosOn ? photoLayerIds : [])]}
         onLoad={(event: MapLibreEvent) => {
           exposeMainMapForDebugging(event.target)
           setMapBearing(event.target.getBearing())
@@ -185,7 +213,10 @@ export function RatingMap() {
         }}
         onClick={(event: MapLayerMouseEvent) => {
           const id = nodeIdFromEvent(event)
-          if (!id) return
+          if (!id) {
+            if (photosOn) handleMapillaryClick(event)
+            return
+          }
           void navigate({
             search: (previous) => ({
               ...previous,
@@ -200,6 +231,14 @@ export function RatingMap() {
         <MapBackgroundLayerSource backgroundLayerId={eliId} />
         {streetsOn ? <StreetsLayer /> : null}
         {flyTo ? <FlyToSelected lng={flyTo[0]} lat={flyTo[1]} /> : null}
+        {photosOn ? (
+          <MapillaryLayers
+            node={photoNode}
+            zoom={map.zoom}
+            viewportKey={search.map}
+            streetsOn={streetsOn}
+          />
+        ) : null}
         <Source id={NODES_SOURCE_ID} type="geojson" data={geojson}>
           <Layer
             id={NODES_LAYER_ID}
@@ -250,6 +289,7 @@ export function RatingMap() {
           />
         </Source>
       </Map>
+      {photosOn && photoNode ? <NodePhotoViewer node={photoNode} /> : null}
       <div className="pointer-events-none absolute top-3 right-3 z-10 flex flex-col items-end gap-2 *:pointer-events-auto">
         <MapResetNorthPitchButton />
         <MapBackgroundLayerControl bg={bg ?? null} lat={map.lat} lng={map.lng} />
@@ -262,13 +302,26 @@ export function RatingMap() {
             })
           }}
         />
+        {currentStep === 'work' ? (
+          <MapillaryToggle
+            photosOn={photosOn}
+            onPhotosChange={(on) => {
+              void navigate({
+                search: (previous) => ({ ...previous, photos: on ? undefined : false }),
+                replace: true,
+              })
+            }}
+          />
+        ) : null}
       </div>
     </div>
   )
 }
 
 function nodeIdFromEvent(event: MapLayerMouseEvent) {
-  const feature = event.features?.[0] as JunctionNodeFeature | undefined
+  const feature = event.features?.find((item) =>
+    (interactiveNodeLayerIds as readonly string[]).includes(item.layer.id),
+  ) as JunctionNodeFeature | undefined
   const id = feature?.properties?.id
   return typeof id === 'string' ? id : null
 }

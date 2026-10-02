@@ -1,3 +1,4 @@
+import { useCurrentHistoryEntry } from '@osm-editor-kit/street-imagery-react'
 import { Field, Fieldset, Label } from '@/components/ui/fieldset'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -10,6 +11,8 @@ type Props = {
 }
 
 export function FullMask({ draft, onChange }: Props) {
+  const shownPhotoId = useCurrentHistoryEntry()?.photo.photoId
+
   return (
     <Fieldset data-testid="full-mask" id="full-mask">
       <Field>
@@ -34,6 +37,15 @@ export function FullMask({ draft, onChange }: Props) {
           {...ignorePasswordManagerProps}
           onChange={(event) => onChange({ ...draft, 'Mapillary-ID': event.currentTarget.value })}
         />
+        <button
+          type="button"
+          data-testid="full-mapillary-take"
+          disabled={!shownPhotoId || shownPhotoId === draft['Mapillary-ID']}
+          className="mt-1 text-xs text-zinc-300 underline underline-offset-2 hover:text-white disabled:text-zinc-500 disabled:no-underline"
+          onClick={() => onChange({ ...draft, 'Mapillary-ID': shownPhotoId })}
+        >
+          Angezeigtes Foto übernehmen
+        </button>
       </Field>
       <Field>
         <Label>Kommentar</Label>

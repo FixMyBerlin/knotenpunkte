@@ -6,6 +6,9 @@ minimumReleaseAgeExcludes = [
   "typescript",
   "@typescript/typescript-darwin-arm64",
   "@typescript/typescript-linux-x64",
+  # Our own packages, released together with this app.
+  "@osm-editor-kit/street-imagery",
+  "@osm-editor-kit/street-imagery-react",
 ]
 
 linker = "isolated"

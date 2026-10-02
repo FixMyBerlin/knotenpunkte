@@ -16,7 +16,7 @@ const optionalTrimmedSearchString = optionalSearchString.transform((value) => {
 })
 
 /** Absent or any “on” value stays off the URL. Only an explicit off is stored. */
-const streetsSearchFlag = z
+const onByDefaultSearchFlag = z
   .union([
     z.literal('1'),
     z.literal('true'),
@@ -61,7 +61,8 @@ export const indexSearchSchema = z.object({
         ? value
         : undefined,
     ),
-  streets: streetsSearchFlag,
+  streets: onByDefaultSearchFlag,
+  photos: onByDefaultSearchFlag,
 })
 
 export const dataSearchSchema = z.object({
@@ -83,6 +84,10 @@ export function serializeIndexSearchMap(map: MapParam) {
 
 export function resolveStreetsOn(search: Pick<IndexSearch, 'streets'>) {
   return search.streets !== false
+}
+
+export function resolvePhotosOn(search: Pick<IndexSearch, 'photos'>) {
+  return search.photos !== false
 }
 
 export function resolveStatusFilter(search: Pick<IndexSearch, 'status' | 'step'>) {

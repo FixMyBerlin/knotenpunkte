@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { FullMask } from '@/components/FullMask'
+import { MapillaryHints } from '@/components/mapillary/MapillaryHints'
 import { QaPanel } from '@/components/QaPanel'
 import { RapidActions, RapidForm } from '@/components/RapidForm'
 import { MotionCollapse } from '@/components/shared/motion/MotionCollapse'
@@ -14,7 +15,7 @@ import { SidebarBody, SidebarFooter } from '@/components/ui/sidebar'
 import { Text } from '@/components/ui/text'
 import { Route } from '@/routes/index'
 import { loadNodes, loadSuggestions } from '@/shared/datasets/dataset-idb'
-import { readOnlyNodeFields } from '@/shared/nodes/schema'
+import { nodeLngLat, readOnlyNodeFields } from '@/shared/nodes/schema'
 import { buildRatingRecord } from '@/shared/ratings/build-record'
 import {
   hasAllRapidAttributes,
@@ -30,7 +31,7 @@ import {
   ratingsQueryKey,
 } from '@/shared/ratings/ratings-query'
 import { emptyRapidDraft, rapidValuesFromRecord, type RapidDraft } from '@/shared/ratings/schema'
-import { resolveStatusFilter } from '@/shared/routing/search-schema'
+import { resolvePhotosOn, resolveStatusFilter } from '@/shared/routing/search-schema'
 import { applySuggestions } from '@/shared/suggestions/apply'
 import { suggestionsForNode } from '@/shared/suggestions/schema'
 
@@ -225,6 +226,8 @@ export function WorkPanel() {
               </dl>
             </MotionCollapse>
           </div>
+
+          {resolvePhotosOn(search) ? <MapillaryHints lngLat={nodeLngLat(feature)} /> : null}
 
           <RapidForm
             draft={draft}

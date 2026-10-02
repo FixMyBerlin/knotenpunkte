@@ -4,6 +4,8 @@ const strict = process.env.KNIP_STRICT === '1'
 export default {
   // main.tsx, vite.config.ts and playwright.config.ts are auto-detected entries.
   entry: ['src/routes/**/*.tsx', 'src/**/*.test.ts', 'tests/**/*.ts'],
+  // Aliased in vite.config.ts in place of `@panoramax/web-viewer`.
+  ignore: ['src/shared/mapillary/panoramax-stub.ts'],
   ignoreDependencies: ['@typescript/typescript-darwin-arm64'],
   rules: {
     files: 'error',

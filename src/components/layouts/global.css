@@ -1,5 +1,8 @@
 @import 'tailwindcss';
 
+/* Tailwind does not scan node_modules. */
+@source '../../../node_modules/@osm-editor-kit/street-imagery-react';
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {

@@ -35,3 +35,12 @@ export const streetsAttribution =
 export function isOsmLoginConfigured() {
   return osmClientId.length > 0
 }
+
+/**
+ * Public Mapillary client token (it ships in the bundle anyway).
+ * TODO: this is iD's token; register a Mapillary app for Knotenpunkte and replace it.
+ */
+export const mapillaryToken = 'MLY|4100327730013843|5bb78b81720791946a9a7b956c57b7cf'
+
+/** Photos older than this are not shown or suggested. Berlin needs a date filter. */
+export const mapillaryMaxAgeYears = 2
