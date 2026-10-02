@@ -18,10 +18,12 @@ const activeFillClass = 'text-sky-500/25'
 
 export function StepNav({ steps, onSelect }: Props) {
   return (
-    <nav aria-label="Fortschritt" className="flex min-w-0 flex-1">
+    <nav aria-label="Fortschritt" className="@container flex min-w-0 flex-1">
       <div className="flex items-center gap-2 pl-2 sm:pl-4">
         <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="size-5 shrink-0" />
-        <h1 className="text-sm font-medium tracking-wide text-zinc-200">Knotenpunkte</h1>
+        <h1 className="hidden text-sm font-medium tracking-wide text-zinc-200 @2xl:block">
+          Knotenpunkte
+        </h1>
       </div>
       <ol role="list" className="flex min-w-0 flex-1 overflow-x-auto">
         {steps.map((item, index) => {
@@ -29,8 +31,8 @@ export function StepNav({ steps, onSelect }: Props) {
           const last = index === steps.length - 1
           return (
             <li key={item.id} className={cn('relative flex min-w-0', current && 'z-10')}>
-              <div className="flex h-full items-stretch">
-                <span className="relative h-full w-6 shrink-0">
+              <div className="flex h-full min-w-0 items-stretch">
+                <span className="relative h-full w-3 shrink-0 @4xl:w-6">
                   {current ? (
                     <svg
                       fill="currentColor"
@@ -51,14 +53,16 @@ export function StepNav({ steps, onSelect }: Props) {
                   aria-label={`${item.label}: ${item.description}`}
                   onClick={() => onSelect(item.id)}
                   className={cn(
-                    'flex h-full items-center truncate pr-4 pl-4 text-sm font-medium',
+                    // Narrow header: label above description, two compact lines.
+                    'flex h-full min-w-0 flex-col items-start justify-center px-2 text-xs/tight font-medium',
+                    '@4xl:flex-row @4xl:items-center @4xl:px-4 @4xl:text-sm',
                     current ? 'bg-sky-500/25 text-white' : 'text-zinc-400 hover:text-zinc-200',
                   )}
                 >
-                  {item.label}
+                  <span className="max-w-full truncate">{item.label}</span>
                   <span
                     className={cn(
-                      'ml-1.5 font-normal',
+                      'max-w-full truncate font-normal @4xl:ml-1.5',
                       current ? 'text-sky-100/80' : 'text-zinc-500',
                     )}
                     data-testid={item.id === 'work' ? 'progress-summary' : undefined}
@@ -73,7 +77,7 @@ export function StepNav({ steps, onSelect }: Props) {
                     preserveAspectRatio="none"
                     aria-hidden="true"
                     className={cn(
-                      'h-full w-6 shrink-0',
+                      'h-full w-3 shrink-0 @4xl:w-6',
                       activeFillClass,
                       !last && 'pointer-events-none absolute inset-y-0 left-full',
                     )}
