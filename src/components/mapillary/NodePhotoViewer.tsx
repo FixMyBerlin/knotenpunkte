@@ -1,9 +1,8 @@
 import {
-  bestTargetImage,
   mapillaryValueName,
-  parseIsoDateStartMs,
   PLACE_TARGET,
   providerExternalLink,
+  targetImageToPhoto,
   type LngLat,
   type NormalizedPhoto,
 } from '@osm-editor-kit/street-imagery'
@@ -18,14 +17,14 @@ import {
   useCanGoForward,
   useCurrentHistoryEntry,
   useMapillaryImageDetections,
-  useMapillaryMapFeatureImages,
+  useSelectedMapillaryFeature,
   useViewpoints,
 } from '@osm-editor-kit/street-imagery-react'
 import { useEffect, useRef, useState } from 'react'
 import {
+  featurePhotosFromMs,
   showPhoto,
   showSuggestion,
-  targetImageToPhoto,
   useNodeViewSuggestions,
 } from '@/components/mapillary/photo-session'
 import {
@@ -34,7 +33,7 @@ import {
   useViewpointsNodeId,
 } from '@/components/shared/map-ui-store'
 import { mapillaryMaxAgeYears } from '@/config/app.const'
-import { isJunctionDetection, mapillaryFromDate } from '@/shared/mapillary/junction'
+import { isJunctionDetection } from '@/shared/mapillary/junction'
 
 const BIKE_LANE_COLOR = 0x22d3ee
 
@@ -62,13 +61,17 @@ export function NodePhotoViewer({ node }: Props) {
   const canGoForward = useCanGoForward()
   const featureId = useSelectedMapFeatureId()
   const { setSelectedMapFeatureId } = useMapUiActions()
-  const feature = useMapillaryMapFeatureImages(featureId)
-  const featureData = feature.data ?? null
   const [viewerPhoto, setViewerPhoto] = useState<NormalizedPhoto | null>(null)
   const [closedNodeId, setClosedNodeId] = useState<string | null>(null)
   const [showOutlines, setShowOutlines] = useState(false)
 
   const photo = entry?.photo ?? null
+  const feature = useSelectedMapillaryFeature({
+    featureId,
+    shownPhotoId: photo?.photoId,
+    minCapturedAt: featurePhotosFromMs,
+  })
+  const { data: featureData, shownImage, firstImage } = feature
   const viewsReady = viewpointsNodeId === node.id && viewpoints.length > 0 && !isLoading
 
   const autoOpenedRef = useRef<string | null>(null)
@@ -76,13 +79,14 @@ export function NodePhotoViewer({ node }: Props) {
     function openBestViewIntoNode() {
       if (!viewsReady || autoOpenedRef.current === node.id) return
       autoOpenedRef.current = node.id
+      // The rater was faster and already opened a photo or a detected object.
+      if (featureId || getViewpointSession().current) return
       const best = suggestions.find((suggestion) => suggestion.candidates.length > 0)
       if (best) showSuggestion(best)
     },
-    [node.id, suggestions, viewsReady],
+    [featureId, node.id, suggestions, viewsReady],
   )
 
-  const shownImage = featureData?.images.find((image) => image.id === photo?.photoId) ?? null
   const featureOpenedRef = useRef<string | null>(null)
   useEffect(
     function openBestPhotoOfFeature() {
@@ -90,14 +94,11 @@ export function NodePhotoViewer({ node }: Props) {
         featureOpenedRef.current = null
         return
       }
-      if (!featureData || featureOpenedRef.current === featureId) return
+      if (!firstImage || featureOpenedRef.current === featureId) return
       featureOpenedRef.current = featureId
-      const first = bestTargetImage(featureData.images, featureData.feature.lngLat, {
-        minCapturedAt: parseIsoDateStartMs(mapillaryFromDate()) ?? undefined,
-      })
-      if (first) showPhoto(targetImageToPhoto(first))
+      showPhoto(targetImageToPhoto(firstImage))
     },
-    [featureData, featureId],
+    [featureId, firstImage],
   )
 
   const detections = useMapillaryImageDetections(showOutlines ? photo?.photoId : null, {

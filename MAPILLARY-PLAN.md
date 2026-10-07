@@ -1,6 +1,6 @@
 # Mapillary detections for the Knotenpunkte rating — plan
 
-Status 2026-10-02: phases 1 and 2 are built with `@osm-editor-kit/street-imagery` (0.1.0-alpha.6) and `@osm-editor-kit/street-imagery-react` (0.1.0-alpha.7). Phases 3 and 4 are open.
+Status 2026-10-02: phases 1 and 2 are built with `@osm-editor-kit/street-imagery` (0.1.0-alpha.8) and `@osm-editor-kit/street-imagery-react` (0.1.0-alpha.10). Phases 3 and 4 are open.
 
 ## What is built, compared with this plan
 

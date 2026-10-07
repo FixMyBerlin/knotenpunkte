@@ -8,10 +8,11 @@ import {
 import {
   getViewpointSession,
   queryStreetImageryFeatures,
+  SelectedMapFeatureLayer,
   StreetLevelImagerySourcesAndLayers,
   useActiveDirectionKey,
   useCurrentHistoryEntry,
-  useMapillaryMapFeatureImages,
+  useSelectedMapillaryFeature,
   useMapViewportBbox,
   useViewerBearing,
   useViewerHfov,
@@ -23,8 +24,9 @@ import {
 import type { Geometry } from 'geojson'
 import type { MapLayerMouseEvent } from 'maplibre-gl'
 import { useEffect } from 'react'
-import { Layer, Source, useMap } from 'react-map-gl/maplibre'
+import { useMap } from 'react-map-gl/maplibre'
 import {
+  featurePhotosFromMs,
   showPhoto,
   showSuggestion,
   useNodeViewSuggestions,
@@ -74,7 +76,12 @@ export function MapillaryLayers({ node, zoom, viewportKey, streetsOn }: Props) {
   const hfov = useViewerHfov()
   const lngLat = useViewerLngLat()
   const selectedFeatureId = useSelectedMapFeatureId()
-  const selectedFeature = useMapillaryMapFeatureImages(selectedFeatureId).data?.feature
+  const selectedFeature = useSelectedMapillaryFeature({
+    featureId: selectedFeatureId,
+    shownPhotoId: selectedPhoto?.photoId,
+    minCapturedAt: featurePhotosFromMs,
+  })
+  const providers = zoom >= MAP_FEATURES_MIN_ZOOM ? mapillaryProviders : photoProviders
   const { setSelectedMapFeatureId, setViewpointsNodeId } = useMapUiActions()
 
   const nodeId = node?.id
@@ -125,7 +132,7 @@ export function MapillaryLayers({ node, zoom, viewportKey, streetsOn }: Props) {
   return (
     <>
       <StreetLevelImagerySourcesAndLayers
-        providers={zoom >= MAP_FEATURES_MIN_ZOOM ? mapillaryProviders : photoProviders}
+        providers={providers}
         bbox={bbox}
         zoom={zoom}
         filter={photoFilter}
@@ -146,24 +153,13 @@ export function MapillaryLayers({ node, zoom, viewportKey, streetsOn }: Props) {
         activeDirectionKey={activeDirectionKey}
         zoom={zoom}
       />
-      {selectedFeature ? (
-        <Source
-          id="mapillary-selected-feature"
-          type="geojson"
-          data={{ type: 'Point', coordinates: selectedFeature.lngLat }}
-        >
-          <Layer
-            id="mapillary-selected-feature-ring"
-            type="circle"
-            paint={{
-              'circle-radius': 11,
-              'circle-color': 'transparent',
-              'circle-stroke-color': '#facc15',
-              'circle-stroke-width': 3,
-            }}
-          />
-        </Source>
-      ) : null}
+      <SelectedMapFeatureLayer
+        data={selectedFeature.data}
+        shownImage={selectedFeature.shownImage}
+        providers={providers}
+        bbox={bbox}
+        zoom={zoom}
+      />
     </>
   )
 }

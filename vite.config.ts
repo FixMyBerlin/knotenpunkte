@@ -39,9 +39,6 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       '@': path.resolve(projectRoot, 'src'),
-      // The street-imagery package's Panoramax panel is never shown here. Its viewer pulls in
-      // three.js and needs extra build plugins, so it is replaced by an empty module.
-      '@panoramax/web-viewer': path.resolve(projectRoot, 'src/shared/mapillary/panoramax-stub.ts'),
     },
   },
   server: {
