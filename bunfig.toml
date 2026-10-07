@@ -6,7 +6,8 @@ minimumReleaseAgeExcludes = [
   "typescript",
   "@typescript/typescript-darwin-arm64",
   "@typescript/typescript-linux-x64",
-  # Our own packages, released together with this app.
+  # Our own packages (@osm-editor-kit), released together with this app.
+  "@osm-editor-kit/maplibre-editor-layer-index",
   "@osm-editor-kit/street-imagery",
   "@osm-editor-kit/street-imagery-react",
 ]
