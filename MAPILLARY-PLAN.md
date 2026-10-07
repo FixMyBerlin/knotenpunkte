@@ -18,7 +18,7 @@ Found while testing:
 - The counts include old detections. At one test junction the nearest traffic light was last seen in 2019. The date filter applies to photos, not to map features.
 - Many photos have no bike-lane or line detections at all (one 360° photo from 2025: road and sidewalk only).
 - `URL photos=false` turns everything off; the toggle is in the map controls.
-- The Mapillary token is still iD's (open question 3).
+- The Mapillary token is registered in the FMC `radinfra` account (`mapillaryToken` in `src/config/app.const.ts`).
 
 ## Question
 

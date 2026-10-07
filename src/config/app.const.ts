@@ -40,9 +40,10 @@ export function isOsmLoginConfigured() {
 
 /**
  * Public Mapillary client token (it ships in the bundle anyway).
- * TODO: this is iD's token; register a Mapillary app for Knotenpunkte and replace it.
+ * Registered in the FMC `radinfra` Mapillary account:
+ * https://www.mapillary.com/dashboard/developers
  */
-export const mapillaryToken = 'MLY|4100327730013843|5bb78b81720791946a9a7b956c57b7cf'
+export const mapillaryToken = 'MLY|24010869485212176|7dd87f9f30ce7c88bd3967d95eca15ae'
 
 /**
  * Detected objects (traffic lights, markings) that Mapillary last saw before this day do not
