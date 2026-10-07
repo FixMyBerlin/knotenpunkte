@@ -1,6 +1,7 @@
 import {
   parseIsoDateStartMs,
   type NormalizedPhoto,
+  type PhotoCandidate,
   type ViewSuggestion,
 } from '@osm-editor-kit/street-imagery'
 import {
@@ -17,11 +18,12 @@ export function useNodeViewSuggestions() {
   return useViewSuggestions(viewpoints, { maxAgeYears: mapillaryMaxAgeYears })
 }
 
-export function showSuggestion(suggestion: ViewSuggestion) {
-  const best = suggestion.candidates[0]
-  if (!best) return
+/** Shows a photo of the view: the given one (stepping through the view's photos), else the best. */
+export function showSuggestion(suggestion: ViewSuggestion, candidate?: PhotoCandidate) {
+  const pick = candidate ?? suggestion.candidates[0]
+  if (!pick) return
   getViewpointSession().actions.showPhoto({
-    photo: best.photo,
+    photo: pick.photo,
     directionKey: suggestion.direction.key,
   })
 }

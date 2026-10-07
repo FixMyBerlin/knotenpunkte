@@ -161,9 +161,10 @@ export function NodePhotoViewer({ node }: Props) {
       title={featureData ? 'Erkanntes Objekt' : 'Fotos am Knoten'}
       suggestions={suggestions}
       activeDirectionKey={activeDirectionKey}
-      onSelectSuggestion={(suggestion) => {
+      shownPhotoId={photo?.photoId}
+      onSelectSuggestion={(suggestion, candidate) => {
         setSelectedMapFeatureId(null)
-        showSuggestion(suggestion)
+        showSuggestion(suggestion, candidate)
       }}
       canGoBack={canGoBack}
       canGoForward={canGoForward}

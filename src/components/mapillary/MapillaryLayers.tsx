@@ -2,6 +2,7 @@ import {
   MAP_FEATURE_COLOR,
   viewpointFromPoint,
   viewpointsIntoNode,
+  type Bbox,
   type LngLat,
 } from '@osm-editor-kit/street-imagery'
 import {
@@ -12,7 +13,6 @@ import {
   useActiveDirectionKey,
   useCurrentHistoryEntry,
   useSelectedMapillaryFeature,
-  useMapViewportBbox,
   useViewerBearing,
   useViewerHfov,
   useViewerLngLat,
@@ -22,8 +22,9 @@ import {
 } from '@osm-editor-kit/street-imagery-react'
 import type { Geometry } from 'geojson'
 import type { MapLayerMouseEvent } from 'maplibre-gl'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useMap } from 'react-map-gl/maplibre'
+import { InactiveViewpointsLayer } from '@/components/mapillary/InactiveViewpointsLayer'
 import {
   featurePhotosFromMs,
   showPhoto,
@@ -57,6 +58,25 @@ function geometryLines(geometry: Geometry): LngLat[][] {
   return []
 }
 
+/**
+ * The map's bounds, read again whenever the camera moved (`viewportKey`). The package's
+ * `useMapViewportBbox` waits for the map's `load` event; when these layers mount later while
+ * the map is busy loading tiles, that event never comes and no photos would load.
+ */
+function useViewportBbox(viewportKey: string): Bbox | null {
+  const { [MAIN_MAP_ID]: mapRef } = useMap()
+  const [bbox, setBbox] = useState<Bbox | null>(null)
+  useEffect(
+    function readBoundsAfterCameraMove() {
+      const bounds = mapRef?.getMap().getBounds()
+      if (!bounds) return
+      setBbox([bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()])
+    },
+    [mapRef, viewportKey],
+  )
+  return bbox
+}
+
 type Props = {
   node: { id: string; lngLat: LngLat } | null
   zoom: number
@@ -69,9 +89,9 @@ type Props = {
 /** Mapillary photos, detected junction features and the views into the current node. */
 export function MapillaryLayers({ node, zoom, viewportKey, streetsOn, photoColor }: Props) {
   const { [MAIN_MAP_ID]: mapRef } = useMap()
-  const bbox = useMapViewportBbox(MAIN_MAP_ID, viewportKey)
+  const bbox = useViewportBbox(viewportKey)
   const viewpoints = useViewpoints()
-  const { suggestions } = useNodeViewSuggestions()
+  const { suggestions, isLoading } = useNodeViewSuggestions()
   const activeDirectionKey = useActiveDirectionKey()
   const selectedPhoto = useCurrentHistoryEntry()?.photo ?? null
   const bearing = useViewerBearing()
@@ -83,6 +103,16 @@ export function MapillaryLayers({ node, zoom, viewportKey, streetsOn, photoColor
     shownPhotoId: selectedPhoto?.photoId,
     minCapturedAt: featurePhotosFromMs,
   })
+  // Views without a recent photo open nothing; they get their own grey, non-clickable layer.
+  const withPhoto = suggestions.filter((suggestion) => suggestion.candidates.length > 0)
+  const withoutPhoto = isLoading
+    ? []
+    : suggestions.filter((suggestion) => suggestion.candidates.length === 0)
+  const withoutPhotoIds = new Set(
+    withoutPhoto
+      .map((suggestion) => suggestion.viewpoint.id)
+      .filter((id) => !withPhoto.some((suggestion) => suggestion.viewpoint.id === id)),
+  )
   const providers = zoom >= MAP_FEATURES_MIN_ZOOM ? mapillaryProviders : photoProviders
   const { setSelectedMapFeatureId, setViewpointsNodeId } = useMapUiActions()
 
@@ -149,9 +179,10 @@ export function MapillaryLayers({ node, zoom, viewportKey, streetsOn, photoColor
           showViewCone: true,
         }}
       />
+      <InactiveViewpointsLayer suggestions={withoutPhoto} zoom={zoom} />
       <ViewpointLayer
-        viewpoints={viewpoints}
-        suggestions={suggestions}
+        viewpoints={viewpoints.filter((viewpoint) => !withoutPhotoIds.has(viewpoint.id))}
+        suggestions={withPhoto}
         activeDirectionKey={activeDirectionKey}
         zoom={zoom}
       />
