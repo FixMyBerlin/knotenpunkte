@@ -44,6 +44,12 @@ export function isOsmLoginConfigured() {
  */
 export const mapillaryToken = 'MLY|4100327730013843|5bb78b81720791946a9a7b956c57b7cf'
 
+/**
+ * Detected objects (traffic lights, markings) that Mapillary last saw before this day do not
+ * count: the junction may have been rebuilt since.
+ */
+export const mapillaryFeaturesSeenFrom = '2024-01-01'
+
 /** Photos older than this are not shown or suggested. Berlin needs a date filter. */
 export const mapillaryMaxAgeYears = 2
 

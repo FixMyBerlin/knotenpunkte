@@ -55,6 +55,7 @@ import { ratingStore, ratingsQueryKey } from '@/shared/ratings/ratings-query'
 import type { RatingRecord } from '@/shared/ratings/schema'
 import { resolveStep } from '@/shared/routing/app-step'
 import {
+  resolvePhotoColor,
   resolvePhotosOn,
   resolveStatusFilter,
   resolveStreetsOn,
@@ -103,6 +104,7 @@ export function RatingMap() {
   const statusFilter = resolveStatusFilter(search)
   const streetsOn = resolveStreetsOn(search)
   const photosOn = resolvePhotosOn(search) && currentStep === 'work'
+  const photoColor = resolvePhotoColor(search)
   const handleMapillaryClick = useMapillaryMapClick()
   const { setBackgroundChoice, setHoveredNodeId, setMapBearing, setMapPitch, setPrivateRasterUrl } =
     useMapUiActions()
@@ -250,6 +252,7 @@ export function RatingMap() {
             zoom={map.zoom}
             viewportKey={search.map}
             streetsOn={streetsOn}
+            photoColor={photoColor}
           />
         ) : null}
         <Source id={NODES_SOURCE_ID} type="geojson" data={geojson}>
@@ -322,6 +325,16 @@ export function RatingMap() {
             onPhotosChange={(on) => {
               void navigate({
                 search: (previous) => ({ ...previous, photos: on ? undefined : false }),
+                replace: true,
+              })
+            }}
+            photoColor={photoColor}
+            onPhotoColorChange={(mode) => {
+              void navigate({
+                search: (previous) => ({
+                  ...previous,
+                  photoColor: mode === 'type' ? ('type' as const) : undefined,
+                }),
                 replace: true,
               })
             }}

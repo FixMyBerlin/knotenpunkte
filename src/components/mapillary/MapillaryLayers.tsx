@@ -1,6 +1,5 @@
 import {
   MAP_FEATURE_COLOR,
-  photoTypeColorExpression,
   viewpointFromPoint,
   viewpointsIntoNode,
   type LngLat,
@@ -39,6 +38,8 @@ import {
   isJunctionFeature,
   mapillaryFromDate,
   mapillaryProviders,
+  photoColorModes,
+  type PhotoColorMode,
 } from '@/shared/mapillary/junction'
 
 const photoFilter = { date: { from: mapillaryFromDate() }, mapFeatureValue: isJunctionFeature }
@@ -62,10 +63,11 @@ type Props = {
   /** Changes when the camera moves, so the photo bbox follows. */
   viewportKey: string
   streetsOn: boolean
+  photoColor: PhotoColorMode
 }
 
 /** Mapillary photos, detected junction features and the views into the current node. */
-export function MapillaryLayers({ node, zoom, viewportKey, streetsOn }: Props) {
+export function MapillaryLayers({ node, zoom, viewportKey, streetsOn, photoColor }: Props) {
   const { [MAIN_MAP_ID]: mapRef } = useMap()
   const bbox = useMapViewportBbox(MAIN_MAP_ID, viewportKey)
   const viewpoints = useViewpoints()
@@ -137,7 +139,7 @@ export function MapillaryLayers({ node, zoom, viewportKey, streetsOn }: Props) {
         zoom={zoom}
         filter={photoFilter}
         options={{
-          photoCircleColor: photoTypeColorExpression,
+          photoCircleColor: photoColorModes[photoColor].expression,
           mapFeatureCircleColor: MAP_FEATURE_COLOR,
           selectedPhoto,
           selectedSequenceId: selectedPhoto?.sequenceId ?? null,

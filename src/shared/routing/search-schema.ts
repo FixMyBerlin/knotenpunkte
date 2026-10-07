@@ -63,6 +63,11 @@ export const indexSearchSchema = z.object({
     ),
   streets: onByDefaultSearchFlag,
   photos: onByDefaultSearchFlag,
+  /** Photo colours on the map: by age (default, not in the URL) or by photo type. */
+  photoColor: z
+    .union([z.string(), z.number()])
+    .optional()
+    .transform((value) => (value === 'type' ? ('type' as const) : undefined)),
 })
 
 export const dataSearchSchema = z.object({
@@ -88,6 +93,10 @@ export function resolveStreetsOn(search: Pick<IndexSearch, 'streets'>) {
 
 export function resolvePhotosOn(search: Pick<IndexSearch, 'photos'>) {
   return search.photos !== false
+}
+
+export function resolvePhotoColor(search: Pick<IndexSearch, 'photoColor'>) {
+  return search.photoColor ?? ('age' as const)
 }
 
 export function resolveStatusFilter(search: Pick<IndexSearch, 'status' | 'step'>) {

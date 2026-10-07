@@ -1,7 +1,12 @@
 import {
+  ageStepColorExpression,
+  createAgeSteps,
   JUNCTION_DETECTION_GROUPS,
   JUNCTION_FEATURE_GROUPS,
   matchesAnyGroup,
+  PHOTO_TYPE_COLORS,
+  photoTypeColorExpression,
+  yearsAgoMs,
   type ProviderId,
 } from '@osm-editor-kit/street-imagery'
 import { mapillaryMaxAgeYears } from '@/config/app.const'
@@ -43,4 +48,38 @@ export function mapillaryFromDate(now = new Date()) {
   const from = new Date(now)
   from.setFullYear(from.getFullYear() - mapillaryMaxAgeYears)
   return from.toISOString().slice(0, 10)
+}
+
+export type PhotoColorMode = 'age' | 'type'
+
+// Photos are at most `mapillaryMaxAgeYears` old, so the steps are finer than the package default.
+const now = Date.now()
+const halfYearAgo = (yearsAgoMs(1, now) + now) / 2
+const photoAgeSteps = createAgeSteps({ now, starts: [yearsAgoMs(1, now), halfYearAgo] })
+
+export const photoColorModes: Record<
+  PhotoColorMode,
+  {
+    label: string
+    expression: typeof photoTypeColorExpression
+    legend: { color: string; label: string }[]
+  }
+> = {
+  age: {
+    label: 'Alter',
+    expression: ageStepColorExpression(photoAgeSteps) as typeof photoTypeColorExpression,
+    legend: [
+      { color: photoAgeSteps[2]!.color, label: 'bis 6 Monate' },
+      { color: photoAgeSteps[1]!.color, label: '6–12 Monate' },
+      { color: photoAgeSteps[0]!.color, label: 'älter als 1 Jahr' },
+    ],
+  },
+  type: {
+    label: 'Fototyp',
+    expression: photoTypeColorExpression,
+    legend: [
+      { color: PHOTO_TYPE_COLORS.panorama, label: '360°' },
+      { color: PHOTO_TYPE_COLORS.flat, label: 'Foto' },
+    ],
+  },
 }
