@@ -149,8 +149,8 @@ test.describe('rating flow', () => {
       'public/fixtures/berlin-nodes-sample.geojson',
     )
     await page.getByTestId('import-dataset').click()
-    await expect(page.getByTestId('progress-summary')).toContainText('0/4 Knoten')
-    await expect(page.getByTestId('selected-node-id')).toHaveText('Knoten 32580001')
+    await expect(page.getByTestId('progress-summary')).toContainText('0/10 Knoten')
+    await expect(page.getByTestId('selected-node-id')).toHaveText('Knoten 40530022')
 
     await page.getByTestId('attr-KP_HVS-1').click()
     await page.getByTestId('attr-LSA_KP-0').click()
@@ -161,8 +161,8 @@ test.describe('rating flow', () => {
     await page.getByTestId('attr-vorgez_Fl-teilweise').click()
     await page.getByTestId('save-next').click()
 
-    await expect(page.getByTestId('progress-summary')).toContainText('1/4 Knoten')
-    await expect(page.getByTestId('selected-node-id')).toHaveText('Knoten 32580002')
+    await expect(page.getByTestId('progress-summary')).toContainText('1/10 Knoten')
+    await expect(page.getByTestId('selected-node-id')).toHaveText('Knoten 40530027')
   })
 
   test('imports suggestions and prefills a value', async ({ page }) => {
@@ -179,7 +179,7 @@ test.describe('rating flow', () => {
     await page.getByTestId('import-suggestions').click()
     await page.getByTestId('import-dataset').click()
 
-    await expect(page.getByTestId('selected-node-id')).toHaveText('Knoten 32580001')
+    await expect(page.getByTestId('selected-node-id')).toHaveText('Knoten 40530022')
     await expect(page.getByTestId('attr-Furt_rot-teilweise')).toHaveAttribute(
       'aria-pressed',
       'true',

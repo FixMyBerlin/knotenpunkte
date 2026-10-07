@@ -11,7 +11,7 @@ bun install
 bun run dev
 ```
 
-Download [Testdaten herunterladen (dann hochladen)](https://github.com/FixMyBerlin/knotenpunkte/raw/main/public/fixtures/berlin-nodes-sample.geojson), then **Datei wählen**, check the area slug, and click **Importieren**. Optional suggestions: [Beispiel-Vorschläge herunterladen](https://github.com/FixMyBerlin/knotenpunkte/raw/main/public/fixtures/berlin-suggestions-sample.json).
+Download [Testdaten herunterladen (dann hochladen)](https://github.com/FixMyBerlin/knotenpunkte/raw/main/public/fixtures/berlin-nodes-sample.geojson), then **Datei wählen**, check the area slug, and click **Importieren**. The sample holds 10 real nodes in Charlottenburg from `infravelo-radnetz` (`output/knotenpunkte/knotenpunkte_mit_id_und_bezirken.gpkg`; Geoportal Berlin, DL-DE/BY-2.0). Optional suggestions: [Beispiel-Vorschläge herunterladen](https://github.com/FixMyBerlin/knotenpunkte/raw/main/public/fixtures/berlin-suggestions-sample.json).
 
 ```bash
 bun run check

@@ -4,48 +4,208 @@
     "schema": "junction-nodes/v1",
     "dataset": "berlin-sample",
     "region": "Berlin",
-    "generated_at": "2026-09-23T12:00:00.000Z",
-    "source": "hand-drawn test fixture (not the official Verbindungspunkte file)"
+    "generated_at": "2026-10-07T00:00:00.000Z",
+    "source": "10 Knotenpunkte in Charlottenburg aus infravelo-radnetz output/knotenpunkte/knotenpunkte_mit_id_und_bezirken.gpkg (Geoportal Berlin, Detailnetz Verbindungspunkte, DL-DE/BY-2.0)"
   },
   "features": [
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [13.3115, 52.5076] },
+      "geometry": {
+        "type": "MultiPoint",
+        "coordinates": [
+          [
+            13.311041,
+            52.506442
+          ]
+        ]
+      },
       "properties": {
-        "NUMMER": "32580001",
-        "okstra_id": "OK-32580001",
-        "Bezirksnummer": "04",
-        "ist_radvorrangnetz": "1"
+        "dnkn__sdatenid": 16042,
+        "verkehrsebene": 0,
+        "okstra_id": "0E0A1B87288C45FEA7ACBB2E62AB9514",
+        "ist_radvorrangnetz": "Radvorrangnetz",
+        "Knotenpunkt‐ID": "40530022",
+        "Bezirksnummer": "04"
       }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [13.312, 52.5078] },
+      "geometry": {
+        "type": "MultiPoint",
+        "coordinates": [
+          [
+            13.309426,
+            52.507879
+          ]
+        ]
+      },
       "properties": {
-        "NUMMER": "32580002",
-        "okstra_id": "OK-32580002",
-        "Bezirksnummer": "04",
-        "ist_radvorrangnetz": "0"
+        "dnkn__sdatenid": 63644,
+        "verkehrsebene": 0,
+        "okstra_id": "699E69DECB8143EBBFF44FE5E07042A2",
+        "ist_radvorrangnetz": "Radvorrangnetz",
+        "Knotenpunkt‐ID": "40530027",
+        "Bezirksnummer": "04"
       }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [13.311, 52.5072] },
+      "geometry": {
+        "type": "MultiPoint",
+        "coordinates": [
+          [
+            13.309266,
+            52.506533
+          ]
+        ]
+      },
       "properties": {
-        "NUMMER": "32580003",
-        "okstra_id": "OK-32580003",
-        "Bezirksnummer": "04",
-        "ist_radvorrangnetz": "1"
+        "dnkn__sdatenid": 63617,
+        "verkehrsebene": 0,
+        "okstra_id": "C848447911B4400DB555DA39746D8A39",
+        "ist_radvorrangnetz": "Radvorrangnetz",
+        "Knotenpunkt‐ID": "40530021",
+        "Bezirksnummer": "04"
       }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [13.3125, 52.5074] },
+      "geometry": {
+        "type": "MultiPoint",
+        "coordinates": [
+          [
+            13.309541,
+            52.508869
+          ]
+        ]
+      },
       "properties": {
-        "NUMMER": "32580004",
-        "okstra_id": "OK-32580004",
-        "Bezirksnummer": "04",
-        "ist_radvorrangnetz": "0"
+        "dnkn__sdatenid": 12021,
+        "verkehrsebene": 0,
+        "okstra_id": "1BB1DBD746164017B2BAF649D24036D0",
+        "ist_radvorrangnetz": "Radvorrangnetz",
+        "Knotenpunkt‐ID": "40530014",
+        "Bezirksnummer": "04"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "MultiPoint",
+        "coordinates": [
+          [
+            13.313895,
+            52.506279
+          ]
+        ]
+      },
+      "properties": {
+        "dnkn__sdatenid": 16044,
+        "verkehrsebene": 0,
+        "okstra_id": "E41E90381F3E4E47B126A3CDFDC2E924",
+        "ist_radvorrangnetz": "Radvorrangnetz",
+        "Knotenpunkt‐ID": "40530023",
+        "Bezirksnummer": "04"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "MultiPoint",
+        "coordinates": [
+          [
+            13.309625,
+            52.51027
+          ]
+        ]
+      },
+      "properties": {
+        "dnkn__sdatenid": 63616,
+        "verkehrsebene": 0,
+        "okstra_id": "2FCC6F32267D43EEB73A8285FF237A54",
+        "ist_radvorrangnetz": "Radvorrangnetz",
+        "Knotenpunkt‐ID": "40540019",
+        "Bezirksnummer": "04"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "MultiPoint",
+        "coordinates": [
+          [
+            13.315838,
+            52.506171
+          ]
+        ]
+      },
+      "properties": {
+        "dnkn__sdatenid": 16046,
+        "verkehrsebene": 0,
+        "okstra_id": "F01BBC7AF08F485D9A270D94A494AA18",
+        "ist_radvorrangnetz": "Radvorrangnetz",
+        "Knotenpunkt‐ID": "40530024",
+        "Bezirksnummer": "04"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "MultiPoint",
+        "coordinates": [
+          [
+            13.306986,
+            52.505662
+          ]
+        ]
+      },
+      "properties": {
+        "dnkn__sdatenid": 17392,
+        "verkehrsebene": 0,
+        "okstra_id": "63C9B378E0734E13BB7C06372A71ABBD",
+        "ist_radvorrangnetz": "Radvorrangnetz",
+        "Knotenpunkt‐ID": "40530026",
+        "Bezirksnummer": "04"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "MultiPoint",
+        "coordinates": [
+          [
+            13.307177,
+            52.50504
+          ]
+        ]
+      },
+      "properties": {
+        "dnkn__sdatenid": 11649,
+        "verkehrsebene": 0,
+        "okstra_id": "BA58F1CED69F44CB8EDEEB584C41C133",
+        "ist_radvorrangnetz": "Radvorrangnetz",
+        "Knotenpunkt‐ID": "40530008",
+        "Bezirksnummer": "04"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "MultiPoint",
+        "coordinates": [
+          [
+            13.307316,
+            52.504575
+          ]
+        ]
+      },
+      "properties": {
+        "dnkn__sdatenid": 20123,
+        "verkehrsebene": 0,
+        "okstra_id": "6618EE8841A34184A7A0ED14FDDB3E77",
+        "ist_radvorrangnetz": "Radvorrangnetz",
+        "Knotenpunkt‐ID": "40530042",
+        "Bezirksnummer": "04"
       }
     }
   ]
