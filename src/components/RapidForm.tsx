@@ -59,6 +59,8 @@ type Props = {
   suggestions: SuggestionRow[]
   /** `false`: the node needs no rating; show a hint instead of the attributes. */
   attributesVisible: boolean
+  /** `LSA_Konflikt` of the node: Open Data and OSM disagree whether an LSA exists. */
+  lsaConflict?: string
   onRateAnyway: () => void
 }
 
@@ -71,6 +73,7 @@ export function RapidForm({
   onSave,
   suggestions,
   attributesVisible,
+  lsaConflict,
   onRateAnyway,
 }: Props) {
   const textEntryFocused = useTextEntryFocused()
@@ -136,6 +139,20 @@ export function RapidForm({
           </Button>
         </Callout>
       )}
+      {lsaConflict ? (
+        <Callout tone="warning" title="LSA unsicher" data-testid="lsa-conflict-hint">
+          <p>
+            Unklar, ob eine LSA vorhanden ist (
+            {lsaConflict === 'nur_OSM'
+              ? 'nur in OSM'
+              : lsaConflict === 'nur_OpenData'
+                ? 'nur in Open Data'
+                : lsaConflict}
+            ).
+          </p>
+          <p>Bitte manuell prüfen!</p>
+        </Callout>
+      ) : null}
       {(attributesVisible ? rapidAttributeKeys : []).map((key) => {
         const meta = rapidAttributeMeta[key]
         const suggestion = suggestions.find((row) => row.attribute === key)

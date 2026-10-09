@@ -107,6 +107,15 @@ export function readOnlyNodeFields(properties: Record<string, unknown>) {
   }
 }
 
+/**
+ * `LSA_Konflikt` (`nur_OSM` / `nur_OpenData`) is set when Open Data and OSM disagree whether a
+ * signal exists; `LSA_KP` is then empty and it is uncertain whether the node has an LSA.
+ */
+export function lsaConflict(properties: Record<string, unknown>) {
+  const value = properties.LSA_Konflikt
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined
+}
+
 function stringOrEmpty(value: unknown) {
   if (typeof value === 'string') return value
   if (typeof value === 'number' || typeof value === 'boolean') return String(value)

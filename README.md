@@ -39,7 +39,7 @@ Seven Zustand-nach-OSM attributes (two Ja/Nein, five keine/teilweise/gänzlich),
 
 Progress is **bewertet/gesamt**. Completeness ignores virtual, Mapillary, and comment: a node is complete when it is skipped or all seven answers are set. Skip (`KP_Nichtbetrachten`) clears the seven and still counts as complete.
 
-`Betrachtung` is derived from the suggestions: `0` when both `KP_HVS` and `LSA_KP` are suggested as `0`, else `1` (also without those two suggestions). At `0` the form shows a short hint instead of the seven attributes, and Enter skips the node; **Doch bewerten** reveals the attributes. Nodes that already have a rating (not skipped) show the attributes.
+`Betrachtung` is derived from the suggestions: `0` when both `KP_HVS` and `LSA_KP` are suggested as `0`, else `1` (also without those two suggestions, and never when the node has an `LSA_Konflikt`). At `0` the form shows a short hint instead of the seven attributes, and Enter skips the node; **Doch bewerten** reveals the attributes. Nodes that already have a rating (not skipped) show the attributes. With an `LSA_Konflikt` (`nur_OSM` / `nur_OpenData`: the sources disagree whether an LSA exists) the attributes stay visible and a warning says it is uncertain whether an LSA exists.
 
 ## Suggestions
 

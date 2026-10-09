@@ -15,7 +15,7 @@ import { SidebarBody, SidebarFooter } from '@/components/ui/sidebar'
 import { Text } from '@/components/ui/text'
 import { Route } from '@/routes/index'
 import { loadNodes, loadSuggestions } from '@/shared/datasets/dataset-idb'
-import { nodeLngLat, readOnlyNodeFields } from '@/shared/nodes/schema'
+import { lsaConflict, nodeLngLat, readOnlyNodeFields } from '@/shared/nodes/schema'
 import { buildRatingRecord } from '@/shared/ratings/build-record'
 import {
   hasAllRapidAttributes,
@@ -170,8 +170,10 @@ export function WorkPanel() {
   }
 
   const readonly = readOnlyNodeFields(feature.properties)
+  const lsaConflictSource = lsaConflict(feature.properties)
   const attributesVisible =
     suggestedBetrachtung(suggestionRows) === 1 ||
+    lsaConflictSource !== undefined ||
     rateAnywayByNode[currentId] === true ||
     (record !== undefined && record.KP_Nichtbetrachten !== 1)
   const { rated, total } = ratingProgress(records, nodeIds)
@@ -246,6 +248,7 @@ export function WorkPanel() {
             draft={draft}
             suggestions={suggestionRows}
             attributesVisible={attributesVisible}
+            lsaConflict={lsaConflictSource}
             onRateAnyway={rateAnyway}
             onChange={setDraft}
             onSkip={skip}
