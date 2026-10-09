@@ -18,6 +18,7 @@ import {
 } from 'react-map-gl/maplibre'
 import { MapBackgroundLayerControl } from '@/components/MapBackgroundLayerControl'
 import { MapBackgroundLayerSource } from '@/components/MapBackgroundLayerSource'
+import { Infra3dLink } from '@/components/mapillary/Infra3dLink'
 import { MapillaryLayers, useMapillaryMapClick } from '@/components/mapillary/MapillaryLayers'
 import { MapillaryToggle } from '@/components/mapillary/MapillaryToggle'
 import { NodePhotoViewer } from '@/components/mapillary/NodePhotoViewer'
@@ -313,6 +314,7 @@ export function RatingMap() {
             }}
           />
         ) : null}
+        {currentStep === 'work' && flyTo ? <Infra3dLink lngLat={flyTo} /> : null}
       </div>
     </div>
   )
