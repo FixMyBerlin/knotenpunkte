@@ -265,10 +265,11 @@ export function RatingMap() {
                 ['==', ['get', 'selected'], 1],
                 8,
                 ['==', ['get', 'workDim'], 1],
-                4,
+                5.5,
                 6,
               ],
-              'circle-opacity': ['case', ['==', ['get', 'workDim'], 1], 0.35, 1],
+              'circle-opacity': ['case', ['==', ['get', 'workDim'], 1], 0.8, 1],
+              'circle-stroke-opacity': ['case', ['==', ['get', 'workDim'], 1], 0.8, 1],
             }}
           />
           <Layer
