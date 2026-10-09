@@ -82,3 +82,13 @@ export function suggestionProbability(row: SuggestionRow, value: RapidValue) {
 export function suggestionsForNode(rows: SuggestionRow[], nodeId: string) {
   return rows.filter((row) => row.id === nodeId)
 }
+
+/**
+ * `Betrachtung` is derived from the suggestions: `0` only when both `KP_HVS` and `LSA_KP`
+ * are suggested as `0`. A missing suggestion (e.g. LSA conflict) leaves the node to be rated.
+ */
+export function suggestedBetrachtung(rows: SuggestionRow[]): 0 | 1 {
+  const hvs = rows.find((row) => row.attribute === 'KP_HVS')?.value
+  const lsa = rows.find((row) => row.attribute === 'LSA_KP')?.value
+  return hvs === 0 && lsa === 0 ? 0 : 1
+}

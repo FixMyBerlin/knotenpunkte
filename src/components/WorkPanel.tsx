@@ -33,7 +33,7 @@ import {
 import { emptyRapidDraft, rapidValuesFromRecord, type RapidDraft } from '@/shared/ratings/schema'
 import { resolvePhotosOn, resolveStatusFilter } from '@/shared/routing/search-schema'
 import { applySuggestions } from '@/shared/suggestions/apply'
-import { suggestionsForNode } from '@/shared/suggestions/schema'
+import { suggestedBetrachtung, suggestionsForNode } from '@/shared/suggestions/schema'
 
 function revealFullMask() {
   requestAnimationFrame(() => {
@@ -55,6 +55,7 @@ export function WorkPanel() {
   const [correcting, setCorrecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [draftByNode, setDraftByNode] = useState<Record<string, RapidDraft>>({})
+  const [rateAnywayByNode, setRateAnywayByNode] = useState<Record<string, boolean>>({})
 
   const nodesQuery = useQuery({
     queryKey: ['dataset', dataset],
@@ -169,10 +170,16 @@ export function WorkPanel() {
   }
 
   const readonly = readOnlyNodeFields(feature.properties)
+  const attributesVisible =
+    suggestedBetrachtung(suggestionRows) === 1 ||
+    rateAnywayByNode[currentId] === true ||
+    (record !== undefined && record.KP_Nichtbetrachten !== 1)
   const { rated, total } = ratingProgress(records, nodeIds)
   const canSave =
     auth.authenticated &&
-    (isRatingComplete(draft) || (hasAllRapidAttributes(draft) && draft.KP_Nichtbetrachten !== 1))
+    (!attributesVisible ||
+      isRatingComplete(draft) ||
+      (hasAllRapidAttributes(draft) && draft.KP_Nichtbetrachten !== 1))
   const skip = () => {
     const skipped = { ...emptyRapidDraft(), KP_Nichtbetrachten: 1 as const }
     setDraft(skipped)
@@ -180,7 +187,13 @@ export function WorkPanel() {
   }
   const previous = () => goToNode(previousNodeId(nodeIds, currentId, records, statusFilter))
   const next = () => goToNode(nextNodeId(nodeIds, currentId, records, statusFilter))
-  const save = () => saveMutation.mutate({ kind: correcting ? 'corrected' : 'save', draft })
+  const save = () =>
+    attributesVisible
+      ? saveMutation.mutate({ kind: correcting ? 'corrected' : 'save', draft })
+      : skip()
+  const rateAnyway = () => {
+    setRateAnywayByNode((previous) => ({ ...previous, [currentId]: true }))
+  }
 
   return (
     <>
@@ -232,6 +245,8 @@ export function WorkPanel() {
           <RapidForm
             draft={draft}
             suggestions={suggestionRows}
+            attributesVisible={attributesVisible}
+            onRateAnyway={rateAnyway}
             onChange={setDraft}
             onSkip={skip}
             onPrevious={previous}

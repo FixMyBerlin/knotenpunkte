@@ -57,6 +57,9 @@ type Props = {
   onNext: () => void
   onSave: () => void
   suggestions: SuggestionRow[]
+  /** `false`: the node needs no rating; show a hint instead of the attributes. */
+  attributesVisible: boolean
+  onRateAnyway: () => void
 }
 
 export function RapidForm({
@@ -67,13 +70,15 @@ export function RapidForm({
   onNext,
   onSave,
   suggestions,
+  attributesVisible,
+  onRateAnyway,
 }: Props) {
   const textEntryFocused = useTextEntryFocused()
   const focused = firstEmptyRapidKey(draft)
 
   useHotkeys(
     [
-      ...rapidHotkeyBindings.map((binding) => ({
+      ...(attributesVisible ? rapidHotkeyBindings : []).map((binding) => ({
         hotkey: binding.hotkey,
         callback: () => setValue(binding.attribute, binding.value),
         options: { meta: { name: binding.attribute } },
@@ -116,7 +121,22 @@ export function RapidForm({
         onSave()
       }}
     >
-      {rapidAttributeKeys.map((key) => {
+      {attributesVisible ? null : (
+        <Callout tone="info" title="Nicht zu betrachten" data-testid="not-considered-hint">
+          <p>Laut Vorschlag weder HVS noch LSA.</p>
+          <p>Bitte manuell prüfen!</p>
+          <Button
+            type="button"
+            outline
+            className="mt-2"
+            data-testid="rate-anyway"
+            onClick={onRateAnyway}
+          >
+            Doch bewerten
+          </Button>
+        </Callout>
+      )}
+      {(attributesVisible ? rapidAttributeKeys : []).map((key) => {
         const meta = rapidAttributeMeta[key]
         const suggestion = suggestions.find((row) => row.attribute === key)
         const chosen = draft[key]
@@ -175,9 +195,11 @@ export function RapidForm({
           </fieldset>
         )
       })}
-      <p className="sr-only">
-        {binaryAttributeKeys.join(', ')}, {ternaryAttributeKeys.join(', ')}
-      </p>
+      {attributesVisible ? (
+        <p className="sr-only">
+          {binaryAttributeKeys.join(', ')}, {ternaryAttributeKeys.join(', ')}
+        </p>
+      ) : null}
     </form>
   )
 }
