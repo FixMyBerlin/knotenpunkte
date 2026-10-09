@@ -26,12 +26,28 @@ import {
   rapidAttributeMeta,
   ternaryAttributeKeys,
   ternaryLabels,
+  type BinaryValue,
   type RapidAttributeKey,
   type RapidDraft,
   type RapidValue,
+  type TernaryValue,
 } from '@/shared/ratings/schema'
-import { formatSuggestionValue, suggestionMismatch } from '@/shared/suggestions/apply'
-import type { SuggestionRow } from '@/shared/suggestions/schema'
+import {
+  formatSuggestionValue,
+  rankProbabilities,
+  suggestionMismatch,
+  type ProbabilityRank,
+} from '@/shared/suggestions/apply'
+import { suggestionProbability, type SuggestionRow } from '@/shared/suggestions/schema'
+
+const binaryValues = [0, 1] as const
+const ternaryValues = ['keine', 'teilweise', 'gänzlich'] as const
+
+const rankClasses: Record<ProbabilityRank, string> = {
+  high: 'bg-emerald-400/15 text-emerald-300',
+  mid: 'bg-orange-400/15 text-orange-300',
+  low: 'bg-red-400/15 text-red-300',
+}
 
 type Props = {
   draft: RapidDraft
@@ -104,6 +120,11 @@ export function RapidForm({
         const meta = rapidAttributeMeta[key]
         const suggestion = suggestions.find((row) => row.attribute === key)
         const chosen = draft[key]
+        const values: readonly RapidValue[] = meta.kind === 'binary' ? binaryValues : ternaryValues
+        const probabilities = values.map((value) =>
+          suggestion ? suggestionProbability(suggestion, value) : undefined,
+        )
+        const ranks = rankProbabilities(probabilities)
         const mismatch = suggestion
           ? suggestionMismatch(chosen, suggestion.value as RapidValue)
           : false
@@ -121,30 +142,23 @@ export function RapidForm({
                 <span>{meta.title}</span>
               </Tooltip>
             </legend>
-            <div className="clear-both flex flex-wrap gap-1.5">
-              {meta.kind === 'binary'
-                ? ([0, 1] as const).map((value) => (
-                    <ChoiceButton
-                      key={value}
-                      pressed={chosen === value}
-                      hotkey={hotkeyFor(key, value)}
-                      testId={`attr-${key}-${value}`}
-                      onClick={() => setValue(key, value)}
-                    >
-                      {binaryLabels[value]}
-                    </ChoiceButton>
-                  ))
-                : (['keine', 'teilweise', 'gänzlich'] as const).map((value) => (
-                    <ChoiceButton
-                      key={value}
-                      pressed={chosen === value}
-                      hotkey={hotkeyFor(key, value)}
-                      testId={`attr-${key}-${value}`}
-                      onClick={() => setValue(key, value)}
-                    >
-                      {ternaryLabels[value]}
-                    </ChoiceButton>
-                  ))}
+            <div className="clear-both flex flex-col gap-1.5">
+              {values.map((value, index) => (
+                <ChoiceButton
+                  key={value}
+                  pressed={chosen === value}
+                  hotkey={hotkeyFor(key, value)}
+                  testId={`attr-${key}-${value}`}
+                  onClick={() => setValue(key, value)}
+                  probability={probabilities[index]}
+                  rank={ranks[index]}
+                  reserveProbability={suggestion !== undefined}
+                >
+                  {meta.kind === 'binary'
+                    ? binaryLabels[value as BinaryValue]
+                    : ternaryLabels[value as TernaryValue]}
+                </ChoiceButton>
+              ))}
             </div>
             {mismatch && suggestion ? (
               <Callout className="mt-2" tone="warning" title="Abweichung vom Vorschlag">
@@ -157,11 +171,6 @@ export function RapidForm({
                   ? formatSuggestionValue(chosen)
                   : '—'}
               </Callout>
-            ) : null}
-            {suggestion && !mismatch && chosen !== undefined ? (
-              <p className="mt-1 text-xs text-zinc-500" data-testid={`suggestion-${key}`}>
-                Vorschlag übernommen ({Math.round(suggestion.confidence * 100)} %)
-              </p>
             ) : null}
           </fieldset>
         )
@@ -263,12 +272,18 @@ function ChoiceButton({
   hotkey,
   testId,
   onClick,
+  probability,
+  rank,
+  reserveProbability,
   children,
 }: {
   pressed: boolean
   hotkey: string
   testId: string
   onClick: () => void
+  probability?: number
+  rank?: ProbabilityRank
+  reserveProbability: boolean
   children: React.ReactNode
 }) {
   return (
@@ -278,10 +293,22 @@ function ChoiceButton({
       aria-pressed={pressed}
       onClick={onClick}
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm',
+        'flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-sm',
         pressed ? 'bg-sky-500/30 text-white' : 'bg-white/5 text-zinc-200 hover:bg-white/10',
       )}
     >
+      {reserveProbability ? (
+        <span
+          className={cn(
+            'w-12 shrink-0 rounded px-1 text-right text-xs whitespace-nowrap tabular-nums',
+            rank && rankClasses[rank],
+          )}
+          title="Wahrscheinlichkeit laut Vorschlagsmodell"
+          data-testid={`${testId}-probability`}
+        >
+          {probability !== undefined ? `${Math.round(probability * 100)} %` : null}
+        </span>
+      ) : null}
       <kbd className="rounded bg-black/30 px-1 font-mono text-[10px] text-zinc-300">{hotkey}</kbd>
       {children}
     </button>

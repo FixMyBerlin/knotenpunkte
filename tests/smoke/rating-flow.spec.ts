@@ -184,6 +184,6 @@ test.describe('rating flow', () => {
       'aria-pressed',
       'true',
     )
-    await expect(page.getByTestId('suggestion-Furt_rot')).toBeVisible()
+    await expect(page.getByTestId('attr-Furt_rot-teilweise-probability')).toHaveText('72 %')
   })
 })

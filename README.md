@@ -41,7 +41,7 @@ Progress is **bewertet/gesamt**. Completeness ignores virtual, Mapillary, and co
 
 ## Suggestions
 
-Optional JSON array per area: `{ id, attribute, value, confidence }` with confidence 0–1. `id` must match the node ID (`NUMMER` or `Knotenpunkt-ID`). `value` is `0`/`1` for `KP_HVS` and `LSA_KP`, `keine`/`teilweise`/`gänzlich` for the other five; one row per node and attribute. [infravelo-ml-knotenpunkte](https://github.com/FixMyBerlin/infravelo-ml-knotenpunkte) writes this file with `06_export_knotenpunkte.py`. Re-upload replaces suggestions for that area. Prefills empty rapid attributes; the cursor jumps to the first empty one. If all seven are suggested, Enter accepts them. Each suggested attribute is stored as `{ suggested, confidence, accepted }`. A mismatch shows “Vorschlag A, gewählt B”.
+Optional JSON array per area: `{ id, attribute, value, confidence, probabilities? }` with confidence 0–1. Optional `probabilities` maps every possible value (`"0"`/`"1"` or `keine`/`teilweise`/`gänzlich`) to its probability; the rapid form then shows the percentage on every button, otherwise only on the suggested one. `id` must match the node ID (`NUMMER` or `Knotenpunkt-ID`). `value` is `0`/`1` for `KP_HVS` and `LSA_KP`, `keine`/`teilweise`/`gänzlich` for the other five; one row per node and attribute. [infravelo-ml-knotenpunkte](https://github.com/FixMyBerlin/infravelo-ml-knotenpunkte) writes this file with `06_export_knotenpunkte.py`. Re-upload replaces suggestions for that area. Prefills empty rapid attributes; the cursor jumps to the first empty one. If all seven are suggested, Enter accepts them. Each suggested attribute is stored as `{ suggested, confidence, accepted }`. A mismatch shows “Vorschlag A, gewählt B”.
 
 ## Weitere Angaben
 

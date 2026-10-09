@@ -44,3 +44,25 @@ export function formatSuggestionValue(value: RapidValue) {
   if (value === 1) return 'Ja'
   return value
 }
+
+export type ProbabilityRank = 'high' | 'mid' | 'low'
+
+/**
+ * Rang je Wahrscheinlichkeit: höchste = high, niedrigste = low, dazwischen mid.
+ * Gleiche Werte (auf ganze Prozent gerundet, wie angezeigt) sind immer mid.
+ */
+export function rankProbabilities(probabilities: (number | undefined)[]) {
+  const percents = probabilities.map((value) =>
+    value === undefined ? undefined : Math.round(value * 100),
+  )
+  return percents.map((percent, index): ProbabilityRank | undefined => {
+    if (percent === undefined) return undefined
+    const others = percents.filter(
+      (other, otherIndex): other is number => otherIndex !== index && other !== undefined,
+    )
+    if (others.includes(percent)) return 'mid'
+    if (others.every((other) => other < percent)) return 'high'
+    if (others.every((other) => other > percent)) return 'low'
+    return 'mid'
+  })
+}
