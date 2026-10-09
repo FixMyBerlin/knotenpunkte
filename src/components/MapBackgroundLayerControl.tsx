@@ -13,10 +13,12 @@ import { cn } from '@/shared/cn'
 import { ignorePasswordManagerProps } from '@/shared/form-ignore-password-manager'
 import { MAIN_MAP_ID } from '@/shared/map/map-ids'
 import {
-  isPrivateRasterTemplate,
+  type BackgroundChoice,
   POSITRON_BG,
   PRIVATE_BG,
   privateRasterDisplayName,
+  privateRasterUrlError,
+  writeBackgroundChoice,
   writePrivateRasterUrl,
 } from '@/shared/map/private-raster'
 
@@ -50,19 +52,20 @@ function sortLayers(layers: EliLayer[]): EliLayer[] {
 }
 
 export function MapBackgroundLayerControl({
-  bg,
+  background,
   lat,
   lng,
 }: {
-  bg: string | null
+  background: BackgroundChoice
   lat: number
   lng: number
 }) {
   const navigate = useNavigate({ from: Route.fullPath })
   const privateUrl = usePrivateRasterUrl()
-  const { setPrivateRasterUrl } = useMapUiActions()
+  const { setBackgroundChoice, setPrivateRasterUrl } = useMapUiActions()
   const [draftUrl, setDraftUrl] = useState(privateUrl)
   const [editingPrivateUrl, setEditingPrivateUrl] = useState(false)
+  const [draftError, setDraftError] = useState<string | null>(null)
   const centerCountry = countryCoder.iso1A2Code([lng, lat])
 
   const { layers, status } = useEditorLayerIndex({
@@ -79,22 +82,27 @@ export function MapBackgroundLayerControl({
     items: sortLayers(layers.filter((layer) => (layer.category ?? 'other') === category)),
   })).filter((group) => group.items.length > 0)
 
-  const selectedLayer = layers.find((layer) => layer.id === bg)
-  const value = bg ?? (privateUrl ? PRIVATE_BG : POSITRON_BG)
+  const value =
+    background.kind === 'eli'
+      ? background.id
+      : background.kind === 'private'
+        ? PRIVATE_BG
+        : POSITRON_BG
+  const selectedLayer =
+    background.kind === 'eli' ? layers.find((layer) => layer.id === value) : undefined
+
+  function chooseBackground(choice: string) {
+    writeBackgroundChoice(choice)
+    setBackgroundChoice(choice)
+  }
 
   function handleChange(nextValue: string) {
-    const nextBg =
-      nextValue === POSITRON_BG || (nextValue === PRIVATE_BG && !bg && privateUrl)
-        ? nextValue === POSITRON_BG
-          ? POSITRON_BG
-          : undefined
-        : nextValue === PRIVATE_BG
-          ? PRIVATE_BG
-          : nextValue
+    chooseBackground(nextValue)
     void navigate({
       search: (previous) => ({
         ...previous,
-        bg: nextValue === PRIVATE_BG && privateUrl && !previous.bg ? undefined : nextBg,
+        // The private URL often carries an API key, so only the stored choice refers to it.
+        bg: nextValue === PRIVATE_BG ? undefined : nextValue,
       }),
       replace: true,
     })
@@ -102,16 +110,23 @@ export function MapBackgroundLayerControl({
 
   function beginPrivateUrlEdit() {
     setDraftUrl(privateUrl)
+    setDraftError(null)
     setEditingPrivateUrl(true)
   }
 
   function savePrivateUrl() {
     const trimmed = draftUrl.trim()
-    if (trimmed && !isPrivateRasterTemplate(trimmed)) return
+    const error = trimmed ? privateRasterUrlError(trimmed) : null
+    if (error) {
+      setDraftError(error)
+      return
+    }
+    setDraftError(null)
     writePrivateRasterUrl(trimmed)
     setPrivateRasterUrl(trimmed)
     setEditingPrivateUrl(false)
     if (trimmed) {
+      chooseBackground(PRIVATE_BG)
       void navigate({
         search: (previous) => ({ ...previous, bg: undefined }),
         replace: true,
@@ -158,7 +173,11 @@ export function MapBackgroundLayerControl({
             selected={value === PRIVATE_BG}
             url={privateUrl}
             draftUrl={draftUrl}
-            onDraftUrl={setDraftUrl}
+            draftError={draftError}
+            onDraftUrl={(value) => {
+              setDraftUrl(value)
+              setDraftError(null)
+            }}
             onBeginEdit={beginPrivateUrlEdit}
             onSave={savePrivateUrl}
           />
@@ -183,7 +202,7 @@ export function MapBackgroundLayerControl({
                 className="flex cursor-pointer items-start gap-2 rounded-md px-2 py-1.5 data-focus:bg-white/10"
               >
                 <CheckIcon
-                  className={cn('mt-0.5 size-4 shrink-0', layer.id === bg ? '' : 'opacity-0')}
+                  className={cn('mt-0.5 size-4 shrink-0', layer.id === value ? '' : 'opacity-0')}
                   aria-hidden
                 />
                 <span className="whitespace-normal">
@@ -203,6 +222,8 @@ export function MapBackgroundLayerControl({
   )
 }
 
+const PRIVATE_URL_ERROR_ID = 'private-raster-url-error'
+
 function stopMenuEvent(event: { preventDefault: () => void; stopPropagation: () => void }) {
   event.preventDefault()
   event.stopPropagation()
@@ -213,6 +234,7 @@ function PrivateRasterRow({
   selected,
   url,
   draftUrl,
+  draftError,
   onDraftUrl,
   onBeginEdit,
   onSave,
@@ -221,39 +243,45 @@ function PrivateRasterRow({
   selected: boolean
   url: string
   draftUrl: string
+  draftError: string | null
   onDraftUrl: (value: string) => void
   onBeginEdit: () => void
   onSave: () => void
 }) {
   if (editing) {
     return (
-      <div
-        className="flex items-center gap-2 px-2 py-1.5"
-        onMouseDown={stopMenuEvent}
-        onClick={stopMenuEvent}
-      >
-        <Input
-          autoFocus
-          value={draftUrl}
-          placeholder="https://…/{z}/{x}/{y}.png?key=…"
-          aria-label="Private Raster-Kachel-URL"
-          className="min-w-0 flex-1"
-          {...ignorePasswordManagerProps}
-          onChange={(event) => onDraftUrl(event.currentTarget.value)}
-          onKeyDown={(event) => event.stopPropagation()}
-        />
-        <Button
-          type="button"
-          color="sky"
-          className="shrink-0"
-          onMouseDown={stopMenuEvent}
-          onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
-            stopMenuEvent(event)
-            onSave()
-          }}
-        >
-          Speichern
-        </Button>
+      <div className="px-2 py-1.5" onMouseDown={stopMenuEvent} onClick={stopMenuEvent}>
+        <div className="flex items-center gap-2">
+          <Input
+            autoFocus
+            value={draftUrl}
+            placeholder="https://…/{z}/{x}/{y}.png?key=…"
+            aria-label="Private Raster-Kachel-URL"
+            aria-invalid={draftError ? true : undefined}
+            aria-describedby={draftError ? PRIVATE_URL_ERROR_ID : undefined}
+            className="min-w-0 flex-1"
+            {...ignorePasswordManagerProps}
+            onChange={(event) => onDraftUrl(event.currentTarget.value)}
+            onKeyDown={(event) => event.stopPropagation()}
+          />
+          <Button
+            type="button"
+            color="sky"
+            className="shrink-0"
+            onMouseDown={stopMenuEvent}
+            onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+              stopMenuEvent(event)
+              onSave()
+            }}
+          >
+            Speichern
+          </Button>
+        </div>
+        {draftError ? (
+          <p id={PRIVATE_URL_ERROR_ID} role="alert" className="mt-1.5 text-xs text-red-400">
+            {draftError}
+          </p>
+        ) : null}
       </div>
     )
   }

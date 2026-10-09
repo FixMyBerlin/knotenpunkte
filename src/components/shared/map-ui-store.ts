@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 
 interface MapUiStore {
+  /** Last background picked by the user (see `readBackgroundChoice`); `?bg=` takes precedence. */
+  backgroundChoice: string
   hoveredNodeId: string | null
   mapBearing: number
   mapPitch: number
@@ -10,6 +12,7 @@ interface MapUiStore {
   /** Node the photo session's viewpoints belong to; they are found after the streets load. */
   viewpointsNodeId: string | null
   actions: {
+    setBackgroundChoice: (choice: string) => void
     setHoveredNodeId: (nodeId: string | null) => void
     setMapBearing: (bearing: number) => void
     setMapPitch: (pitch: number) => void
@@ -20,6 +23,7 @@ interface MapUiStore {
 }
 
 const useMapUiStore = create<MapUiStore>()((set) => ({
+  backgroundChoice: '',
   hoveredNodeId: null,
   mapBearing: 0,
   mapPitch: 0,
@@ -27,6 +31,7 @@ const useMapUiStore = create<MapUiStore>()((set) => ({
   selectedMapFeatureId: null,
   viewpointsNodeId: null,
   actions: {
+    setBackgroundChoice: (backgroundChoice) => set({ backgroundChoice }),
     setHoveredNodeId: (hoveredNodeId) => set({ hoveredNodeId }),
     setMapBearing: (mapBearing) => set({ mapBearing }),
     setMapPitch: (mapPitch) => set({ mapPitch }),
@@ -36,6 +41,7 @@ const useMapUiStore = create<MapUiStore>()((set) => ({
   },
 }))
 
+export const useBackgroundChoice = () => useMapUiStore((state) => state.backgroundChoice)
 export const useHoveredNodeId = () => useMapUiStore((state) => state.hoveredNodeId)
 export const useMapBearing = () => useMapUiStore((state) => state.mapBearing)
 export const useMapPitch = () => useMapUiStore((state) => state.mapPitch)
