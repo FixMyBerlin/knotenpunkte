@@ -116,12 +116,12 @@ export function RapidForm({
               focused === key && 'ring-2 ring-sky-400',
             )}
           >
-            <legend className="px-1 text-sm font-medium text-white">
+            <legend className="float-left mb-1.5 w-full px-1 text-sm font-medium text-white">
               <Tooltip text={key}>
                 <span>{meta.title}</span>
               </Tooltip>
             </legend>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="clear-both flex flex-wrap gap-1.5">
               {meta.kind === 'binary'
                 ? ([0, 1] as const).map((value) => (
                     <ChoiceButton
