@@ -65,7 +65,7 @@ export function RapidForm({
       {
         hotkey: skipHotkey,
         callback: onSkip,
-        options: { meta: { name: 'Überspringen' } },
+        options: { meta: { name: 'Knotenpunkt nicht betrachten' } },
       },
       {
         hotkey: previousHotkey,
@@ -182,7 +182,11 @@ export function RapidActions({
 }: Pick<Props, 'onSkip' | 'onPrevious' | 'onNext' | 'onSave'> & { saveDisabled?: boolean }) {
   return (
     <div className="@container flex w-full gap-1">
-      <ActionButton testId="skip-node" label={`Überspringen (${skipHotkey})`} onClick={onSkip}>
+      <ActionButton
+        testId="skip-node"
+        label={`Knotenpunkt nicht betrachten (${skipHotkey})`}
+        onClick={onSkip}
+      >
         <ForwardIcon data-slot="icon" aria-hidden />
       </ActionButton>
       <ActionButton testId="prev-node" label={`Zurück (${previousHotkey})`} onClick={onPrevious}>
