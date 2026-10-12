@@ -148,14 +148,22 @@ export function MapillaryLayers({ node, zoom, viewportKey, streetsOn, photoColor
         setViewpointsNodeId(nodeId)
       }
 
+      // Leaving the node (or switching the photos off) ends its photo session, so the viewer
+      // does not take the old photo for one the rater opened at the next node.
+      const endSession = () => {
+        actions.reset()
+        setViewpointsNodeId(null)
+      }
+
       // The streets around a node that is not in view yet load after the map moved there.
       if (map.loaded() && !map.isMoving() && map.getBounds().contains(target)) {
         open()
-        return
+        return endSession
       }
       void map.once('idle', open)
       return () => {
         map.off('idle', open)
+        endSession()
       }
     },
     [mapRef, nodeId, nodeLng, nodeLat, streetsOn, setSelectedMapFeatureId, setViewpointsNodeId],
