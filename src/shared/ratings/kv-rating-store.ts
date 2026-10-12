@@ -5,10 +5,10 @@ import { ratingRecordSchema, type RatingRecord } from './schema'
 
 export const osmLoginRequiredMessage = 'Zum Speichern mit OSM anmelden'
 
-export const projectMetaTag = 'kp-project-meta'
+const projectMetaTag = 'kp-project-meta'
 const metaPrefix = '_meta/'
 
-export function entryId(dataset: string, nodeId: string) {
+function entryId(dataset: string, nodeId: string) {
   return `${dataset}:${nodeId}`
 }
 

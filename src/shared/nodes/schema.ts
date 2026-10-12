@@ -13,13 +13,13 @@ const multiPointSchema = z.object({
 
 const nodeGeometrySchema = z.union([pointSchema, multiPointSchema])
 
-export const nodePropertiesSchema = z
+const nodePropertiesSchema = z
   .object({
     id: z.string().min(1),
   })
   .passthrough()
 
-export type NodeProperties = z.infer<typeof nodePropertiesSchema> & Record<string, unknown>
+type NodeProperties = z.infer<typeof nodePropertiesSchema> & Record<string, unknown>
 
 const nodesMetadataSchema = z
   .object({
@@ -31,7 +31,7 @@ const nodesMetadataSchema = z
   })
   .passthrough()
 
-export type NodesMetadata = z.infer<typeof nodesMetadataSchema>
+type NodesMetadata = z.infer<typeof nodesMetadataSchema>
 
 const nodeFeatureSchema = z.object({
   type: z.literal('Feature'),
@@ -61,7 +61,7 @@ export const nodesCollectionSchema = z
     }
   })
 
-export type JunctionNodeGeometry = Point | MultiPoint
+type JunctionNodeGeometry = Point | MultiPoint
 
 export type JunctionNodesGeoJSON = FeatureCollection<JunctionNodeGeometry, NodeProperties> & {
   metadata?: NodesMetadata

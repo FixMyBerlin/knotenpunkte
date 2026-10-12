@@ -1,5 +1,3 @@
-import { STREETS_LAYER_ID } from './map-ids'
-
 export const nodeStatusColors = {
   unrated: '#f59e0b',
   complete: '#22c55e',
@@ -29,5 +27,3 @@ export const privateRasterStyle = (tilesTemplate: string) => ({
   ],
   glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
 })
-
-export const streetsBeforeId = STREETS_LAYER_ID

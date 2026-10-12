@@ -1,11 +1,11 @@
 import type { RapidAttributeKey, RapidValue } from '@/shared/ratings/schema'
 
-export const binaryHotkeys = {
+const binaryHotkeys = {
   KP_HVS: { 0: 'Q', 1: 'W' },
   LSA_KP: { 0: 'A', 1: 'S' },
 } as const
 
-export const ternaryHotkeys = {
+const ternaryHotkeys = {
   Mar_RVF_KP: { keine: '1', teilweise: '2', gänzlich: '3' },
   Furt_rot: { keine: '4', teilweise: '5', gänzlich: '6' },
   RFS_Mitte: { keine: '7', teilweise: '8', gänzlich: '9' },

@@ -10,7 +10,5 @@ export const NODES_LABELS_LAYER_ID = 'junction-nodes-labels'
 
 export const BACKGROUND_SOURCE_ID = 'eli-background'
 export const BACKGROUND_LAYER_ID = 'eli-background'
-export const PRIVATE_RASTER_SOURCE_ID = 'private-raster'
-export const PRIVATE_RASTER_LAYER_ID = 'private-raster'
 
 export const interactiveNodeLayerIds = [NODES_LAYER_ID, NODES_SELECTED_LAYER_ID] as const

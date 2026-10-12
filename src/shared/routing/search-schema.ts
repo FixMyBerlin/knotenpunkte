@@ -77,7 +77,6 @@ export const dataSearchSchema = z.object({
 })
 
 export type IndexSearch = z.infer<typeof indexSearchSchema>
-export type DataSearch = z.infer<typeof dataSearchSchema>
 
 export function searchMapParam(search: Pick<IndexSearch, 'map'>) {
   return parseMapParam(search.map) ?? mapParamFallback

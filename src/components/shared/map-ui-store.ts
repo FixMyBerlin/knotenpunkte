@@ -42,7 +42,6 @@ const useMapUiStore = create<MapUiStore>()((set) => ({
 }))
 
 export const useBackgroundChoice = () => useMapUiStore((state) => state.backgroundChoice)
-export const useHoveredNodeId = () => useMapUiStore((state) => state.hoveredNodeId)
 export const useMapBearing = () => useMapUiStore((state) => state.mapBearing)
 export const useMapPitch = () => useMapUiStore((state) => state.mapPitch)
 export const usePrivateRasterUrl = () => useMapUiStore((state) => state.privateRasterUrl)

@@ -94,7 +94,7 @@ export async function loadSuggestions(dataset: string): Promise<StoredSuggestion
   return parseStoredSuggestions(await get(suggestionsKey(dataset))) ?? null
 }
 
-export async function deleteSuggestions(dataset: string) {
+async function deleteSuggestions(dataset: string) {
   await del(suggestionsKey(dataset))
 }
 

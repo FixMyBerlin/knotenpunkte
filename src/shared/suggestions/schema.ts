@@ -7,7 +7,7 @@ import {
   ternaryValueSchema,
 } from '@/shared/ratings/schema'
 
-export const suggestionRowSchema = z
+const suggestionRowSchema = z
   .object({
     id: z.string().min(1),
     attribute: z.enum(rapidAttributeKeys),

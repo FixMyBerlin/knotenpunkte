@@ -10,8 +10,6 @@ export const ternaryAttributeKeys = [
 ] as const
 export const rapidAttributeKeys = [...binaryAttributeKeys, ...ternaryAttributeKeys] as const
 
-export type BinaryAttributeKey = (typeof binaryAttributeKeys)[number]
-export type TernaryAttributeKey = (typeof ternaryAttributeKeys)[number]
 export type RapidAttributeKey = (typeof rapidAttributeKeys)[number]
 
 export const binaryValueSchema = z.union([z.literal(0), z.literal(1)])
@@ -41,7 +39,7 @@ export const rapidAttributeMeta: Record<
   vorgez_Fl: { title: 'Vorgezogene Aufstellflächen vorhanden', kind: 'ternary' },
 }
 
-export const suggestionAuditSchema = z.object({
+const suggestionAuditSchema = z.object({
   suggested: z.union([binaryValueSchema, ternaryValueSchema, z.string(), z.number()]),
   confidence: z.number().min(0).max(1),
   accepted: z.boolean(),
@@ -49,13 +47,12 @@ export const suggestionAuditSchema = z.object({
 
 export type SuggestionAudit = z.infer<typeof suggestionAuditSchema>
 
-export const qaStatusSchema = z.enum(['none', 'confirmed', 'corrected'])
-export type QaStatus = z.infer<typeof qaStatusSchema>
+const qaStatusSchema = z.enum(['none', 'confirmed', 'corrected'])
 
-export const historyKindSchema = z.enum(['save', 'confirmed', 'corrected'])
+const historyKindSchema = z.enum(['save', 'confirmed', 'corrected'])
 export type HistoryKind = z.infer<typeof historyKindSchema>
 
-export const historyEntrySchema = z.object({
+const historyEntrySchema = z.object({
   at: z.string(),
   by: z.string(),
   kind: historyKindSchema,
@@ -65,8 +62,7 @@ export const historyEntrySchema = z.object({
 
 export type HistoryEntry = z.infer<typeof historyEntrySchema>
 
-export const ratingStatusSchema = z.enum(['incomplete', 'complete'])
-export type RatingStatus = z.infer<typeof ratingStatusSchema>
+const ratingStatusSchema = z.enum(['incomplete', 'complete'])
 
 export const ratingRecordSchema = z.object({
   KP_HVS: binaryValueSchema.optional(),
@@ -128,8 +124,4 @@ export function rapidValuesFromRecord(record: RatingRecord | undefined): RapidDr
     'Mapillary-ID': record['Mapillary-ID'],
     Kommentar: record.Kommentar,
   }
-}
-
-export function rapidValueOf(draft: RapidDraft, key: RapidAttributeKey): RapidValue | undefined {
-  return draft[key]
 }

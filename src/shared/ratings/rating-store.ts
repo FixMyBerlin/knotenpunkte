@@ -1,6 +1,6 @@
 import type { RatingRecord } from './schema'
 
-export type DatasetSummary = { dataset: string; entryCount: number }
+type DatasetSummary = { dataset: string; entryCount: number }
 
 export type RatingStoreEntry = {
   dataset: string

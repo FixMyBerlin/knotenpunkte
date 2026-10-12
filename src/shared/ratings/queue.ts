@@ -18,7 +18,7 @@ export function matchesStatusFilter(record: RatingRecord | undefined, filter: St
   }
 }
 
-export function filterNodeIds(
+function filterNodeIds(
   nodeIds: string[],
   records: Record<string, RatingRecord | undefined>,
   filter: StatusFilter,
