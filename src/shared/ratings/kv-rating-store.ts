@@ -1,9 +1,19 @@
 import { z } from 'zod'
 import { KvError, type KvClient } from '@/shared/kv-client'
-import type { ProjectMeta, RatingStore, RatingStoreEntry, RawRatingEntry } from './rating-store'
+import type { ProjectMeta, RatingStore, RatingStoreEntry } from './rating-store'
 import { ratingRecordSchema, type RatingRecord } from './schema'
 
 export const osmLoginRequiredMessage = 'Zum Speichern mit OSM anmelden'
+
+/** Somebody else changed the entry since it was loaded; nothing was written. */
+export class RatingConflictError extends Error {
+  constructor() {
+    super(
+      'Jemand anderes hat diesen Knoten inzwischen geändert. Der aktuelle Stand wurde geladen – bitte prüfen und erneut speichern.',
+    )
+    this.name = 'RatingConflictError'
+  }
+}
 
 const projectMetaTag = 'kp-project-meta'
 const metaPrefix = '_meta/'
@@ -30,6 +40,9 @@ function rethrowMapped(error: unknown): never {
   if (error instanceof KvError && error.code === 'unauthenticated') {
     throw new Error(osmLoginRequiredMessage)
   }
+  if (error instanceof KvError && error.code === 'version_conflict') {
+    throw new RatingConflictError()
+  }
   throw error
 }
 
@@ -43,6 +56,10 @@ function datasetAndNodeFromId(id: string) {
 }
 
 export function createKvRatingStore(client: KvClient<RatingRecord>): RatingStore {
+  // Version of each entry as last read or written here. A save sends it along, so the store
+  // refuses to overwrite an entry that somebody else changed in the meantime.
+  const versions = new Map<string, number>()
+
   const store: RatingStore = {
     async list(dataset) {
       const records: Record<string, RatingRecord> = {}
@@ -56,6 +73,8 @@ export function createKvRatingStore(client: KvClient<RatingRecord>): RatingStore
         })
         const prefix = `${dataset}:`
         for (const item of page.items) {
+          // A list that was requested before a save of ours may arrive after it.
+          versions.set(item.id, Math.max(item.version, versions.get(item.id) ?? 0))
           const record = ratingRecordSchema.safeParse(item.data)
           const nodeId = item.id.startsWith(prefix) ? item.id.slice(prefix.length) : ''
           if (record.success && nodeId) records[nodeId] = record.data
@@ -64,29 +83,19 @@ export function createKvRatingStore(client: KvClient<RatingRecord>): RatingStore
       } while (cursor)
       return records
     },
-    async get(dataset, nodeId) {
-      try {
-        const item = await client.get(entryId(dataset, nodeId))
-        const record = ratingRecordSchema.safeParse(item.data)
-        return record.success ? record.data : undefined
-      } catch (error) {
-        if (error instanceof KvError && error.code === 'not_found') return undefined
-        throw error
-      }
-    },
     async put(dataset, nodeId, record) {
+      const id = entryId(dataset, nodeId)
+      const version = versions.get(id)
       try {
-        await client.put(entryId(dataset, nodeId), record, [dataset])
+        const saved = await client.put(
+          id,
+          record,
+          [dataset],
+          version === undefined ? undefined : { ifMatch: `"${version}"` },
+        )
+        versions.set(id, saved.version)
         return record
       } catch (error) {
-        rethrowMapped(error)
-      }
-    },
-    async remove(dataset, nodeId) {
-      try {
-        await client.remove(entryId(dataset, nodeId))
-      } catch (error) {
-        if (error instanceof KvError && error.code === 'not_found') return
         rethrowMapped(error)
       }
     },
@@ -117,45 +126,20 @@ export function createKvRatingStore(client: KvClient<RatingRecord>): RatingStore
       } while (cursor)
       return entries
     },
-    async listRawEntries(dataset) {
-      const raw: RawRatingEntry[] = []
+    async listUnreadable(dataset) {
+      const nodeIds: string[] = []
       const prefix = `${dataset}:`
       let cursor: string | undefined
       do {
-        const page = await client.list({
-          tags: [dataset],
-          match: 'all',
-          limit: 500,
-          cursor,
-        })
+        const page = await client.list({ tags: [dataset], match: 'all', limit: 500, cursor })
         for (const item of page.items) {
           if (isReservedMetaEntry(item.id, item.tags)) continue
-          const nodeId = item.id.startsWith(prefix) ? item.id.slice(prefix.length) : item.id
-          const record = ratingRecordSchema.safeParse(item.data)
-          raw.push({
-            id: item.id,
-            nodeId,
-            valid: record.success,
-            record: record.success ? record.data : undefined,
-            raw: item.data,
-            updatedAt: item.updated_at,
-            version: item.version,
-          })
+          if (ratingRecordSchema.safeParse(item.data).success) continue
+          nodeIds.push(item.id.startsWith(prefix) ? item.id.slice(prefix.length) : item.id)
         }
         cursor = page.next_cursor ?? undefined
       } while (cursor)
-      return raw
-    },
-    async getProjectMeta(dataset) {
-      try {
-        const item = await client.get(metaId(dataset))
-        const parsed = projectMetaPayloadSchema.safeParse(item.data)
-        if (!parsed.success) return undefined
-        return { dataset, createdAt: parsed.data.created_at, createdBy: parsed.data.created_by }
-      } catch (error) {
-        if (error instanceof KvError && error.code === 'not_found') return undefined
-        throw error
-      }
+      return nodeIds
     },
     async putProjectMeta(dataset, meta) {
       const payload = { name: dataset, created_at: meta.createdAt, created_by: meta.createdBy }
@@ -165,14 +149,6 @@ export function createKvRatingStore(client: KvClient<RatingRecord>): RatingStore
         rethrowMapped(error)
       }
       return { dataset, createdAt: meta.createdAt, createdBy: meta.createdBy }
-    },
-    async removeProjectMeta(dataset) {
-      try {
-        await client.remove(metaId(dataset))
-      } catch (error) {
-        if (error instanceof KvError && error.code === 'not_found') return
-        rethrowMapped(error)
-      }
     },
     async listProjectMeta() {
       const result: ProjectMeta[] = []

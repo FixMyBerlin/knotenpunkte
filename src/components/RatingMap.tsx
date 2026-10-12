@@ -27,7 +27,7 @@ import { MapResetNorthPitchButton } from '@/components/MapResetNorthPitchButton'
 import {
   useBackgroundChoice,
   useMapUiActions,
-  usePrivateRasterUrl,
+  usePrivateRasters,
 } from '@/components/shared/map-ui-store'
 import { StreetsLayer } from '@/components/StreetsLayer'
 import { StreetsLegend } from '@/components/StreetsLegend'
@@ -44,10 +44,9 @@ import {
 } from '@/shared/map/map-ids'
 import { nodeStatusColors, OPENFREEMAP_POSITRON, privateRasterStyle } from '@/shared/map/node-style'
 import {
-  POSITRON_BG,
-  PRIVATE_BG,
+  backgroundChoiceId,
   readBackgroundChoice,
-  readPrivateRasterUrl,
+  readPrivateRasters,
   resolveBackgroundChoice,
 } from '@/shared/map/private-raster'
 import { usePmtilesProtocol } from '@/shared/map/use-pmtiles-protocol'
@@ -109,17 +108,16 @@ export function RatingMap() {
   const photosOn = resolvePhotosOn(search) && currentStep === 'work'
   const photoColor = resolvePhotoColor(search)
   const handleMapillaryClick = useMapillaryMapClick()
-  const { setBackgroundChoice, setHoveredNodeId, setMapBearing, setMapPitch, setPrivateRasterUrl } =
-    useMapUiActions()
-  const storedPrivateUrl = usePrivateRasterUrl()
+  const { setBackgroundChoice, setMapBearing, setMapPitch, setPrivateRasters } = useMapUiActions()
+  const privateRasters = usePrivateRasters()
   const storedBackground = useBackgroundChoice()
 
   useEffect(
     function hydrateBackgroundFromStorage() {
-      setPrivateRasterUrl(readPrivateRasterUrl())
+      setPrivateRasters(readPrivateRasters())
       setBackgroundChoice(readBackgroundChoice())
     },
-    [setPrivateRasterUrl, setBackgroundChoice],
+    [setPrivateRasters, setBackgroundChoice],
   )
 
   const nodesQuery = useQuery({
@@ -177,7 +175,7 @@ export function RatingMap() {
     selectedFeature && flyTo ? { id: selectedFeature.properties.id, lngLat: flyTo } : null
 
   const effectiveBg = bg ?? (storedBackground || undefined)
-  const background = resolveBackgroundChoice(effectiveBg, storedPrivateUrl)
+  const background = resolveBackgroundChoice(effectiveBg, privateRasters)
   const mapStyle =
     background.kind === 'private' ? privateRasterStyle(background.url) : OPENFREEMAP_POSITRON
   const eliId = background.kind === 'eli' ? background.id : null
@@ -221,13 +219,6 @@ export function RatingMap() {
             }),
             replace: true,
           })
-        }}
-        onMouseMove={(event: MapLayerMouseEvent) => {
-          const id = nodeIdFromEvent(event)
-          setHoveredNodeId(id)
-        }}
-        onMouseLeave={() => {
-          setHoveredNodeId(null)
         }}
         onClick={(event: MapLayerMouseEvent) => {
           const id = nodeIdFromEvent(event)
@@ -313,15 +304,7 @@ export function RatingMap() {
       <div className="pointer-events-none absolute top-3 right-3 z-10 flex flex-col items-end gap-2 *:pointer-events-auto">
         <MapResetNorthPitchButton />
         <MapBackgroundLayerControl background={background} lat={map.lat} lng={map.lng} />
-        <MapBackgroundFavorites
-          activeId={
-            background.kind === 'eli'
-              ? background.id
-              : background.kind === 'private'
-                ? PRIVATE_BG
-                : POSITRON_BG
-          }
-        />
+        <MapBackgroundFavorites activeId={backgroundChoiceId(background)} />
         <StreetsLegend
           streetsOn={streetsOn}
           onStreetsChange={(on) => {

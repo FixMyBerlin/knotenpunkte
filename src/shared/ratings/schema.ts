@@ -77,6 +77,8 @@ export const ratingRecordSchema = z.object({
   Fl_Linksab: ternaryValueSchema.optional(),
   vorgez_Fl: ternaryValueSchema.optional(),
   KP_Nichtbetrachten: binaryValueSchema.default(0),
+  /** Put off for later ("Zurückstellen"): the node stays open until it is saved normally. */
+  Zurueckgestellt: binaryValueSchema.default(0),
   ist_virtuell: binaryValueSchema.default(0),
   /** Mapillary photos assigned to the node, `;`-separated (see `list-field.ts`). */
   'Mapillary-ID': z.string().optional(),
@@ -107,6 +109,7 @@ export type RapidDraft = {
   Fl_Linksab?: TernaryValue
   vorgez_Fl?: TernaryValue
   KP_Nichtbetrachten: BinaryValue
+  Zurueckgestellt: BinaryValue
   ist_virtuell: BinaryValue
   'Mapillary-ID'?: string
   Quelle?: string
@@ -117,6 +120,7 @@ export type RapidDraft = {
 export function emptyRapidDraft(): RapidDraft {
   return {
     KP_Nichtbetrachten: 0,
+    Zurueckgestellt: 0,
     ist_virtuell: 0,
   }
 }
@@ -132,6 +136,7 @@ export function rapidValuesFromRecord(record: RatingRecord | undefined): RapidDr
     Fl_Linksab: record.Fl_Linksab,
     vorgez_Fl: record.vorgez_Fl,
     KP_Nichtbetrachten: record.KP_Nichtbetrachten,
+    Zurueckgestellt: record.Zurueckgestellt,
     ist_virtuell: record.ist_virtuell,
     'Mapillary-ID': record['Mapillary-ID'],
     Quelle: record.Quelle,

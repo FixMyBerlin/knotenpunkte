@@ -25,13 +25,23 @@ const useDraftStore = create<DraftStore>()((set) => ({
     }),
 }))
 
+export function draftKey(dataset: string | undefined, nodeId: string | undefined) {
+  return `${dataset}:${nodeId}`
+}
+
+/** Drops the unsaved edits of a node once they are stored, unless they changed in the meantime. */
+export function clearDraftIfUnchanged(key: string, saved: RapidDraft) {
+  const { drafts, clearDraft } = useDraftStore.getState()
+  if (drafts[key] === saved) clearDraft(key)
+}
+
 /**
  * The rating of a node as it is being edited: the unsaved edits, else the saved record, else the
  * suggestions. Shared by the form and the photo viewer, which both write to it.
  */
 export function useRatingDraft(nodeId: string | undefined) {
   const dataset = Route.useSearch({ select: (search) => search.dataset })
-  const key = `${dataset}:${nodeId}`
+  const key = draftKey(dataset, nodeId)
   const stored = useDraftStore((state) => state.drafts[key])
   const storeDraft = useDraftStore((state) => state.setDraft)
   const removeDraft = useDraftStore((state) => state.clearDraft)
@@ -53,10 +63,16 @@ export function useRatingDraft(nodeId: string | undefined) {
     stored ??
     (record ? rapidValuesFromRecord(record) : applySuggestions(emptyRapidDraft(), suggestionRows))
 
+  // Until the saved ratings are there, an edit would start from an empty rating and hide them.
+  const ready = ratingsQuery.isSuccess
+
   return {
     draft,
+    /** There are edits that are not stored yet. */
+    dirty: stored !== undefined,
+    ready,
     setDraft: (next: RapidDraft) => {
-      if (dataset && nodeId) storeDraft(key, next)
+      if (dataset && nodeId && ready) storeDraft(key, next)
     },
     clearDraft: () => removeDraft(key),
   }

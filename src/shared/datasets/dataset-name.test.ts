@@ -12,6 +12,12 @@ describe('isValidDatasetName', () => {
     expect(isValidDatasetName('Berlin')).toBe(false)
     expect(isValidDatasetName('berlin_sample')).toBe(false)
   })
+
+  it('rejects reserved names and separators of entry ids', () => {
+    expect(isValidDatasetName('all')).toBe(false)
+    expect(isValidDatasetName('kp-project-meta')).toBe(false)
+    expect(isValidDatasetName('berlin:mitte')).toBe(false)
+  })
 })
 
 describe('slugifyDatasetName', () => {

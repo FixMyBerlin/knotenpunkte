@@ -1,5 +1,6 @@
 import { useHotkeys } from '@tanstack/react-hotkeys'
 import { useBackgroundFavorites } from '@/components/shared/background-favorites-store'
+import { usePrivateRasters } from '@/components/shared/map-ui-store'
 import { Tooltip } from '@/components/shared/Tooltip/Tooltip'
 import { useChooseBackground } from '@/components/shared/use-choose-background'
 import { cn } from '@/shared/cn'
@@ -9,7 +10,12 @@ import { backgroundFavoriteHotkeys } from '@/shared/ratings/hotkeys'
 
 /** The starred backgrounds as buttons on the map, each with a key by its position. */
 export function MapBackgroundFavorites({ activeId }: { activeId: string }) {
-  const favorites = useBackgroundFavorites()
+  const privateRasters = usePrivateRasters()
+  // A private background can be renamed after it was starred: its current title counts.
+  const favorites = useBackgroundFavorites().map((favorite) => ({
+    ...favorite,
+    name: privateRasters.find((raster) => raster.id === favorite.id)?.title ?? favorite.name,
+  }))
   const chooseBackground = useChooseBackground()
   const textEntryFocused = useTextEntryFocused()
   const withHotkey = favorites.slice(0, backgroundFavoriteHotkeys.length)

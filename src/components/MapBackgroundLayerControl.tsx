@@ -7,9 +7,10 @@ import * as countryCoder from '@rapideditor/country-coder'
 import { useState } from 'react'
 import {
   useBackgroundFavorites,
+  useRemoveBackgroundFavorite,
   useToggleBackgroundFavorite,
 } from '@/components/shared/background-favorites-store'
-import { useMapUiActions, usePrivateRasterUrl } from '@/components/shared/map-ui-store'
+import { useMapUiActions, usePrivateRasters } from '@/components/shared/map-ui-store'
 import { Tooltip } from '@/components/shared/Tooltip/Tooltip'
 import { useChooseBackground } from '@/components/shared/use-choose-background'
 import { Button } from '@/components/ui/button'
@@ -19,12 +20,17 @@ import { ignorePasswordManagerProps } from '@/shared/form-ignore-password-manage
 import { MAIN_MAP_ID } from '@/shared/map/map-ids'
 import {
   type BackgroundChoice,
+  backgroundChoiceId,
+  newPrivateRasterId,
   POSITRON_BG,
-  PRIVATE_BG,
+  type PrivateRaster,
   privateRasterDisplayName,
   privateRasterUrlError,
-  writePrivateRasterUrl,
+  writePrivateRasters,
 } from '@/shared/map/private-raster'
+
+/** The private background in the form: `id` is `null` for one that is being added. */
+type PrivateRasterDraft = { id: string | null; title: string; url: string }
 
 const CATEGORY_LABELS: Record<EliCategory, string> = {
   photo: 'Luftbild / Satellit',
@@ -65,10 +71,10 @@ export function MapBackgroundLayerControl({
   lng: number
 }) {
   const chooseBackground = useChooseBackground()
-  const privateUrl = usePrivateRasterUrl()
-  const { setPrivateRasterUrl } = useMapUiActions()
-  const [draftUrl, setDraftUrl] = useState(privateUrl)
-  const [editingPrivateUrl, setEditingPrivateUrl] = useState(false)
+  const privateRasters = usePrivateRasters()
+  const { setPrivateRasters } = useMapUiActions()
+  const removeFavorite = useRemoveBackgroundFavorite()
+  const [draft, setDraft] = useState<PrivateRasterDraft | null>(null)
   const [draftError, setDraftError] = useState<string | null>(null)
   const centerCountry = countryCoder.iso1A2Code([lng, lat])
 
@@ -86,39 +92,50 @@ export function MapBackgroundLayerControl({
     items: sortLayers(layers.filter((layer) => (layer.category ?? 'other') === category)),
   })).filter((group) => group.items.length > 0)
 
-  const value =
-    background.kind === 'eli'
-      ? background.id
-      : background.kind === 'private'
-        ? PRIVATE_BG
-        : POSITRON_BG
+  const value = backgroundChoiceId(background)
   const selectedLayer =
     background.kind === 'eli' ? layers.find((layer) => layer.id === value) : undefined
 
-  function beginPrivateUrlEdit() {
-    setDraftUrl(privateUrl)
-    setDraftError(null)
-    setEditingPrivateUrl(true)
+  function storePrivateRasters(rasters: PrivateRaster[]) {
+    writePrivateRasters(rasters)
+    setPrivateRasters(rasters)
   }
 
-  function savePrivateUrl() {
-    const trimmed = draftUrl.trim()
-    const error = trimmed ? privateRasterUrlError(trimmed) : null
+  function editPrivateRaster(next: PrivateRasterDraft) {
+    setDraft(next)
+    setDraftError(null)
+  }
+
+  function savePrivateRaster() {
+    if (!draft) return
+    const url = draft.url.trim()
+    const error = privateRasterUrlError(url)
     if (error) {
       setDraftError(error)
       return
     }
-    setDraftError(null)
-    writePrivateRasterUrl(trimmed)
-    setPrivateRasterUrl(trimmed)
-    setEditingPrivateUrl(false)
-    if (trimmed) chooseBackground(PRIVATE_BG)
+    const id = draft.id ?? newPrivateRasterId(privateRasters)
+    const raster = { id, title: draft.title.trim() || privateRasterDisplayName(url), url }
+    storePrivateRasters(
+      draft.id
+        ? privateRasters.map((item) => (item.id === id ? raster : item))
+        : [...privateRasters, raster],
+    )
+    setDraft(null)
+    chooseBackground(id)
+  }
+
+  function removePrivateRaster(id: string) {
+    storePrivateRasters(privateRasters.filter((item) => item.id !== id))
+    removeFavorite(id)
+    setDraft(null)
+    if (value === id) chooseBackground(POSITRON_BG)
   }
 
   const label = selectedLayer
     ? selectedLayer.name
-    : value === PRIVATE_BG
-      ? privateRasterDisplayName(privateUrl)
+    : background.kind === 'private'
+      ? background.title
       : 'Hintergrundkarte'
 
   return (
@@ -150,21 +167,60 @@ export function MapBackgroundLayerControl({
         </div>
         <div className="mt-1 border-t border-white/10 pt-1">
           <div className="px-2 py-1 text-[11px] font-semibold tracking-wide text-white/50 uppercase">
-            Private background layer
+            Private Hintergründe
           </div>
-          <PrivateRasterRow
-            editing={editingPrivateUrl}
-            selected={value === PRIVATE_BG}
-            url={privateUrl}
-            draftUrl={draftUrl}
-            draftError={draftError}
-            onDraftUrl={(value) => {
-              setDraftUrl(value)
-              setDraftError(null)
-            }}
-            onBeginEdit={beginPrivateUrlEdit}
-            onSave={savePrivateUrl}
-          />
+          {privateRasters.map((raster) =>
+            draft?.id === raster.id ? null : (
+              <div key={raster.id} className="flex items-center gap-1 pr-1">
+                <ListboxOption
+                  value={raster.id}
+                  className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 data-focus:bg-white/10"
+                >
+                  <CheckIcon
+                    className={cn('size-4 shrink-0', raster.id === value ? '' : 'opacity-0')}
+                    aria-hidden
+                  />
+                  <span className="truncate">{raster.title}</span>
+                </ListboxOption>
+                <button
+                  type="button"
+                  data-testid={`private-raster-edit-${raster.id}`}
+                  className="shrink-0 rounded-md px-2 py-1 text-xs font-medium ring-1 ring-white/20 hover:bg-white/10"
+                  onMouseDown={stopMenuEvent}
+                  onClick={(event) => {
+                    stopMenuEvent(event)
+                    editPrivateRaster(raster)
+                  }}
+                >
+                  Bearbeiten
+                </button>
+                <FavoriteButton id={raster.id} name={raster.title} />
+              </div>
+            ),
+          )}
+          {draft ? (
+            <PrivateRasterForm
+              draft={draft}
+              error={draftError}
+              onChange={editPrivateRaster}
+              onSave={savePrivateRaster}
+              onCancel={() => setDraft(null)}
+              onRemove={draft.id ? () => removePrivateRaster(draft.id!) : undefined}
+            />
+          ) : (
+            <button
+              type="button"
+              data-testid="private-raster-add"
+              className="w-full rounded-md px-2 py-1.5 text-left text-white/80 hover:bg-white/10"
+              onMouseDown={stopMenuEvent}
+              onClick={(event) => {
+                stopMenuEvent(event)
+                editPrivateRaster({ id: null, title: '', url: '' })
+              }}
+            >
+              + Hintergrund mit eigener URL hinzufügen
+            </button>
+          )}
         </div>
 
         {status === 'loading' && groups.length === 0 ? (
@@ -215,100 +271,89 @@ function stopMenuEvent(event: { preventDefault: () => void; stopPropagation: () 
   event.stopPropagation()
 }
 
-function PrivateRasterRow({
-  editing,
-  selected,
-  url,
-  draftUrl,
-  draftError,
-  onDraftUrl,
-  onBeginEdit,
+function PrivateRasterForm({
+  draft,
+  error,
+  onChange,
   onSave,
+  onCancel,
+  onRemove,
 }: {
-  editing: boolean
-  selected: boolean
-  url: string
-  draftUrl: string
-  draftError: string | null
-  onDraftUrl: (value: string) => void
-  onBeginEdit: () => void
+  draft: PrivateRasterDraft
+  error: string | null
+  onChange: (draft: PrivateRasterDraft) => void
   onSave: () => void
+  onCancel: () => void
+  /** Only for a background that is already stored. */
+  onRemove?: () => void
 }) {
-  if (editing) {
-    return (
-      <div className="px-2 py-1.5" onMouseDown={stopMenuEvent} onClick={stopMenuEvent}>
-        <div className="flex items-center gap-2">
-          <Input
-            autoFocus
-            value={draftUrl}
-            placeholder="https://…/{z}/{x}/{y}.png?key=…"
-            aria-label="Private Raster-Kachel-URL"
-            aria-invalid={draftError ? true : undefined}
-            aria-describedby={draftError ? PRIVATE_URL_ERROR_ID : undefined}
-            className="min-w-0 flex-1"
-            {...ignorePasswordManagerProps}
-            onChange={(event) => onDraftUrl(event.currentTarget.value)}
-            onKeyDown={(event) => event.stopPropagation()}
-          />
-          <Button
-            type="button"
-            color="sky"
-            className="shrink-0"
-            onMouseDown={stopMenuEvent}
-            onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
-              stopMenuEvent(event)
-              onSave()
-            }}
-          >
-            Speichern
-          </Button>
-        </div>
-        {draftError ? (
-          <p id={PRIVATE_URL_ERROR_ID} role="alert" className="mt-1.5 text-xs text-red-400">
-            {draftError}
-          </p>
-        ) : null}
-      </div>
-    )
-  }
-
-  if (!url) {
-    return (
-      <button
-        type="button"
-        className="w-full rounded-md px-2 py-1.5 text-left hover:bg-white/10"
-        onMouseDown={stopMenuEvent}
-        onClick={(event) => {
-          stopMenuEvent(event)
-          onBeginEdit()
-        }}
-      >
-        URL angeben und auswählen
-      </button>
-    )
-  }
+  const smallButtonClass =
+    'shrink-0 rounded-md px-2 py-1 text-xs font-medium ring-1 ring-white/20 hover:bg-white/10'
+  const menuButton = (action: () => void) => ({
+    onMouseDown: stopMenuEvent,
+    onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
+      stopMenuEvent(event)
+      action()
+    },
+  })
 
   return (
-    <div className="flex items-center justify-between gap-2 pr-2">
-      <ListboxOption
-        value={PRIVATE_BG}
-        className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 data-focus:bg-white/10"
-      >
-        <CheckIcon className={cn('size-4 shrink-0', selected ? '' : 'opacity-0')} aria-hidden />
-        <span className="truncate">{privateRasterDisplayName(url)}</span>
-      </ListboxOption>
-      <button
-        type="button"
-        className="shrink-0 rounded-md px-2 py-1 text-xs font-medium ring-1 ring-white/20 hover:bg-white/10"
-        onMouseDown={stopMenuEvent}
-        onClick={(event) => {
-          stopMenuEvent(event)
-          onBeginEdit()
-        }}
-      >
-        Bearbeiten
-      </button>
-      <FavoriteButton id={PRIVATE_BG} name={privateRasterDisplayName(url)} />
+    <div
+      className="space-y-1.5 px-2 py-1.5"
+      data-testid="private-raster-form"
+      onMouseDown={stopMenuEvent}
+      onClick={stopMenuEvent}
+    >
+      <Input
+        autoFocus
+        value={draft.title}
+        placeholder="Titel, z. B. Befliegung 2025"
+        aria-label="Titel des privaten Hintergrunds"
+        data-testid="private-raster-title"
+        {...ignorePasswordManagerProps}
+        onChange={(event) => onChange({ ...draft, title: event.currentTarget.value })}
+        onKeyDown={(event) => event.stopPropagation()}
+      />
+      <Input
+        value={draft.url}
+        placeholder="https://…/{z}/{x}/{y}.png?key=…"
+        aria-label="Raster-Kachel-URL des privaten Hintergrunds"
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? PRIVATE_URL_ERROR_ID : undefined}
+        data-testid="private-raster-url"
+        {...ignorePasswordManagerProps}
+        onChange={(event) => onChange({ ...draft, url: event.currentTarget.value })}
+        onKeyDown={(event) => event.stopPropagation()}
+      />
+      {error ? (
+        <p id={PRIVATE_URL_ERROR_ID} role="alert" className="text-xs text-red-400">
+          {error}
+        </p>
+      ) : null}
+      <div className="flex items-center gap-1.5">
+        <Button
+          type="button"
+          color="sky"
+          className="shrink-0"
+          data-testid="private-raster-save"
+          {...menuButton(onSave)}
+        >
+          Speichern
+        </Button>
+        <button type="button" className={smallButtonClass} {...menuButton(onCancel)}>
+          Abbrechen
+        </button>
+        {onRemove ? (
+          <button
+            type="button"
+            data-testid="private-raster-remove"
+            className={cn(smallButtonClass, 'ml-auto text-red-300')}
+            {...menuButton(onRemove)}
+          >
+            Löschen
+          </button>
+        ) : null}
+      </div>
     </div>
   )
 }

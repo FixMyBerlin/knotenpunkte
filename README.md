@@ -35,9 +35,9 @@ Writes to the rating database require a logged-in OSM user (`Authorization: Bear
 
 Pick or create an area slug (`^[a-z0-9]+(-[a-z0-9]+)*$`, 3–60 chars), upload a node GeoJSON (`NUMMER` or `Knotenpunkt-ID`, including Unicode hyphen U+2010; Point or MultiPoint), then land on the next unrated node. The map shows that point and the always-on StEP street layer.
 
-Seven Zustand-nach-OSM attributes (two Ja/Nein, five keine/teilweise/gänzlich). One attribute is active (highlighted); every node starts at the top one. `Q` / `W` / `E` answer its first, second and third choice and move on to the next attribute; `Tab` and `Shift+Tab` move without answering. The footer has **Speichern** (`Enter`, saves and goes to the next node), **Nicht relevant** (`X`) and **Zurückstellen** (`Z`). `J` / `K` and the arrows next to the node id step through the nodes. Keyboard is ignored while a text field is focused.
+Seven Zustand-nach-OSM attributes (two Ja/Nein, five keine/teilweise/gänzlich). One attribute is active (highlighted); every node starts at the top one. `Q` / `W` / `E` answer its first, second and third choice and move on to the next attribute; `Tab` and `Shift+Tab` move without answering; after the last attribute `Tab` goes on into the notes. `H`, `I` and `O` jump to the customer note, the internal note and the source; inside these fields `Tab` works as usual and `Escape` leaves them. The footer has **Speichern** (`Enter`, saves and goes to the next node), **Nicht relevant** (`X`) and **Zurückstellen** (`Z`). `J` / `K` and the arrows next to the node id step through the nodes. Keyboard is ignored while a text field is focused.
 
-Progress is **bewertet/gesamt**. Completeness ignores virtual, photos, source and notes: a node is complete when it is not relevant or all seven answers are set. **Nicht relevant** (`KP_Nichtbetrachten`) sets `KP_HVS` and `LSA_KP` to Nein, clears the other five and counts as complete. **Zurückstellen** (later) needs an internal note: without one the note field gets the focus and is marked; **Fehlendes Fotomaterial** above the field fills it in. The node is saved as incomplete, so it stays in **Offen**.
+Progress (**bewertet/gesamt**) is in the step navigation. Completeness ignores virtual, photos, source and notes: a node is complete when it is not relevant or all seven answers are set. **Nicht relevant** (`KP_Nichtbetrachten`) sets `KP_HVS` and `LSA_KP` to Nein, clears the other five and counts as complete. **Zurückstellen** (later) needs an internal note: without one the note field gets the focus and is marked; **Fehlendes Fotomaterial** above the field fills it in. The node is saved with `Zurueckgestellt: 1` and as incomplete, so it stays in **Offen** until it is saved normally.
 
 `Betrachtung` is derived from the suggestions: `0` when both `KP_HVS` and `LSA_KP` are suggested as `0`, else `1` (also without those two suggestions, and never when the node has an `LSA_Konflikt`). At `0` the form shows a short hint instead of the seven attributes, and Enter skips the node; **Doch bewerten** reveals the attributes. Nodes that already have a rating (not skipped) show the attributes. With an `LSA_Konflikt` (`nur_OSM` / `nur_OpenData`: the sources disagree whether an LSA exists) the attributes stay visible and a warning says it is uncertain whether an LSA exists.
 
@@ -47,7 +47,13 @@ Optional JSON array per area: `{ id, attribute, value, confidence, probabilities
 
 ## Notes, source and photos
 
-Always shown below the attributes: **Hinweis an den Kunden** (`Kommentar`), **Hinweis intern** (`Kommentar_intern`), **Quelle** (`Quelle`: `Mapillary`, `infra3D`, `;`-separated) and virtual (`ist_virtuell`). Assigning a Mapillary photo ticks Mapillary, opening infra3D ticks infra3D; both can be unticked. The pipette above the photo in the viewer assigns the shown photo to the node; assigned photos are buttons next to it (click shows the photo, × removes it) and are stored `;`-separated in `Mapillary-ID`. All of these save with Speichern.
+Always shown below the attributes: **Hinweis an den Kunden** (`Kommentar`), **Hinweis intern** (`Kommentar_intern`), **Quelle** (`Quelle`: `Mapillary`, `infra3D`, `;`-separated) and virtual (`ist_virtuell`). Assigning a Mapillary photo ticks Mapillary, opening infra3D ticks infra3D; both can be unticked. The pipette above the photo in the viewer assigns the shown photo to the node; assigned photos are buttons next to it (click shows the photo, × removes it) and are stored `;`-separated in `Mapillary-ID`.
+
+## Saving
+
+Every edit is stored on its own: 0.8 s after the last change and at once when the node is left. These autosaves never finish a node; only **Speichern** and **Nicht relevant** make an open node complete. Autosaves of one person within 15 minutes are one history entry. The line under the node id shows the state (`Speichert …`, `Zwischenstand gespeichert · noch offen`, `Gespeichert`). Without OSM login nothing is stored.
+
+A save sends the version of the entry it is based on (`If-Match`). If somebody else changed the node in the meantime the store refuses the save; the app then loads the current rating, drops the local edits of that node and asks to check and save again. The form only appears once the stored ratings are loaded, and it is blocked when they cannot be loaded. An entry that does not match the schema is never overwritten: its node shows an error and cannot be saved, and the Export step lists such entries.
 
 ## Overview
 
@@ -63,7 +69,7 @@ The Export step has three exports, each with a description: GeoJSON of the local
 
 ## Map
 
-OpenFreeMap Positron, Editor Layer Index backgrounds, and a private raster URL template (`{z}/{x}/{y}`) kept in this browser’s localStorage. Once set, that URL is the default here; `bg` can still pick Positron or an ELI layer. The key inside the URL stays on this machine and is never committed. The star at the end of a row in the background list makes it a favourite: favourites are buttons on the map with a short name (the year in the name) and the keys `1`–`9` by position, kept in localStorage.
+OpenFreeMap Positron, Editor Layer Index backgrounds, and private backgrounds: any number of raster URL templates (`{z}/{x}/{y}`), each with a title, kept in this browser’s localStorage. Without another choice the first one is the default here; `bg` can still pick Positron or an ELI layer. A key inside a URL stays on this machine: private backgrounds never go into the page URL and are never committed. The star at the end of a row in the background list makes it a favourite: favourites are buttons on the map with a short name (the year in the name or title) and the keys `1`–`9` by position, kept in localStorage.
 
 Street network: [Berlin Straßenabschnitte](https://tilda-geo.de/api/uploads/strassennetz-berlin-strassenabschnitte.pmtiles), source-layer `default`, colored by `strassenklasse1`. The legend starts closed. **An / Aus** toggles the layer and is stored in the URL (`streets=false` when off; omitted when on). Opening the color list stays in this browser session. Attribution: Geoportal Berlin / Detailnetz Berlin Straßenabschnitte, DL-DE/BY-2.0.
 

@@ -51,6 +51,7 @@ export function mergeRatingsIntoNodes(
         Fl_Linksab: record?.Fl_Linksab,
         vorgez_Fl: record?.vorgez_Fl,
         KP_Nichtbetrachten: record?.KP_Nichtbetrachten ?? 0,
+        Zurueckgestellt: record?.Zurueckgestellt ?? 0,
         ist_virtuell: record?.ist_virtuell ?? 0,
         'Mapillary-ID': record?.['Mapillary-ID'],
         Quelle: record?.Quelle,

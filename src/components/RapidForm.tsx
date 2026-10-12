@@ -1,11 +1,12 @@
 import { useHotkeys } from '@tanstack/react-hotkeys'
 import { useEffect, useRef, useState } from 'react'
+import { CUSTOMER_NOTE_ID, NODE_NOTES_ID } from '@/components/NodeNotes'
 import { Tooltip } from '@/components/shared/Tooltip/Tooltip'
 import { Button } from '@/components/ui/button'
 import { Callout } from '@/components/ui/callout'
 import { cn } from '@/shared/cn'
 import { scrollIntoContainer } from '@/shared/dom/scroll-into-container'
-import { useTextEntryFocused } from '@/shared/dom/text-entry-focus'
+import { useFocusInside, useTextEntryFocused } from '@/shared/dom/text-entry-focus'
 import {
   choiceHotkeys,
   deferHotkey,
@@ -37,6 +38,9 @@ import { suggestionProbability, type SuggestionRow } from '@/shared/suggestions/
 const binaryValues = [0, 1] as const
 const ternaryValues = ['keine', 'teilweise', 'gänzlich'] as const
 
+/** Marks the areas whose focused buttons handle Enter themselves. */
+export const OWN_ENTER_ATTRIBUTE = 'data-own-enter'
+
 function valuesOf(key: RapidAttributeKey): readonly RapidValue[] {
   return rapidAttributeMeta[key].kind === 'binary' ? binaryValues : ternaryValues
 }
@@ -61,6 +65,8 @@ type Props = {
   /** `LSA_Konflikt` of the node: Open Data and OSM disagree whether an LSA exists. */
   lsaConflict?: string
   onRateAnyway: () => void
+  /** A save is running: the keys that save wait. */
+  busy?: boolean
 }
 
 export function RapidForm({
@@ -75,8 +81,18 @@ export function RapidForm({
   attributesVisible,
   lsaConflict,
   onRateAnyway,
+  busy = false,
 }: Props) {
   const textEntryFocused = useTextEntryFocused()
+  const notesFocused = useFocusInside(NODE_NOTES_ID)
+  // A focused button of the rating panel takes Enter itself; the hotkey would save on top of
+  // its click. Buttons elsewhere (map, photo viewer) do not save, so the hotkey still counts.
+  const unlessBusyOrOnButton = (action: () => void) => () => {
+    const focused = document.activeElement
+    if (busy) return
+    if (focused instanceof HTMLButtonElement && focused.closest(`[${OWN_ENTER_ATTRIBUTE}]`)) return
+    action()
+  }
   // The attribute the choice keys answer. Each node starts at the top (the form is keyed by node).
   const [activeIndex, setActiveIndex] = useState(0)
   const activeKey = attributesVisible ? rapidAttributeKeys[activeIndex] : undefined
@@ -104,7 +120,11 @@ export function RapidForm({
         ? [
             {
               hotkey: 'Tab' as const,
-              callback: () => setActiveIndex((index) => Math.min(index + 1, lastIndex)),
+              // After the last attribute Tab goes on into the notes, where it works as usual.
+              callback: () => {
+                if (activeIndex === lastIndex) document.getElementById(CUSTOMER_NOTE_ID)?.focus()
+                else setActiveIndex(activeIndex + 1)
+              },
               options: { meta: { name: 'Nächstes Attribut' } },
             },
             {
@@ -116,12 +136,12 @@ export function RapidForm({
         : []),
       {
         hotkey: skipHotkey,
-        callback: onSkip,
+        callback: unlessBusyOrOnButton(onSkip),
         options: { meta: { name: 'Nicht relevant' } },
       },
       {
         hotkey: deferHotkey,
-        callback: onDefer,
+        callback: unlessBusyOrOnButton(onDefer),
         options: { meta: { name: 'Zurückstellen' } },
       },
       {
@@ -136,11 +156,11 @@ export function RapidForm({
       },
       {
         hotkey: 'Enter',
-        callback: onSave,
+        callback: unlessBusyOrOnButton(onSave),
         options: { meta: { name: 'Speichern' } },
       },
     ],
-    { enabled: !textEntryFocused, ignoreInputs: false },
+    { enabled: !textEntryFocused && !notesFocused, ignoreInputs: false },
   )
 
   /** Answers the attribute and moves on to the next one. */
@@ -218,7 +238,8 @@ export function RapidForm({
                 <span>{meta.title}</span>
               </Tooltip>
             </legend>
-            <div className="clear-both flex flex-col gap-1.5">
+            {/* Three columns for all attributes; Ja/Nein leaves the third one empty. */}
+            <div className="clear-both grid grid-cols-3 gap-1.5">
               {values.map((value, index) => (
                 <ChoiceButton
                   key={value}
@@ -267,9 +288,10 @@ export function RapidActions({
   onSkip,
   onDefer,
   saveDisabled,
-}: Pick<Props, 'onSkip' | 'onDefer'> & { saveDisabled?: boolean }) {
+  busy = false,
+}: Pick<Props, 'onSkip' | 'onDefer' | 'busy'> & { saveDisabled?: boolean }) {
   return (
-    <div className="flex w-full flex-wrap gap-1">
+    <div className="flex w-full flex-wrap gap-1" {...{ [OWN_ENTER_ATTRIBUTE]: '' }}>
       <Tooltip text="Speichern und zum nächsten Knoten" className="w-full">
         <Button
           type="submit"
@@ -287,7 +309,14 @@ export function RapidActions({
         text="Knotenpunkt nicht betrachten: setzt HVS und LSA auf Nein, speichert und geht weiter"
         className="min-w-0 flex-1"
       >
-        <Button type="button" outline data-testid="skip-node" onClick={onSkip} className="w-full">
+        <Button
+          type="button"
+          outline
+          data-testid="skip-node"
+          disabled={busy}
+          onClick={onSkip}
+          className="w-full"
+        >
           Nicht relevant
           <kbd className={actionKbdClass}>{skipHotkey}</kbd>
         </Button>
@@ -296,7 +325,14 @@ export function RapidActions({
         text="Später bewerten: braucht einen internen Hinweis, der Knoten bleibt offen"
         className="min-w-0 flex-1"
       >
-        <Button type="button" outline data-testid="defer-node" onClick={onDefer} className="w-full">
+        <Button
+          type="button"
+          outline
+          data-testid="defer-node"
+          disabled={busy}
+          onClick={onDefer}
+          className="w-full"
+        >
           Zurückstellen
           <kbd className={actionKbdClass}>{deferHotkey}</kbd>
         </Button>
@@ -330,16 +366,26 @@ function ChoiceButton({
       type="button"
       data-testid={testId}
       aria-pressed={pressed}
+      // Keeps the focus off the button, so Enter saves instead of clicking it again.
+      onMouseDown={(event) => event.preventDefault()}
       onClick={onClick}
       className={cn(
-        'flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-sm',
+        'flex w-full min-w-0 flex-col gap-1 rounded-md px-2 py-1 text-left text-sm',
         pressed ? 'bg-sky-500/30 text-white' : 'bg-white/5 text-zinc-200 hover:bg-white/10',
       )}
     >
+      <span className="flex w-full items-center gap-1">
+        <span className="min-w-0 flex-1 truncate">{children}</span>
+        {hotkey ? (
+          <kbd className="shrink-0 rounded bg-black/30 px-1 font-sans text-xs font-semibold text-zinc-200">
+            {hotkey}
+          </kbd>
+        ) : null}
+      </span>
       {reserveProbability ? (
         <span
           className={cn(
-            'w-12 shrink-0 rounded px-1 text-right text-xs whitespace-nowrap tabular-nums',
+            'min-h-4 self-start rounded px-1 text-xs whitespace-nowrap tabular-nums',
             rank && rankClasses[rank],
           )}
           title="Wahrscheinlichkeit laut Vorschlagsmodell"
@@ -348,12 +394,6 @@ function ChoiceButton({
           {probability !== undefined ? `${Math.round(probability * 100)} %` : null}
         </span>
       ) : null}
-      {hotkey ? (
-        <kbd className="rounded bg-black/30 px-1 font-sans text-xs font-semibold text-zinc-200">
-          {hotkey}
-        </kbd>
-      ) : null}
-      {children}
     </button>
   )
 }

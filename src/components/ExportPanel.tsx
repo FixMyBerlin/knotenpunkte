@@ -15,7 +15,11 @@ import {
   mergeRatingsIntoNodes,
 } from '@/shared/ratings/export-ratings'
 import { osmLoginRequiredMessage } from '@/shared/ratings/kv-rating-store'
-import { ratingStore, ratingsQueryKey } from '@/shared/ratings/ratings-query'
+import {
+  ratingStore,
+  ratingsQueryKey,
+  unreadableRatingsQueryKey,
+} from '@/shared/ratings/ratings-query'
 
 export function ExportPanel() {
   const dataset = Route.useSearch({ select: (search) => search.dataset })
@@ -30,6 +34,14 @@ export function ExportPanel() {
     queryFn: () => ratingStore.list(dataset!),
     enabled: Boolean(dataset),
   })
+
+  const unreadableQuery = useQuery({
+    queryKey: unreadableRatingsQueryKey(dataset ?? ''),
+    queryFn: () => ratingStore.listUnreadable(dataset!),
+    enabled: Boolean(dataset),
+    staleTime: Infinity,
+  })
+  const unreadable = unreadableQuery.data ?? []
 
   const exportAll = useMutation({
     mutationFn: async () => {
@@ -62,6 +74,15 @@ export function ExportPanel() {
           zugeordneten Mapillary-Fotos.
         </Text>
       </div>
+
+      {unreadable.length > 0 ? (
+        <Callout tone="error" title="Nicht lesbare Einträge" data-testid="export-unreadable">
+          {unreadable.length === 1 ? 'Ein Eintrag' : `${unreadable.length} Einträge`} in der
+          Datenbank {unreadable.length === 1 ? 'ist' : 'sind'} nicht lesbar und{' '}
+          {unreadable.length === 1 ? 'fehlt' : 'fehlen'} in den Exporten: {unreadable.join(', ')}.
+          Bitte an die Entwicklung melden.
+        </Callout>
+      ) : null}
 
       <ExportGroup
         title="Ergebnis für GIS (GeoJSON)"

@@ -1,14 +1,18 @@
 import { ChevronLeftIcon, ChevronRightIcon, InformationCircleIcon } from '@heroicons/react/20/solid'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { INTERNAL_NOTE_ID, NodeNotes } from '@/components/NodeNotes'
 import { QaPanel } from '@/components/QaPanel'
-import { RapidActions, RapidForm } from '@/components/RapidForm'
+import { OWN_ENTER_ATTRIBUTE, RapidActions, RapidForm } from '@/components/RapidForm'
 import { MotionCollapse } from '@/components/shared/motion/MotionCollapse'
 import { Tooltip } from '@/components/shared/Tooltip/Tooltip'
 import { useOsmAuth } from '@/components/shared/use-osm-auth'
-import { useRatingDraft } from '@/components/shared/use-rating-draft'
+import {
+  clearDraftIfUnchanged,
+  draftKey,
+  useRatingDraft,
+} from '@/components/shared/use-rating-draft'
 import { Callout } from '@/components/ui/callout'
 import { Subheading } from '@/components/ui/heading'
 import { SidebarBody, SidebarFooter } from '@/components/ui/sidebar'
@@ -18,23 +22,36 @@ import { cn } from '@/shared/cn'
 import { loadNodes, loadSuggestions } from '@/shared/datasets/dataset-idb'
 import { lsaConflict, readOnlyNodeFields } from '@/shared/nodes/schema'
 import { buildRatingRecord } from '@/shared/ratings/build-record'
-import {
-  hasAllRapidAttributes,
-  isRatingComplete,
-  ratingProgress,
-} from '@/shared/ratings/completeness'
+import { hasAllRapidAttributes, isRatingComplete } from '@/shared/ratings/completeness'
 import { nextHotkey, previousHotkey } from '@/shared/ratings/hotkeys'
-import { osmLoginRequiredMessage } from '@/shared/ratings/kv-rating-store'
+import { osmLoginRequiredMessage, RatingConflictError } from '@/shared/ratings/kv-rating-store'
 import { defaultWorkNodeId, nextNodeId, previousNodeId } from '@/shared/ratings/queue'
 import {
   allRatingsQueryKey,
   datasetSummariesQueryKey,
   ratingStore,
   ratingsQueryKey,
+  unreadableRatingsQueryKey,
 } from '@/shared/ratings/ratings-query'
-import { rapidValuesFromRecord, type RapidDraft } from '@/shared/ratings/schema'
+import {
+  rapidValuesFromRecord,
+  type HistoryKind,
+  type RapidDraft,
+  type RatingRecord,
+} from '@/shared/ratings/schema'
 import { resolveStatusFilter } from '@/shared/routing/search-schema'
 import { suggestedBetrachtung, suggestionsForNode } from '@/shared/suggestions/schema'
+
+/** Edits are stored this long after the last change, and at once when the node is left. */
+const AUTOSAVE_DELAY_MS = 800
+
+type SaveArgs = {
+  dataset: string
+  nodeId: string
+  draft: RapidDraft
+  kind: HistoryKind
+  autosave?: boolean
+}
 
 export function WorkPanel() {
   const queryClient = useQueryClient()
@@ -72,7 +89,15 @@ export function WorkPanel() {
   const feature = nodes?.features.find((item) => item.properties.id === currentId)
   const record = currentId ? records[currentId] : undefined
   const suggestionRows = suggestionsForNode(suggestionsQuery.data?.rows ?? [], currentId ?? '')
-  const { draft, setDraft, clearDraft } = useRatingDraft(currentId)
+  const { draft, dirty, ready, setDraft, clearDraft } = useRatingDraft(currentId)
+  const unreadableQuery = useQuery({
+    queryKey: unreadableRatingsQueryKey(dataset ?? ''),
+    queryFn: () => ratingStore.listUnreadable(dataset!),
+    enabled: Boolean(dataset),
+    staleTime: Infinity,
+  })
+  const unreadable = currentId !== undefined && (unreadableQuery.data ?? []).includes(currentId)
+  const [autosaving, setAutosaving] = useState(0)
 
   function goToNode(nextId: string | undefined) {
     void navigate({
@@ -85,41 +110,121 @@ export function WorkPanel() {
     })
   }
 
-  const saveMutation = useMutation({
-    mutationFn: async (opts: {
-      kind: 'save' | 'confirmed' | 'corrected'
-      draft: RapidDraft
-      deferred?: boolean
-    }) => {
-      if (!dataset || !currentId) throw new Error('Kein Knoten')
-      if (!auth.authenticated || !auth.displayName) throw new Error(osmLoginRequiredMessage)
+  // Saves run one after the other, each on top of the result of the one before: the store
+  // refuses a save that is not based on the latest version of the entry.
+  const saveQueueRef = useRef<Promise<unknown>>(Promise.resolve())
+  function enqueueSave({ dataset, nodeId, draft, kind, autosave = false }: SaveArgs) {
+    const actor = auth.displayName
+    const run = async () => {
+      if (!auth.authenticated || !actor) throw new Error(osmLoginRequiredMessage)
+      const key = ratingsQueryKey(dataset)
+      const previous = queryClient.getQueryData<Record<string, RatingRecord>>(key)?.[nodeId]
       const next = buildRatingRecord({
-        previous: record,
-        draft: opts.draft,
-        suggestions: suggestionRows,
-        actor: auth.displayName,
-        kind: opts.kind,
-        deferred: opts.deferred,
+        previous,
+        draft,
+        suggestions: suggestionsForNode(suggestionsQuery.data?.rows ?? [], nodeId),
+        actor,
+        kind,
+        autosave,
       })
-      if (opts.kind === 'save' && !opts.deferred && next.status !== 'complete') {
-        throw new Error('Alle sieben Attribute setzen oder überspringen.')
+      if (
+        !autosave &&
+        kind === 'save' &&
+        next.Zurueckgestellt !== 1 &&
+        next.status !== 'complete'
+      ) {
+        throw new Error('Alle sieben Attribute setzen oder „Nicht relevant“ wählen.')
       }
-      await ratingStore.put(dataset, currentId, next)
+      try {
+        await ratingStore.put(dataset, nodeId, next)
+      } catch (caught) {
+        if (caught instanceof RatingConflictError) {
+          // The edits were made on an outdated rating: show the current one instead.
+          clearDraftIfUnchanged(draftKey(dataset, nodeId), draft)
+          void queryClient.invalidateQueries({ queryKey: key })
+        }
+        throw caught
+      }
+      queryClient.setQueryData<Record<string, RatingRecord>>(key, (old) => ({
+        ...old,
+        [nodeId]: next,
+      }))
+      clearDraftIfUnchanged(draftKey(dataset, nodeId), draft)
       return next
+    }
+    const result = saveQueueRef.current.then(run, run)
+    saveQueueRef.current = result.catch(() => undefined)
+    return result
+  }
+
+  const pendingAutosaveRef = useRef<SaveArgs | null>(null)
+  const autosaveTimerRef = useRef<number | undefined>(undefined)
+  function cancelAutosave() {
+    window.clearTimeout(autosaveTimerRef.current)
+    pendingAutosaveRef.current = null
+  }
+  function flushAutosave() {
+    const pending = pendingAutosaveRef.current
+    cancelAutosave()
+    if (!pending) return
+    setAutosaving((count) => count + 1)
+    enqueueSave(pending)
+      .then(() => setError(null))
+      .catch((caught: unknown) => {
+        setError(
+          caught instanceof Error ? caught.message : 'Automatisches Speichern fehlgeschlagen',
+        )
+      })
+      .finally(() => setAutosaving((count) => count - 1))
+  }
+
+  const canAutosave = auth.authenticated && ready && !unreadable
+  useEffect(
+    function scheduleAutosaveOfEdits() {
+      if (!dirty || !canAutosave || !dataset || !currentId) return
+      pendingAutosaveRef.current = {
+        dataset,
+        nodeId: currentId,
+        draft,
+        kind: 'save',
+        autosave: true,
+      }
+      window.clearTimeout(autosaveTimerRef.current)
+      autosaveTimerRef.current = window.setTimeout(flushAutosave, AUTOSAVE_DELAY_MS)
     },
-    onSuccess: async (_next, variables) => {
+    // `flushAutosave` only reads refs and stable setters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [draft, dirty, canAutosave, dataset, currentId],
+  )
+  useEffect(
+    function flushAutosaveWhenLeavingNode() {
+      return flushAutosave
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [dataset, currentId],
+  )
+
+  const saveMutation = useMutation({
+    mutationFn: (opts: { kind: HistoryKind; draft: RapidDraft }) => {
+      if (!dataset || !currentId) throw new Error('Kein Knoten')
+      // This save includes the edits an autosave would have stored.
+      cancelAutosave()
+      return enqueueSave({ dataset, nodeId: currentId, draft: opts.draft, kind: opts.kind })
+    },
+    onSuccess: (_next, variables) => {
       if (!dataset) return
       setError(null)
       setCorrecting(false)
-      await queryClient.invalidateQueries({ queryKey: ratingsQueryKey(dataset) })
-      await queryClient.invalidateQueries({ queryKey: allRatingsQueryKey })
-      await queryClient.invalidateQueries({ queryKey: datasetSummariesQueryKey })
+      clearDraft()
+      void queryClient.invalidateQueries({ queryKey: allRatingsQueryKey })
+      void queryClient.invalidateQueries({ queryKey: datasetSummariesQueryKey })
       if (variables.kind === 'save' || variables.kind === 'corrected') {
-        const refreshed = await ratingStore.list(dataset)
-        const next = nextNodeId(nodeIds, currentId, refreshed, statusFilter)
-        clearDraft()
-        goToNode(next)
+        const saved =
+          queryClient.getQueryData<Record<string, RatingRecord>>(ratingsQueryKey(dataset)) ?? {}
+        goToNode(nextNodeId(nodeIds, currentId, saved, statusFilter))
       }
+      // Picks up what other raters stored in the meantime.
+      void queryClient.invalidateQueries({ queryKey: ratingsQueryKey(dataset) })
     },
     onError: (caught: unknown) => {
       setError(caught instanceof Error ? caught.message : 'Speichern fehlgeschlagen')
@@ -140,6 +245,23 @@ export function WorkPanel() {
       </SidebarBody>
     )
   }
+  if (ratingsQuery.isError) {
+    return (
+      <SidebarBody>
+        <Callout tone="error" title="Bewertungen nicht geladen">
+          Die gespeicherten Bewertungen konnten nicht geladen werden. Ohne sie wird nichts
+          gespeichert, damit nichts überschrieben wird. Bitte die Seite neu laden.
+        </Callout>
+      </SidebarBody>
+    )
+  }
+  if (!ready) {
+    return (
+      <SidebarBody>
+        <Text>Lade Bewertungen …</Text>
+      </SidebarBody>
+    )
+  }
   if (!feature || !currentId) {
     return (
       <SidebarBody>
@@ -157,33 +279,58 @@ export function WorkPanel() {
     lsaConflictSource !== undefined ||
     rateAnywayByNode[currentId] === true ||
     (record !== undefined && record.KP_Nichtbetrachten !== 1)
-  const { rated, total } = ratingProgress(records, nodeIds)
+  const busy = saveMutation.isPending
   const canSave =
     auth.authenticated &&
+    !unreadable &&
     (!attributesVisible ||
       isRatingComplete(draft) ||
       (hasAllRapidAttributes(draft) && draft.KP_Nichtbetrachten !== 1))
+  // Not relevant. Notes, photos and sources stay; the record builder sets HVS and LSA to Nein
+  // and clears the other attributes.
   const skip = () => {
-    // Notes, photos and sources stay; the record builder clears the seven attributes.
-    const skipped = { ...draft, KP_Nichtbetrachten: 1 as const }
-    setDraft(skipped)
-    saveMutation.mutate({ kind: 'save', draft: skipped })
+    if (busy || unreadable) return
+    saveMutation.mutate({
+      kind: 'save',
+      draft: { ...draft, KP_Nichtbetrachten: 1, Zurueckgestellt: 0 },
+    })
   }
   // Later, not now: the node stays open. The internal note says why.
   const defer = () => {
+    if (busy || unreadable) return
     if (!draft.Kommentar_intern?.trim()) {
       setNoteRequiredNodeId(currentId)
       document.getElementById(INTERNAL_NOTE_ID)?.focus()
       return
     }
-    saveMutation.mutate({ kind: 'save', draft, deferred: true })
+    saveMutation.mutate({
+      kind: 'save',
+      draft: { ...draft, KP_Nichtbetrachten: 0, Zurueckgestellt: 1 },
+    })
   }
   const previous = () => goToNode(previousNodeId(nodeIds, currentId, records, statusFilter))
   const next = () => goToNode(nextNodeId(nodeIds, currentId, records, statusFilter))
-  const save = () =>
-    attributesVisible
-      ? saveMutation.mutate({ kind: correcting ? 'corrected' : 'save', draft })
-      : skip()
+  const save = () => {
+    if (busy || unreadable) return
+    if (!attributesVisible) return skip()
+    saveMutation.mutate({
+      kind: correcting ? 'corrected' : 'save',
+      draft: { ...draft, Zurueckgestellt: 0 },
+    })
+  }
+  const saveState = !auth.authenticated
+    ? null
+    : busy || autosaving > 0
+      ? 'Speichert …'
+      : dirty
+        ? 'Änderungen noch nicht gespeichert'
+        : record
+          ? record.Zurueckgestellt === 1
+            ? 'Gespeichert · zurückgestellt'
+            : record.status === 'complete'
+              ? 'Gespeichert'
+              : 'Zwischenstand gespeichert · noch offen'
+          : null
   const rateAnyway = () => {
     setRateAnywayByNode((previous) => ({ ...previous, [currentId]: true }))
   }
@@ -191,7 +338,7 @@ export function WorkPanel() {
   return (
     <>
       <SidebarBody>
-        <section className="space-y-4" data-testid="work-panel">
+        <section className="space-y-4" data-testid="work-panel" {...{ [OWN_ENTER_ATTRIBUTE]: '' }}>
           <div>
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-1">
@@ -212,6 +359,8 @@ export function WorkPanel() {
                     <InformationCircleIcon className="size-4" aria-hidden />
                   </button>
                 </Tooltip>
+              </div>
+              <div className="flex shrink-0 items-center gap-1">
                 {(
                   [
                     [
@@ -228,7 +377,7 @@ export function WorkPanel() {
                       type="button"
                       data-testid={testId}
                       aria-label={label}
-                      className="rounded p-0.5 text-zinc-300 ring-1 ring-white/15 hover:bg-white/10 hover:text-white"
+                      className="flex items-center gap-0.5 rounded px-1 py-0.5 text-zinc-300 ring-1 ring-white/15 hover:bg-white/10 hover:text-white"
                       onClick={onClick}
                     >
                       <Icon className="size-4" aria-hidden />
@@ -236,10 +385,12 @@ export function WorkPanel() {
                   </Tooltip>
                 ))}
               </div>
-              <Text data-testid="progress-count">
-                {rated}/{total} bewertet
-              </Text>
             </div>
+            {saveState ? (
+              <p className="pt-1 text-xs text-zinc-400" data-testid="save-state">
+                {saveState}
+              </p>
+            ) : null}
             <MotionCollapse open={detailsOpen}>
               <dl
                 id="node-details"
@@ -255,8 +406,21 @@ export function WorkPanel() {
             </MotionCollapse>
           </div>
 
+          {unreadable ? (
+            <Callout
+              tone="error"
+              title="Gespeicherter Eintrag nicht lesbar"
+              data-testid="unreadable"
+            >
+              Für diesen Knoten liegt ein Eintrag in der Datenbank, den die Anwendung nicht lesen
+              kann. Damit er nicht überschrieben wird, ist das Speichern hier gesperrt. Bitte an die
+              Entwicklung melden.
+            </Callout>
+          ) : null}
+
           <RapidForm
             key={currentId}
+            busy={busy}
             draft={draft}
             suggestions={suggestionRows}
             attributesVisible={attributesVisible}
@@ -296,7 +460,8 @@ export function WorkPanel() {
         <RapidActions
           onSkip={skip}
           onDefer={defer}
-          saveDisabled={!canSave || saveMutation.isPending}
+          busy={busy || unreadable}
+          saveDisabled={!canSave || busy}
         />
       </SidebarFooter>
     </>

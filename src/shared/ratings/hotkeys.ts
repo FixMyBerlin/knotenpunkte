@@ -10,3 +10,8 @@ export const nextHotkey = 'K' as const
 
 /** Starred map backgrounds, by the position of their button. */
 export const backgroundFavoriteHotkeys = ['1', '2', '3', '4', '5', '6', '7', '8', '9'] as const
+
+/** Jump into the fields below the attributes; Tab moves on from there, Escape leaves them. */
+export const customerNoteHotkey = 'H' as const
+export const internalNoteHotkey = 'I' as const
+export const sourceHotkey = 'O' as const

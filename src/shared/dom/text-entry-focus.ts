@@ -30,3 +30,12 @@ export function useTextEntryFocused() {
     () => false,
   )
 }
+
+/** Whether the focus is inside the element with this id. */
+export function useFocusInside(elementId: string) {
+  return useSyncExternalStore(
+    subscribeToFocusChanges,
+    () => document.getElementById(elementId)?.contains(document.activeElement) ?? false,
+    () => false,
+  )
+}

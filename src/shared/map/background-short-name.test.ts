@@ -14,8 +14,8 @@ describe('backgroundShortName', () => {
     expect(backgroundShortName('Esri', 'Esri')).toBe('Esri')
   })
 
-  it('names the two built-in backgrounds', () => {
+  it('names Positron and shortens the title of a private background', () => {
     expect(backgroundShortName('positron', 'OpenFreeMap Positron')).toBe('Karte')
-    expect(backgroundShortName('private', 'example.org/{z}/{x}/{y}.png')).toBe('Privat')
+    expect(backgroundShortName('private', 'Befliegung 2025')).toBe('2025')
   })
 })

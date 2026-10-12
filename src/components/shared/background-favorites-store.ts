@@ -7,6 +7,7 @@ type BackgroundFavorite = { id: string; name: string }
 interface BackgroundFavoritesStore {
   favorites: BackgroundFavorite[]
   toggleFavorite: (favorite: BackgroundFavorite) => void
+  removeFavorite: (id: string) => void
 }
 
 const useBackgroundFavoritesStore = create<BackgroundFavoritesStore>()(
@@ -19,11 +20,15 @@ const useBackgroundFavoritesStore = create<BackgroundFavoritesStore>()(
             ? state.favorites.filter((item) => item.id !== favorite.id)
             : [...state.favorites, favorite],
         })),
+      removeFavorite: (id) =>
+        set((state) => ({ favorites: state.favorites.filter((item) => item.id !== id) })),
     }),
     { name: 'knotenpunkte-background-favorites' },
   ),
 )
 
 export const useBackgroundFavorites = () => useBackgroundFavoritesStore((state) => state.favorites)
+export const useRemoveBackgroundFavorite = () =>
+  useBackgroundFavoritesStore((state) => state.removeFavorite)
 export const useToggleBackgroundFavorite = () =>
   useBackgroundFavoritesStore((state) => state.toggleFavorite)

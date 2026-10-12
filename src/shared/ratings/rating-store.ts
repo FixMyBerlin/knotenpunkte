@@ -8,16 +8,6 @@ export type RatingStoreEntry = {
   record: RatingRecord
 }
 
-export type RawRatingEntry = {
-  id: string
-  nodeId: string
-  valid: boolean
-  record: RatingRecord | undefined
-  raw: unknown
-  updatedAt: string
-  version: number
-}
-
 export type ProjectMeta = {
   dataset: string
   createdAt: string
@@ -26,17 +16,15 @@ export type ProjectMeta = {
 
 export type RatingStore = {
   list: (dataset: string) => Promise<Record<string, RatingRecord>>
-  get: (dataset: string, nodeId: string) => Promise<RatingRecord | undefined>
+  /** Throws `RatingConflictError` when the entry changed since it was last read here. */
   put: (dataset: string, nodeId: string, record: RatingRecord) => Promise<RatingRecord>
-  remove: (dataset: string, nodeId: string) => Promise<void>
   listDatasetSummaries: () => Promise<DatasetSummary[]>
   listAll: () => Promise<RatingStoreEntry[]>
-  listRawEntries: (dataset: string) => Promise<RawRatingEntry[]>
-  getProjectMeta: (dataset: string) => Promise<ProjectMeta | undefined>
+  /** Node ids whose stored entry does not match the schema; `list` leaves those out. */
+  listUnreadable: (dataset: string) => Promise<string[]>
   putProjectMeta: (
     dataset: string,
     meta: { createdAt: string; createdBy?: string },
   ) => Promise<ProjectMeta>
-  removeProjectMeta: (dataset: string) => Promise<void>
   listProjectMeta: () => Promise<ProjectMeta[]>
 }

@@ -28,7 +28,7 @@ const dummyUser: KvUser = { osm_uid: 1, display_name: 'e2e' }
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Api-Key',
+  'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Api-Key, If-Match',
 }
 
 function parseKvUrl(raw: string) {
@@ -96,11 +96,21 @@ test.describe('rating flow', () => {
       if (parsed.type === 'entry' && method === 'PUT') {
         const body = request.postDataJSON() as { data: unknown; tags?: string[] }
         const now = '2026-01-01T00:00:00.000Z'
+        const existing = saved.get(parsed.id)
+        const ifMatch = request.headers()['if-match']
+        if (ifMatch !== undefined && ifMatch !== `"${existing?.version}"`) {
+          await route.fulfill({
+            status: 409,
+            headers: corsHeaders,
+            json: { error: { code: 'version_conflict', message: 'version conflict' } },
+          })
+          return
+        }
         const entry: KvEntry = {
           id: parsed.id,
           data: body.data,
           tags: body.tags ?? [],
-          version: 1,
+          version: (existing?.version ?? 0) + 1,
           created_at: now,
           updated_at: now,
           created_by: dummyUser,
@@ -219,6 +229,19 @@ test.describe('rating flow', () => {
       'true',
     )
 
+    // Edits are stored on their own, but they do not finish the node.
+    await expect(page.getByTestId('save-state')).toHaveText(
+      'Zwischenstand gespeichert · noch offen',
+    )
+    expect(saved.at(-1)?.data).toMatchObject({ status: 'incomplete', KP_HVS: 1 })
+
+    // H jumps into the note; there Tab moves on as usual and Escape leaves.
+    await page.keyboard.press('h')
+    await expect(page.getByTestId('note-customer')).toBeFocused()
+    await page.keyboard.press('Tab')
+    await expect(page.getByTestId('note-internal-missing-photos')).toBeFocused()
+    await page.keyboard.press('Escape')
+
     await page.getByTestId('defer-node').click()
     await expect(page.getByTestId('note-internal-required')).toBeVisible()
     await expect(page.getByTestId('note-internal')).toBeFocused()
@@ -227,6 +250,7 @@ test.describe('rating flow', () => {
     await expect(page.getByTestId('selected-node-id')).toHaveText('Knoten 40530027')
     expect(saved.at(-1)?.data).toMatchObject({
       status: 'incomplete',
+      Zurueckgestellt: 1,
       Kommentar_intern: 'Fehlendes Fotomaterial',
     })
 

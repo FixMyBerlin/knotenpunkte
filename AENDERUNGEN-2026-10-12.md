@@ -4,12 +4,22 @@
 
 - Ein Attribut ist immer aktiv (blau umrandet). Jeder Knoten beginnt beim obersten.
 - **Q / W / E** wählen die erste, zweite und dritte Antwort des aktiven Attributs. Danach springt die Auswahl automatisch zum nächsten Attribut.
-- **Tab** und **Umschalt+Tab** wechseln ohne Antwort zum nächsten oder vorherigen Attribut.
+- **Tab** und **Umschalt+Tab** wechseln ohne Antwort zum nächsten oder vorherigen Attribut. Nach dem letzten Attribut führt Tab in die Hinweisfelder.
+- **H** springt in den Hinweis an den Kunden, **I** in den internen Hinweis, **O** zur Quelle. In diesen Feldern arbeitet Tab wie gewohnt; **Esc** verlässt sie.
+- Die Antworten stehen in drei Spalten nebeneinander, das Kürzel jeweils rechts.
 - Die alten Kürzel pro Attribut (A/S, 1–9, R/T, D/F/G) gibt es nicht mehr.
+
+## Bewerten: Speichern
+
+- Jede Änderung wird von selbst gespeichert: kurz nach der letzten Eingabe und sofort beim Wechsel zum nächsten Knoten. Das gilt auch für zugeordnete Fotos, Quelle und Hinweise.
+- Automatisches Speichern schließt einen Knoten nicht ab. „Bewertet“ wird er erst mit **Speichern** oder **Nicht relevant**.
+- Unter der Knoten-ID steht der Stand: „Speichert …“, „Zwischenstand gespeichert · noch offen“ oder „Gespeichert“.
+- Hat jemand anderes denselben Knoten inzwischen geändert, wird nicht überschrieben. Die Anwendung lädt den aktuellen Stand und bittet, zu prüfen und erneut zu speichern.
+- Kann die Anwendung einen gespeicherten Eintrag nicht lesen, zeigt sie das am Knoten an und sperrt dort das Speichern. Der Export-Schritt listet solche Einträge auf.
 
 ## Bewerten: Knoten wechseln und abschließen
 
-- Vor und Zurück stehen jetzt oben neben der Knoten-ID (Tasten **J** und **K**).
+- Vor und Zurück stehen jetzt oben rechts neben der Knoten-ID (Tasten **J** und **K**). Die Zählung „x/10 bewertet“ steht nur noch in der Hauptnavigation.
 - Unten gibt es drei Buttons, jeweils mit Tastenkürzel im Button:
   - **Speichern** (Enter): speichert und geht zum nächsten Knoten.
   - **Nicht relevant** (X): der Knoten wird nicht betrachtet. HVS und LSA werden auf Nein gesetzt, der Knoten gilt als bewertet.
@@ -36,12 +46,17 @@
 - In der Hintergrund-Liste hat jeder Eintrag einen Stern. Mit Stern markierte Luftbilder erscheinen als Buttons direkt auf der Karte, mit Kurznamen (das Jahr) und Tastenkürzel.
 - Tasten **1** bis **9** wechseln zwischen den Favoriten, in der Reihenfolge der Buttons. (Y/X/C/V ging nicht, weil X schon „Nicht relevant“ ist.)
 - Die Favoriten werden in diesem Browser gespeichert.
+- Es lassen sich mehrere private Hintergründe anlegen, jeder mit Titel und URL. Bearbeiten und Löschen geht in der Liste. Ein vorhandener privater Hintergrund bleibt erhalten.
 
 ## Export
 
 - Die drei Exporte stehen in getrennten Gruppen mit Erklärung: Ergebnis für GIS (GeoJSON), Bewertungen dieses Gebiets (JSON), Bewertungen aller Gebiete (JSON).
 - Alle Exporte enthalten beide Hinweise, die Quelle und die zugeordneten Fotos.
-- Neue Spalten: `Kommentar_intern` und `Quelle`. `Kommentar` ist der Hinweis an den Kunden, `Mapillary-ID` kann mehrere IDs enthalten.
+- Neue Spalten: `Kommentar_intern`, `Quelle` und `Zurueckgestellt`. `Kommentar` ist der Hinweis an den Kunden, `Mapillary-ID` kann mehrere IDs enthalten.
+
+## Projekte
+
+- Die Projektnamen `all` und `kp-project-meta` sind gesperrt, weil die Anwendung sie intern verwendet.
 
 ## Datenbank-Ansicht
 
