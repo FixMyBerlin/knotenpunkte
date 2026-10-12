@@ -6,13 +6,18 @@ import { AppSidebar } from '@/components/Sidebar'
 import { SidebarLayout } from '@/components/SidebarLayout'
 
 export function AppShell() {
-  const { steps, goToStep } = useAppStepNav()
+  const { steps, goToStep, search } = useAppStepNav()
 
   return (
     <MapProvider>
       <SidebarLayout
         header={({ onOpenSidebar }) => (
-          <AppHeader steps={steps} onSelect={goToStep} onOpenSidebar={onOpenSidebar} />
+          <AppHeader
+            steps={steps}
+            onSelect={goToStep}
+            onOpenSidebar={onOpenSidebar}
+            search={search}
+          />
         )}
         sidebar={<AppSidebar />}
       >

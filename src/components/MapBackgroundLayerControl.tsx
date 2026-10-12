@@ -1,14 +1,19 @@
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react'
-import { CheckIcon, ChevronUpDownIcon, PhotoIcon } from '@heroicons/react/20/solid'
+import { CheckIcon, ChevronUpDownIcon, PhotoIcon, StarIcon } from '@heroicons/react/20/solid'
+import { StarIcon as StarOutlineIcon } from '@heroicons/react/24/outline'
 import type { EliCategory, EliLayer } from '@osm-editor-kit/maplibre-editor-layer-index/react'
 import { useEditorLayerIndex } from '@osm-editor-kit/maplibre-editor-layer-index/react'
 import * as countryCoder from '@rapideditor/country-coder'
-import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import {
+  useBackgroundFavorites,
+  useToggleBackgroundFavorite,
+} from '@/components/shared/background-favorites-store'
 import { useMapUiActions, usePrivateRasterUrl } from '@/components/shared/map-ui-store'
+import { Tooltip } from '@/components/shared/Tooltip/Tooltip'
+import { useChooseBackground } from '@/components/shared/use-choose-background'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Route } from '@/routes/index'
 import { cn } from '@/shared/cn'
 import { ignorePasswordManagerProps } from '@/shared/form-ignore-password-manager'
 import { MAIN_MAP_ID } from '@/shared/map/map-ids'
@@ -18,7 +23,6 @@ import {
   PRIVATE_BG,
   privateRasterDisplayName,
   privateRasterUrlError,
-  writeBackgroundChoice,
   writePrivateRasterUrl,
 } from '@/shared/map/private-raster'
 
@@ -60,9 +64,9 @@ export function MapBackgroundLayerControl({
   lat: number
   lng: number
 }) {
-  const navigate = useNavigate({ from: Route.fullPath })
+  const chooseBackground = useChooseBackground()
   const privateUrl = usePrivateRasterUrl()
-  const { setBackgroundChoice, setPrivateRasterUrl } = useMapUiActions()
+  const { setPrivateRasterUrl } = useMapUiActions()
   const [draftUrl, setDraftUrl] = useState(privateUrl)
   const [editingPrivateUrl, setEditingPrivateUrl] = useState(false)
   const [draftError, setDraftError] = useState<string | null>(null)
@@ -91,23 +95,6 @@ export function MapBackgroundLayerControl({
   const selectedLayer =
     background.kind === 'eli' ? layers.find((layer) => layer.id === value) : undefined
 
-  function chooseBackground(choice: string) {
-    writeBackgroundChoice(choice)
-    setBackgroundChoice(choice)
-  }
-
-  function handleChange(nextValue: string) {
-    chooseBackground(nextValue)
-    void navigate({
-      search: (previous) => ({
-        ...previous,
-        // The private URL often carries an API key, so only the stored choice refers to it.
-        bg: nextValue === PRIVATE_BG ? undefined : nextValue,
-      }),
-      replace: true,
-    })
-  }
-
   function beginPrivateUrlEdit() {
     setDraftUrl(privateUrl)
     setDraftError(null)
@@ -125,13 +112,7 @@ export function MapBackgroundLayerControl({
     writePrivateRasterUrl(trimmed)
     setPrivateRasterUrl(trimmed)
     setEditingPrivateUrl(false)
-    if (trimmed) {
-      chooseBackground(PRIVATE_BG)
-      void navigate({
-        search: (previous) => ({ ...previous, bg: undefined }),
-        replace: true,
-      })
-    }
+    if (trimmed) chooseBackground(PRIVATE_BG)
   }
 
   const label = selectedLayer
@@ -141,7 +122,7 @@ export function MapBackgroundLayerControl({
       : 'Hintergrundkarte'
 
   return (
-    <Listbox value={value} onChange={handleChange}>
+    <Listbox value={value} onChange={chooseBackground}>
       <ListboxButton
         aria-label="Hintergrundkarte"
         className="flex max-w-52 items-center gap-1.5 rounded-lg bg-zinc-900/90 px-3 py-2 text-xs font-medium text-white shadow-lg ring-1 ring-white/10 hover:bg-zinc-800"
@@ -154,16 +135,19 @@ export function MapBackgroundLayerControl({
         anchor={{ to: 'bottom end', gap: 8, padding: 12 }}
         className="z-50 max-h-[min(28rem,calc(100dvh-5.5rem))] w-[min(22rem,calc(100vw-1.25rem))] rounded-lg bg-zinc-900/95 p-1 text-sm text-white shadow-lg ring-1 ring-white/10"
       >
-        <ListboxOption
-          value={POSITRON_BG}
-          className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 data-focus:bg-white/10"
-        >
-          <CheckIcon
-            className={cn('size-4 shrink-0', value === POSITRON_BG ? '' : 'opacity-0')}
-            aria-hidden
-          />
-          <span>OpenFreeMap Positron</span>
-        </ListboxOption>
+        <div className="flex items-center gap-1 pr-1">
+          <ListboxOption
+            value={POSITRON_BG}
+            className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 data-focus:bg-white/10"
+          >
+            <CheckIcon
+              className={cn('size-4 shrink-0', value === POSITRON_BG ? '' : 'opacity-0')}
+              aria-hidden
+            />
+            <span>OpenFreeMap Positron</span>
+          </ListboxOption>
+          <FavoriteButton id={POSITRON_BG} name="OpenFreeMap Positron" />
+        </div>
         <div className="mt-1 border-t border-white/10 pt-1">
           <div className="px-2 py-1 text-[11px] font-semibold tracking-wide text-white/50 uppercase">
             Private background layer
@@ -196,20 +180,22 @@ export function MapBackgroundLayerControl({
               {group.label}
             </div>
             {group.items.map((layer) => (
-              <ListboxOption
-                key={layer.id}
-                value={layer.id}
-                className="flex cursor-pointer items-start gap-2 rounded-md px-2 py-1.5 data-focus:bg-white/10"
-              >
-                <CheckIcon
-                  className={cn('mt-0.5 size-4 shrink-0', layer.id === value ? '' : 'opacity-0')}
-                  aria-hidden
-                />
-                <span className="whitespace-normal">
-                  {layer.name}
-                  {layer.best ? ' ⭐' : null}
-                </span>
-              </ListboxOption>
+              <div key={layer.id} className="flex items-start gap-1 pr-1">
+                <ListboxOption
+                  value={layer.id}
+                  className="flex min-w-0 flex-1 cursor-pointer items-start gap-2 rounded-md px-2 py-1.5 data-focus:bg-white/10"
+                >
+                  <CheckIcon
+                    className={cn('mt-0.5 size-4 shrink-0', layer.id === value ? '' : 'opacity-0')}
+                    aria-hidden
+                  />
+                  <span className="whitespace-normal">
+                    {layer.name}
+                    {layer.best ? <span className="text-white/50"> · empfohlen</span> : null}
+                  </span>
+                </ListboxOption>
+                <FavoriteButton id={layer.id} name={layer.name} />
+              </div>
             ))}
           </div>
         ))}
@@ -322,6 +308,37 @@ function PrivateRasterRow({
       >
         Bearbeiten
       </button>
+      <FavoriteButton id={PRIVATE_BG} name={privateRasterDisplayName(url)} />
     </div>
+  )
+}
+
+/** Star at the end of a row: starred backgrounds get a button on the map. */
+function FavoriteButton({ id, name }: { id: string; name: string }) {
+  const favorite = useBackgroundFavorites().some((item) => item.id === id)
+  const toggleFavorite = useToggleBackgroundFavorite()
+  const label = favorite ? 'Favorit entfernen' : 'Als Favorit auf der Karte zeigen'
+
+  return (
+    <Tooltip text={label}>
+      <button
+        type="button"
+        aria-pressed={favorite}
+        aria-label={`${label}: ${name}`}
+        data-testid={`background-star-${id}`}
+        className="mt-0.5 shrink-0 rounded-md p-1 hover:bg-white/10"
+        onMouseDown={stopMenuEvent}
+        onClick={(event) => {
+          stopMenuEvent(event)
+          toggleFavorite({ id, name })
+        }}
+      >
+        {favorite ? (
+          <StarIcon className="size-4 text-amber-300" aria-hidden />
+        ) : (
+          <StarOutlineIcon className="size-4 text-white/50" aria-hidden />
+        )}
+      </button>
+    </Tooltip>
   )
 }

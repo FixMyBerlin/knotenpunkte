@@ -1,5 +1,5 @@
 import {
-  parseIsoDateStartMs,
+  photoFilter,
   type NormalizedPhoto,
   type PhotoCandidate,
   type ViewSuggestion,
@@ -9,13 +9,17 @@ import {
   useViewpoints,
   useViewSuggestions,
 } from '@osm-editor-kit/street-imagery-react'
-import { mapillaryMaxAgeYears } from '@/config/app.const'
-import { mapillaryFromDate } from '@/shared/mapillary/junction'
+import { usePhotoDateFilter, usePhotoTypeFilter } from '@/components/mapillary/photo-filter-store'
 
 /** Photos for the views into the current node, ranked per approaching street. */
 export function useNodeViewSuggestions() {
   const viewpoints = useViewpoints()
-  return useViewSuggestions(viewpoints, { maxAgeYears: mapillaryMaxAgeYears })
+  const date = usePhotoDateFilter()
+  const photoType = usePhotoTypeFilter()
+  return useViewSuggestions(viewpoints, {
+    photoTypes: photoType ? [photoType] : undefined,
+    filterPhoto: photoFilter(undefined, date),
+  })
 }
 
 /** Shows a photo of the view: the given one (stepping through the view's photos), else the best. */
@@ -31,6 +35,3 @@ export function showSuggestion(suggestion: ViewSuggestion, candidate?: PhotoCand
 export function showPhoto(photo: NormalizedPhoto) {
   getViewpointSession().actions.showPhoto({ photo, directionKey: null })
 }
-
-/** Capture time from which a selected feature's first photo is picked, if it has one that recent. */
-export const featurePhotosFromMs = parseIsoDateStartMs(mapillaryFromDate())

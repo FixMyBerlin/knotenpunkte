@@ -186,4 +186,57 @@ test.describe('rating flow', () => {
     )
     await expect(page.getByTestId('attr-Furt_rot-teilweise-probability')).toHaveText('72 %')
   })
+
+  test('answers with Q/W/E, moves with Tab, and puts a node off with an internal note', async ({
+    page,
+  }) => {
+    const saved: { data: Record<string, unknown> }[] = []
+    page.on('request', (request) => {
+      if (request.method() === 'PUT' && request.url().includes('/entries/')) {
+        saved.push(request.postDataJSON())
+      }
+    })
+    await page.goto('/')
+    await createProjectAndStageFile(
+      page,
+      'berlin-sample',
+      'public/fixtures/berlin-nodes-sample.geojson',
+    )
+    await page.getByTestId('import-dataset').click()
+    await expect(page.getByTestId('selected-node-id')).toHaveText('Knoten 40530022')
+
+    await expect(page.getByTestId('attr-KP_HVS')).toHaveAttribute('data-active', '')
+    await page.keyboard.press('w')
+    await expect(page.getByTestId('attr-KP_HVS-1')).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByTestId('attr-LSA_KP')).toHaveAttribute('data-active', '')
+    await page.keyboard.press('Shift+Tab')
+    await expect(page.getByTestId('attr-KP_HVS')).toHaveAttribute('data-active', '')
+    await page.keyboard.press('Tab')
+    await page.keyboard.press('Tab')
+    await page.keyboard.press('e')
+    await expect(page.getByTestId('attr-Mar_RVF_KP-gänzlich')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+
+    await page.getByTestId('defer-node').click()
+    await expect(page.getByTestId('note-internal-required')).toBeVisible()
+    await expect(page.getByTestId('note-internal')).toBeFocused()
+    await page.getByTestId('note-internal-missing-photos').click()
+    await page.getByTestId('defer-node').click()
+    await expect(page.getByTestId('selected-node-id')).toHaveText('Knoten 40530027')
+    expect(saved.at(-1)?.data).toMatchObject({
+      status: 'incomplete',
+      Kommentar_intern: 'Fehlendes Fotomaterial',
+    })
+
+    await page.getByTestId('skip-node').click()
+    await expect(page.getByTestId('selected-node-id')).not.toHaveText('Knoten 40530027')
+    expect(saved.at(-1)?.data).toMatchObject({
+      status: 'complete',
+      KP_Nichtbetrachten: 1,
+      KP_HVS: 0,
+      LSA_KP: 0,
+    })
+  })
 })

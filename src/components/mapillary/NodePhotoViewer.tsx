@@ -1,41 +1,35 @@
+import { EyeDropperIcon, XMarkIcon } from '@heroicons/react/16/solid'
 import {
-  mapillaryValueName,
   PLACE_TARGET,
   providerExternalLink,
-  targetImageToPhoto,
   type LngLat,
   type NormalizedPhoto,
 } from '@osm-editor-kit/street-imagery'
 import {
   FloatingPhotoViewer,
   getViewpointSession,
-  MapillaryFeatureBar,
   PhotoDate,
   StreetLevelImageryViewer,
   useActiveDirectionKey,
   useCanGoBack,
   useCanGoForward,
   useCurrentHistoryEntry,
-  useMapillaryImageDetections,
-  useSelectedMapillaryFeature,
   useViewpoints,
 } from '@osm-editor-kit/street-imagery-react'
 import { useEffect, useRef, useState } from 'react'
 import {
-  featurePhotosFromMs,
   showPhoto,
   showSuggestion,
   useNodeViewSuggestions,
 } from '@/components/mapillary/photo-session'
-import {
-  useMapUiActions,
-  useSelectedMapFeatureId,
-  useViewpointsNodeId,
-} from '@/components/shared/map-ui-store'
-import { mapillaryMaxAgeYears } from '@/config/app.const'
-import { isJunctionDetection } from '@/shared/mapillary/junction'
+import { useViewpointsNodeId } from '@/components/shared/map-ui-store'
+import { Tooltip } from '@/components/shared/Tooltip/Tooltip'
+import { useRatingDraft } from '@/components/shared/use-rating-draft'
+import { cn } from '@/shared/cn'
+import { addToList, removeFromList, splitList } from '@/shared/ratings/list-field'
+import type { RatingSource } from '@/shared/ratings/schema'
 
-const BIKE_LANE_COLOR = 0x22d3ee
+const mapillarySource: RatingSource = 'Mapillary'
 
 const separator = (
   <span aria-hidden className="px-1.5 text-slate-300">
@@ -48,8 +42,9 @@ type Props = {
 }
 
 /**
- * Photo viewer floating over the map. It opens the best recent photo that looks into the node,
- * offers one view per approaching street, and shows a selected detected feature in its photos.
+ * Photo viewer floating over the map. It opens the best recent photo that looks into the node and
+ * offers one view per approaching street. The shown photo can be assigned to the node; assigned
+ * photos are listed above the photo.
  */
 export function NodePhotoViewer({ node }: Props) {
   const viewpoints = useViewpoints()
@@ -59,19 +54,12 @@ export function NodePhotoViewer({ node }: Props) {
   const entry = useCurrentHistoryEntry()
   const canGoBack = useCanGoBack()
   const canGoForward = useCanGoForward()
-  const featureId = useSelectedMapFeatureId()
-  const { setSelectedMapFeatureId } = useMapUiActions()
+  const { draft, setDraft } = useRatingDraft(node.id)
   const [viewerPhoto, setViewerPhoto] = useState<NormalizedPhoto | null>(null)
   const [closedNodeId, setClosedNodeId] = useState<string | null>(null)
-  const [showOutlines, setShowOutlines] = useState(false)
 
   const photo = entry?.photo ?? null
-  const feature = useSelectedMapillaryFeature({
-    featureId,
-    shownPhotoId: photo?.photoId,
-    minCapturedAt: featurePhotosFromMs,
-  })
-  const { data: featureData, shownImage, firstImage } = feature
+  const assignedIds = splitList(draft['Mapillary-ID'])
   const viewsReady = viewpointsNodeId === node.id && viewpoints.length > 0 && !isLoading
 
   const autoOpenedRef = useRef<string | null>(null)
@@ -79,113 +67,52 @@ export function NodePhotoViewer({ node }: Props) {
     function openBestViewIntoNode() {
       if (!viewsReady || autoOpenedRef.current === node.id) return
       autoOpenedRef.current = node.id
-      // The rater was faster and already opened a photo or a detected object.
-      if (featureId || getViewpointSession().current) return
+      // The rater was faster and already opened a photo.
+      if (getViewpointSession().current) return
       const best = suggestions.find((suggestion) => suggestion.candidates.length > 0)
       if (best) showSuggestion(best)
     },
-    [featureId, node.id, suggestions, viewsReady],
+    [node.id, suggestions, viewsReady],
   )
 
-  const featureOpenedRef = useRef<string | null>(null)
-  useEffect(
-    function openBestPhotoOfFeature() {
-      if (!featureId) {
-        featureOpenedRef.current = null
-        return
-      }
-      if (!firstImage || featureOpenedRef.current === featureId) return
-      featureOpenedRef.current = featureId
-      showPhoto(targetImageToPhoto(firstImage))
-    },
-    [featureId, firstImage],
-  )
+  if (closedNodeId === node.id && !photo) return null
 
-  const detections = useMapillaryImageDetections(showOutlines ? photo?.photoId : null, {
-    filter: isJunctionDetection,
-    filterKey: 'junction',
-  })
-
-  if (closedNodeId === node.id && !photo && !featureId) return null
-
-  // A photo of the selected feature turns to the feature; a suggested view turns to the node.
-  const lookAt =
-    featureData && shownImage
-      ? {
-          lngLat: featureData.feature.lngLat,
-          outline: shownImage.outline,
-          value: featureData.feature.value,
-          label: mapillaryValueName(featureData.feature.value, 'de'),
-        }
-      : entry?.directionKey
-        ? { lngLat: node.lngLat, shape: PLACE_TARGET }
-        : null
+  // A suggested view turns to the node.
+  const lookAt = entry?.directionKey ? { lngLat: node.lngLat, shape: PLACE_TARGET } : null
   const lookAtBearing =
     suggestions.find((suggestion) => suggestion.direction.key === entry?.directionKey)?.direction
       .bearing ?? null
-  const outlines = showOutlines
-    ? (detections.data ?? []).map((detection) => ({
-        id: detection.id,
-        outline: detection.outline,
-        ...(detection.value.startsWith('construction--flat--bike-lane')
-          ? { color: BIKE_LANE_COLOR }
-          : {}),
-      }))
-    : undefined
 
   const found = suggestions.some((suggestion) => suggestion.candidates.length > 0)
   const status = (() => {
-    if (featureId) {
-      if (feature.isLoading) return 'Lade Fotos des Objekts …'
-      return feature.isError ? 'Das Objekt konnte nicht geladen werden.' : null
-    }
     if (photo) return null
     if (isError) return 'Die Fotos konnten nicht geladen werden.'
     if (!viewsReady) return 'Suche Fotos …'
-    return found ? null : `Keine Fotos der letzten ${mapillaryMaxAgeYears} Jahre an diesem Knoten.`
+    return found ? null : 'Keine Fotos im gewählten Zeitraum an diesem Knoten.'
   })()
 
   const shown = photo && viewerPhoto?.photoId === photo.photoId ? viewerPhoto : photo
   const { actions } = getViewpointSession()
-  // Stepping to a photo that does not show the selected feature ends the feature view.
-  const step = (stepInHistory: typeof actions.back) => () => {
-    const next = stepInHistory()
-    if (next && !featureData?.images.some((image) => image.id === next.photo.photoId)) {
-      setSelectedMapFeatureId(null)
-    }
-  }
+  const shownAssigned = photo ? assignedIds.includes(photo.photoId) : false
 
   return (
     <FloatingPhotoViewer
       storageKey="knotenpunkte-photo-viewer"
-      title={featureData ? 'Erkanntes Objekt' : 'Fotos am Knoten'}
+      title="Fotos am Knoten"
       suggestions={suggestions}
       activeDirectionKey={activeDirectionKey}
       shownPhotoId={photo?.photoId}
-      onSelectSuggestion={(suggestion, candidate) => {
-        setSelectedMapFeatureId(null)
-        showSuggestion(suggestion, candidate)
-      }}
+      onSelectSuggestion={showSuggestion}
       canGoBack={canGoBack}
       canGoForward={canGoForward}
-      onBack={step(actions.back)}
-      onForward={step(actions.forward)}
+      onBack={actions.back}
+      onForward={actions.forward}
       onClose={() => {
         // Keep the suggested views on the map; only the history (the shown photo) goes.
         actions.reset()
         actions.open({ viewpoints })
-        setSelectedMapFeatureId(null)
         setClosedNodeId(node.id)
       }}
-      toolbar={
-        featureData ? (
-          <MapillaryFeatureBar
-            data={featureData}
-            shownImage={shownImage}
-            onShow={(image) => showPhoto(targetImageToPhoto(image))}
-          />
-        ) : undefined
-      }
       status={status}
       footer={
         shown ? (
@@ -207,16 +134,6 @@ export function NodePhotoViewer({ node }: Props) {
               {separator}
               CC BY-SA 4.0
             </p>
-            <label className="flex shrink-0 items-center gap-1">
-              <input
-                type="checkbox"
-                checked={showOutlines}
-                data-testid="photo-outlines-toggle"
-                onChange={(event) => setShowOutlines(event.currentTarget.checked)}
-              />
-              Markierungen
-              {showOutlines && detections.data ? ` (${detections.data.length})` : null}
-            </label>
             <a
               className="shrink-0 text-slate-800 underline-offset-2 hover:underline"
               href={providerExternalLink(shown)}
@@ -229,22 +146,113 @@ export function NodePhotoViewer({ node }: Props) {
         ) : undefined
       }
     >
-      {photo ? (
+      {photo || assignedIds.length > 0 ? (
         <div className="px-2">
-          <StreetLevelImageryViewer
-            photo={photo}
-            groupPhotos={[photo]}
-            hideAttribution
-            lookAt={lookAt}
-            lookAtBearing={lookAtBearing}
-            outlines={outlines}
-            onEaseMapToPoint={() => {}}
-            onPhotoSelected={() => {}}
-            onViewerPhoto={(loaded) => {
-              setViewerPhoto(loaded)
-              showPhoto(loaded)
-            }}
-          />
+          <div
+            className="flex flex-wrap items-center gap-1 pb-1.5 text-[11px] text-slate-700"
+            data-testid="assigned-photos"
+          >
+            <Tooltip
+              text={
+                shownAssigned
+                  ? 'Dieses Foto ist dem Knoten zugeordnet'
+                  : 'Dieses Foto dem Knoten zuordnen'
+              }
+            >
+              <button
+                type="button"
+                data-testid="assign-photo"
+                aria-label="Dieses Foto dem Knoten zuordnen"
+                disabled={!photo || shownAssigned}
+                className="rounded p-1 text-slate-700 ring-1 ring-slate-300 hover:bg-slate-100 disabled:text-slate-300 disabled:hover:bg-transparent"
+                onClick={() => {
+                  if (!photo) return
+                  setDraft({
+                    ...draft,
+                    'Mapillary-ID': addToList(draft['Mapillary-ID'], photo.photoId),
+                    Quelle: addToList(draft.Quelle, mapillarySource),
+                  })
+                }}
+              >
+                <EyeDropperIcon className="size-3.5" aria-hidden />
+              </button>
+            </Tooltip>
+            {assignedIds.length === 0 ? (
+              <span className="text-slate-400">Noch kein Foto zugeordnet</span>
+            ) : null}
+            {assignedIds.map((photoId, index) => {
+              const active = photo?.photoId === photoId
+              return (
+                <span
+                  key={photoId}
+                  className={cn(
+                    'flex items-center rounded ring-1 ring-slate-300',
+                    active && 'bg-slate-800 text-white ring-slate-800',
+                  )}
+                >
+                  <Tooltip text={`Zugeordnetes Foto ${photoId} anzeigen`}>
+                    <button
+                      type="button"
+                      aria-pressed={active}
+                      data-testid={`assigned-photo-${photoId}`}
+                      className={cn(
+                        'rounded-l py-0.5 pr-1 pl-1.5 font-medium',
+                        active ? 'hover:bg-slate-700' : 'hover:bg-slate-100',
+                      )}
+                      onClick={() =>
+                        // The viewer loads date, type, creator and the real position.
+                        showPhoto({
+                          providerId: 'mapillary',
+                          photoId,
+                          sequenceId: null,
+                          capturedAt: null,
+                          isPano: null,
+                          heading: null,
+                          lngLat: node.lngLat,
+                        })
+                      }
+                    >
+                      Foto {index + 1}
+                    </button>
+                  </Tooltip>
+                  <Tooltip text="Zuordnung entfernen">
+                    <button
+                      type="button"
+                      aria-label={`Zuordnung von Foto ${index + 1} entfernen`}
+                      data-testid={`unassign-photo-${photoId}`}
+                      className={cn(
+                        'rounded-r p-0.5',
+                        active ? 'hover:bg-slate-700' : 'hover:bg-slate-100',
+                      )}
+                      onClick={() =>
+                        setDraft({
+                          ...draft,
+                          'Mapillary-ID': removeFromList(draft['Mapillary-ID'], photoId),
+                        })
+                      }
+                    >
+                      <XMarkIcon className="size-3.5" aria-hidden />
+                    </button>
+                  </Tooltip>
+                </span>
+              )
+            })}
+          </div>
+          {photo ? (
+            <StreetLevelImageryViewer
+              photo={photo}
+              groupPhotos={[photo]}
+              hideAttribution
+              lookAt={lookAt}
+              lookAtBearing={lookAtBearing}
+              onEaseMapToPoint={() => {}}
+              onPhotoSelected={() => {}}
+              onViewerPhoto={(loaded) => {
+                setViewerPhoto(loaded)
+                showPhoto(loaded)
+              }}
+            />
+          ) : null}
         </div>
       ) : null}
     </FloatingPhotoViewer>

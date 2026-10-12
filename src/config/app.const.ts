@@ -46,13 +46,11 @@ export function isOsmLoginConfigured() {
 export const mapillaryToken = 'MLY|24010869485212176|7dd87f9f30ce7c88bd3967d95eca15ae'
 
 /**
- * Detected objects (traffic lights, markings) that Mapillary last saw before this day do not
- * count: the junction may have been rebuilt since.
+ * Cut-off day: by default only photos from this day on are shown and suggested, because a
+ * junction may have been rebuilt since. The date filter on the map can widen it. Berlin needs a
+ * date filter; without one the map loads hundreds of thousands of photos.
  */
-export const mapillaryFeaturesSeenFrom = '2024-01-01'
-
-/** Photos older than this are not shown or suggested. Berlin needs a date filter. */
-export const mapillaryMaxAgeYears = 2
+export const mapillaryCutoffDate = '2024-01-01'
 
 /**
  * infra3D street-level imagery of Berlin (same project as TILDA). infra3D has no public API, so

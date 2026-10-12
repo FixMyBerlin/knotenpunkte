@@ -1,22 +1,16 @@
-import {
-  ArrowDownOnSquareIcon,
-  ArrowRightIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  ForwardIcon,
-} from '@heroicons/react/20/solid'
 import { useHotkeys } from '@tanstack/react-hotkeys'
+import { useEffect, useRef, useState } from 'react'
 import { Tooltip } from '@/components/shared/Tooltip/Tooltip'
 import { Button } from '@/components/ui/button'
 import { Callout } from '@/components/ui/callout'
 import { cn } from '@/shared/cn'
+import { scrollIntoContainer } from '@/shared/dom/scroll-into-container'
 import { useTextEntryFocused } from '@/shared/dom/text-entry-focus'
-import { firstEmptyRapidKey } from '@/shared/ratings/completeness'
 import {
-  hotkeyFor,
+  choiceHotkeys,
+  deferHotkey,
   nextHotkey,
   previousHotkey,
-  rapidHotkeyBindings,
   skipHotkey,
 } from '@/shared/ratings/hotkeys'
 import {
@@ -43,6 +37,10 @@ import { suggestionProbability, type SuggestionRow } from '@/shared/suggestions/
 const binaryValues = [0, 1] as const
 const ternaryValues = ['keine', 'teilweise', 'gänzlich'] as const
 
+function valuesOf(key: RapidAttributeKey): readonly RapidValue[] {
+  return rapidAttributeMeta[key].kind === 'binary' ? binaryValues : ternaryValues
+}
+
 const rankClasses: Record<ProbabilityRank, string> = {
   high: 'bg-emerald-400/15 text-emerald-300',
   mid: 'bg-orange-400/15 text-orange-300',
@@ -53,6 +51,7 @@ type Props = {
   draft: RapidDraft
   onChange: (next: RapidDraft) => void
   onSkip: () => void
+  onDefer: () => void
   onPrevious: () => void
   onNext: () => void
   onSave: () => void
@@ -68,6 +67,7 @@ export function RapidForm({
   draft,
   onChange,
   onSkip,
+  onDefer,
   onPrevious,
   onNext,
   onSave,
@@ -77,19 +77,52 @@ export function RapidForm({
   onRateAnyway,
 }: Props) {
   const textEntryFocused = useTextEntryFocused()
-  const focused = firstEmptyRapidKey(draft)
+  // The attribute the choice keys answer. Each node starts at the top (the form is keyed by node).
+  const [activeIndex, setActiveIndex] = useState(0)
+  const activeKey = attributesVisible ? rapidAttributeKeys[activeIndex] : undefined
+  const lastIndex = rapidAttributeKeys.length - 1
+  const activeRef = useRef<HTMLFieldSetElement>(null)
+
+  useEffect(
+    function keepActiveAttributeInView() {
+      if (activeRef.current) scrollIntoContainer(activeRef.current)
+    },
+    [activeIndex],
+  )
 
   useHotkeys(
     [
-      ...(attributesVisible ? rapidHotkeyBindings : []).map((binding) => ({
-        hotkey: binding.hotkey,
-        callback: () => setValue(binding.attribute, binding.value),
-        options: { meta: { name: binding.attribute } },
+      ...(activeKey ? choiceHotkeys : []).map((hotkey, index) => ({
+        hotkey,
+        callback: () => {
+          const value = activeKey ? valuesOf(activeKey)[index] : undefined
+          if (activeKey && value !== undefined) setValue(activeKey, value)
+        },
+        options: { meta: { name: `Antwort ${index + 1}` } },
       })),
+      ...(activeKey
+        ? [
+            {
+              hotkey: 'Tab' as const,
+              callback: () => setActiveIndex((index) => Math.min(index + 1, lastIndex)),
+              options: { meta: { name: 'Nächstes Attribut' } },
+            },
+            {
+              hotkey: 'Shift+Tab' as const,
+              callback: () => setActiveIndex((index) => Math.max(index - 1, 0)),
+              options: { meta: { name: 'Vorheriges Attribut' } },
+            },
+          ]
+        : []),
       {
         hotkey: skipHotkey,
         callback: onSkip,
-        options: { meta: { name: 'Knotenpunkt nicht betrachten' } },
+        options: { meta: { name: 'Nicht relevant' } },
+      },
+      {
+        hotkey: deferHotkey,
+        callback: onDefer,
+        options: { meta: { name: 'Zurückstellen' } },
       },
       {
         hotkey: previousHotkey,
@@ -104,14 +137,16 @@ export function RapidForm({
       {
         hotkey: 'Enter',
         callback: onSave,
-        options: { meta: { name: 'Speichern und weiter' } },
+        options: { meta: { name: 'Speichern' } },
       },
     ],
     { enabled: !textEntryFocused, ignoreInputs: false },
   )
 
+  /** Answers the attribute and moves on to the next one. */
   function setValue(attribute: RapidAttributeKey, value: RapidValue) {
     onChange({ ...draft, [attribute]: value, KP_Nichtbetrachten: 0 })
+    setActiveIndex(Math.min(rapidAttributeKeys.indexOf(attribute) + 1, lastIndex))
   }
 
   return (
@@ -157,7 +192,8 @@ export function RapidForm({
         const meta = rapidAttributeMeta[key]
         const suggestion = suggestions.find((row) => row.attribute === key)
         const chosen = draft[key]
-        const values: readonly RapidValue[] = meta.kind === 'binary' ? binaryValues : ternaryValues
+        const values = valuesOf(key)
+        const active = activeKey === key
         const probabilities = values.map((value) =>
           suggestion ? suggestionProbability(suggestion, value) : undefined,
         )
@@ -168,11 +204,14 @@ export function RapidForm({
         return (
           <fieldset
             key={key}
+            ref={active ? activeRef : undefined}
             data-testid={`attr-${key}`}
+            data-active={active ? '' : undefined}
             className={cn(
               'rounded-lg p-2 ring-1 ring-white/10',
-              focused === key && 'ring-2 ring-sky-400',
+              active && 'bg-sky-400/5 ring-2 ring-sky-400',
             )}
+            onMouseDown={() => setActiveIndex(rapidAttributeKeys.indexOf(key))}
           >
             <legend className="float-left mb-1.5 w-full px-1 text-sm font-medium text-white">
               <Tooltip text={key}>
@@ -184,7 +223,7 @@ export function RapidForm({
                 <ChoiceButton
                   key={value}
                   pressed={chosen === value}
-                  hotkey={hotkeyFor(key, value)}
+                  hotkey={active ? choiceHotkeys[index] : undefined}
                   testId={`attr-${key}-${value}`}
                   onClick={() => setValue(key, value)}
                   probability={probabilities[index]}
@@ -221,88 +260,48 @@ export function RapidForm({
   )
 }
 
+const actionKbdClass = 'rounded bg-black/30 px-1 font-sans text-xs font-medium'
+
+/** Save, and the two ways to leave a node unrated; each with its key. All go to the next node. */
 export function RapidActions({
   onSkip,
-  onPrevious,
-  onNext,
-  onSave,
+  onDefer,
   saveDisabled,
-}: Pick<Props, 'onSkip' | 'onPrevious' | 'onNext' | 'onSave'> & { saveDisabled?: boolean }) {
+}: Pick<Props, 'onSkip' | 'onDefer'> & { saveDisabled?: boolean }) {
   return (
-    <div className="@container flex w-full gap-1">
-      <ActionButton
-        testId="skip-node"
-        label={`Knotenpunkt nicht betrachten (${skipHotkey})`}
-        onClick={onSkip}
+    <div className="flex w-full flex-wrap gap-1">
+      <Tooltip text="Speichern und zum nächsten Knoten" className="w-full">
+        <Button
+          type="submit"
+          form="rapid-form"
+          color="sky"
+          data-testid="save-next"
+          disabled={saveDisabled}
+          className="w-full"
+        >
+          Speichern
+          <kbd className={actionKbdClass}>Enter</kbd>
+        </Button>
+      </Tooltip>
+      <Tooltip
+        text="Knotenpunkt nicht betrachten: setzt HVS und LSA auf Nein, speichert und geht weiter"
+        className="min-w-0 flex-1"
       >
-        <ForwardIcon data-slot="icon" aria-hidden />
-      </ActionButton>
-      <ActionButton testId="prev-node" label={`Zurück (${previousHotkey})`} onClick={onPrevious}>
-        <ChevronLeftIcon data-slot="icon" aria-hidden />
-      </ActionButton>
-      <ActionButton testId="next-node" label={`Weiter (${nextHotkey})`} onClick={onNext}>
-        <ChevronRightIcon data-slot="icon" aria-hidden />
-      </ActionButton>
-      <ActionButton
-        testId="save-next"
-        label="Speichern und weiter (Enter)"
-        onClick={onSave}
-        disabled={saveDisabled}
-        submit
+        <Button type="button" outline data-testid="skip-node" onClick={onSkip} className="w-full">
+          Nicht relevant
+          <kbd className={actionKbdClass}>{skipHotkey}</kbd>
+        </Button>
+      </Tooltip>
+      <Tooltip
+        text="Später bewerten: braucht einen internen Hinweis, der Knoten bleibt offen"
+        className="min-w-0 flex-1"
       >
-        <ArrowDownOnSquareIcon data-slot="icon" aria-hidden />
-        <ArrowRightIcon data-slot="icon" aria-hidden />
-      </ActionButton>
+        <Button type="button" outline data-testid="defer-node" onClick={onDefer} className="w-full">
+          Zurückstellen
+          <kbd className={actionKbdClass}>{deferHotkey}</kbd>
+        </Button>
+      </Tooltip>
     </div>
-  )
-}
-
-function ActionButton({
-  testId,
-  label,
-  onClick,
-  disabled,
-  submit,
-  children,
-}: {
-  testId: string
-  label: string
-  onClick: () => void
-  disabled?: boolean
-  submit?: boolean
-  children: React.ReactNode
-}) {
-  const labelNode = <span className="hidden truncate @[32rem]:inline">{label}</span>
-  const button = submit ? (
-    <Button
-      type="submit"
-      form="rapid-form"
-      color="sky"
-      data-testid={testId}
-      aria-label={label}
-      disabled={disabled}
-      className="w-full min-w-0"
-    >
-      {children}
-      {labelNode}
-    </Button>
-  ) : (
-    <Button
-      type="button"
-      outline
-      data-testid={testId}
-      aria-label={label}
-      onClick={onClick}
-      className="w-full min-w-0"
-    >
-      {children}
-      {labelNode}
-    </Button>
-  )
-  return (
-    <Tooltip text={label} className="min-w-0 flex-1">
-      {button}
-    </Tooltip>
   )
 }
 
@@ -317,7 +316,8 @@ function ChoiceButton({
   children,
 }: {
   pressed: boolean
-  hotkey: string
+  /** Only the active attribute's choices have a key. */
+  hotkey?: string
   testId: string
   onClick: () => void
   probability?: number
@@ -348,7 +348,11 @@ function ChoiceButton({
           {probability !== undefined ? `${Math.round(probability * 100)} %` : null}
         </span>
       ) : null}
-      <kbd className="rounded bg-black/30 px-1 font-mono text-[10px] text-zinc-300">{hotkey}</kbd>
+      {hotkey ? (
+        <kbd className="rounded bg-black/30 px-1 font-sans text-xs font-semibold text-zinc-200">
+          {hotkey}
+        </kbd>
+      ) : null}
       {children}
     </button>
   )

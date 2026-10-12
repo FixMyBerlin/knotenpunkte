@@ -11,6 +11,11 @@ import {
   stepStatus,
   type AppStep,
 } from '@/shared/routing/app-step'
+import type { DataSearch, IndexSearch } from '@/shared/routing/search-schema'
+
+function withoutDataQuery({ q: _q, ...search }: DataSearch): IndexSearch {
+  return search
+}
 
 export function useAppStepNav() {
   const navigate = useNavigate()
@@ -18,8 +23,11 @@ export function useAppStepNav() {
   const isDataPage = useRouterState({
     select: (state) => state.location.pathname === '/data',
   })
-  const dataset = indexMatch?.search.dataset
-  const current = isDataPage ? undefined : resolveStep(indexMatch?.search ?? {})
+  const dataMatch = useMatch({ from: '/data', shouldThrow: false })
+  // The database page carries the rating page's search, so the project stays selected there.
+  const search = indexMatch?.search ?? (dataMatch ? withoutDataQuery(dataMatch.search) : undefined)
+  const dataset = search?.dataset
+  const current = isDataPage ? undefined : resolveStep(search ?? {})
 
   const nodesQuery = useQuery({
     queryKey: ['dataset', dataset],
@@ -56,7 +64,7 @@ export function useAppStepNav() {
   function goToStep(id: AppStep) {
     void navigate({
       to: '/',
-      search: indexMatch ? { ...indexMatch.search, step: id } : { step: id },
+      search: search ? { ...search, step: id } : { step: id },
       replace: !isDataPage,
     })
   }
@@ -71,5 +79,6 @@ export function useAppStepNav() {
     steps,
     goToStep,
     isDataPage,
+    search,
   }
 }

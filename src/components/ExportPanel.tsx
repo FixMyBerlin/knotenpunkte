@@ -51,23 +51,22 @@ export function ExportPanel() {
   const hasNodes = Boolean(nodesQuery.data)
 
   return (
-    <section>
-      <Subheading className="mb-2">Bewertungen</Subheading>
-      <Text className="mb-2">
-        {auth.authenticated
-          ? `Gespeichert als ${auth.displayName ?? 'OSM-Nutzer'} in der Datenbank`
-          : 'Bewertungen liegen in der gemeinsamen Datenbank. Lesen ist öffentlich; Speichern erfordert OSM-Anmeldung.'}
-      </Text>
-      <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          data-testid="export-json"
-          onClick={() => {
-            downloadJson(exportFilename('ratings', dataset), buildRatingsFile(dataset, records))
-          }}
-        >
-          JSON exportieren
-        </Button>
+    <section className="space-y-5">
+      <div>
+        <Subheading className="mb-2">Export</Subheading>
+        <Text>
+          {auth.authenticated
+            ? `Gespeichert als ${auth.displayName ?? 'OSM-Nutzer'} in der Datenbank.`
+            : 'Bewertungen liegen in der gemeinsamen Datenbank. Lesen ist öffentlich; Speichern erfordert OSM-Anmeldung.'}{' '}
+          Alle Exporte enthalten beide Hinweise (an den Kunden und intern), die Quelle und die
+          zugeordneten Mapillary-Fotos.
+        </Text>
+      </div>
+
+      <ExportGroup
+        title="Ergebnis für GIS (GeoJSON)"
+        description={`Alle Knoten von „${dataset}“ als Punkte, jeder mit den Angaben aus der importierten Datei und seiner Bewertung als Attribute. Auch unbewertete Knoten sind enthalten. Ohne Verlauf. Zum Öffnen in QGIS und für die Abgabe.`}
+      >
         {hasNodes ? (
           <Button
             type="button"
@@ -81,7 +80,31 @@ export function ExportPanel() {
           >
             GeoJSON exportieren
           </Button>
-        ) : null}
+        ) : (
+          <Callout>Dafür muss die Knoten-Datei dieses Gebiets importiert sein.</Callout>
+        )}
+      </ExportGroup>
+
+      <ExportGroup
+        title="Bewertungen dieses Gebiets (JSON)"
+        description={`Nur die Bewertungen von „${dataset}“, ohne Geometrie und nur für bewertete Knoten. Vollständig: mit Verlauf (wer hat wann was gesetzt), Prüfstatus und der Übernahme von Vorschlägen. Als Sicherung und zur Auswertung.`}
+      >
+        <Button
+          type="button"
+          outline
+          data-testid="export-json"
+          onClick={() => {
+            downloadJson(exportFilename('ratings', dataset), buildRatingsFile(dataset, records))
+          }}
+        >
+          JSON exportieren
+        </Button>
+      </ExportGroup>
+
+      <ExportGroup
+        title="Bewertungen aller Gebiete (JSON)"
+        description="Wie der Export darüber, aber für alle Gebiete der Datenbank in einer Datei. Als vollständige Sicherung."
+      >
         <Button
           type="button"
           outline
@@ -91,13 +114,32 @@ export function ExportPanel() {
         >
           Alle Bewertungen exportieren
         </Button>
-      </div>
-      {exportAll.isError ? (
-        <Callout className="mt-2" tone="error">
-          {exportAll.error instanceof Error ? exportAll.error.message : 'Export fehlgeschlagen'}
-        </Callout>
-      ) : null}
-      {!auth.authenticated ? <Callout className="mt-2">{osmLoginRequiredMessage}</Callout> : null}
+        {exportAll.isError ? (
+          <Callout className="mt-2" tone="error">
+            {exportAll.error instanceof Error ? exportAll.error.message : 'Export fehlgeschlagen'}
+          </Callout>
+        ) : null}
+      </ExportGroup>
+
+      {!auth.authenticated ? <Callout>{osmLoginRequiredMessage}</Callout> : null}
     </section>
+  )
+}
+
+function ExportGroup({
+  title,
+  description,
+  children,
+}: {
+  title: string
+  description: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="rounded-lg p-3 ring-1 ring-white/10">
+      <h3 className="text-sm font-medium text-white">{title}</h3>
+      <p className="mt-1 mb-2 text-xs text-zinc-400">{description}</p>
+      {children}
+    </div>
   )
 }

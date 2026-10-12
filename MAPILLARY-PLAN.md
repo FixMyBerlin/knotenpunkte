@@ -1,23 +1,21 @@
 # Mapillary detections for the Knotenpunkte rating — plan
 
-Status 2026-10-02: phases 1 and 2 are built with `@osm-editor-kit/street-imagery` (0.1.0-alpha.8) and `@osm-editor-kit/street-imagery-react` (0.1.0-alpha.10). Phases 3 and 4 are open.
+Status 2026-10-12: the photo viewer (phase 1) is built with `@osm-editor-kit/street-imagery` and `@osm-editor-kit/street-imagery-react`. The detection hints of phase 2 were built and then removed again: they did not speed up the rating. Phases 3 and 4 are open and would run outside the app.
 
 ## What is built, compared with this plan
 
-| Plan                                                                       | Built                                                                                                                                                                       | Differs from the plan                                                                                                                                                 |
-| -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Phase 1: image layer, photos from 2024 on, coloured by age                 | Photo dots and sequences from the last 2 years                                                                                                                              | Colour is by photo type (360° blue, flat green); the package fades dots with age. Age bands (`ageBandColorExpression`) are available but not used.                    |
-| Phase 1: viewer opens the newest photo within ~30 m, turned to the node    | One view per approaching street, 20 m up the street, looking into the node (`viewpointsIntoNode`). The best one opens by itself; the others are chips and cones on the map. | Better than planned: the approach lines come from the Berlin street layer. With the street layer off there is one viewpoint at the node with four compass directions. |
-| Phase 1: "Dieses Foto übernehmen"                                          | Button below the Mapillary-ID field in "Weitere Angaben"                                                                                                                    | —                                                                                                                                                                     |
-| Phase 2: features within ~40 m as icons on the map                         | Purple dots from zoom 16, the five junction groups only                                                                                                                     | Dots, not icons. Clicking a dot opens the feature.                                                                                                                    |
-| Phase 2: counts next to the attributes                                     | One row of counts above the form ("27 Ampeln", "4 Fahrrad-Symbole" …); the tooltip names the attribute                                                                      | Not placed per attribute. A click opens the nearest feature in its best photo, turned to it and outlined; another click steps to the next.                            |
-| Phase 2: only bike-lane, symbol, stop-line and line outlines in the viewer | "Markierungen" checkbox in the viewer footer, off by default; bike-lane surface in cyan                                                                                     | —                                                                                                                                                                     |
+| Plan                                                                    | Built                                                                                                                                                                       |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Phase 1: image layer, photos from 2024 on, coloured by age              | Photo dots and sequences from 2024-01-01 on (`mapillaryCutoffDate`). Colour by age or photo type, filter by photo type and date with the package's slider, as in TILDA.     |
+| Phase 1: viewer opens the newest photo within ~30 m, turned to the node | One view per approaching street, 20 m up the street, looking into the node (`viewpointsIntoNode`). The best one opens by itself; the others are chips and cones on the map. |
+| Phase 1: "Dieses Foto übernehmen"                                       | Pipette button above the photo. Several photos per node, listed as buttons, stored `;`-separated in `Mapillary-ID`; sets `Quelle` to Mapillary.                             |
+| Phase 2: detected features as icons, counts, outlines in the viewer     | Removed on 2026-10-12 (map features, counts above the form, "Markierungen" outlines).                                                                                       |
 
 Found while testing:
 
-- The counts include old detections. At one test junction the nearest traffic light was last seen in 2019. The date filter applies to photos, not to map features.
+- Counts of detected features include old detections; the date filter applies to photos, not to map features.
 - Many photos have no bike-lane or line detections at all (one 360° photo from 2025: road and sidewalk only).
-- `URL photos=false` turns everything off; the toggle is in the map controls.
+- `URL photos=false` turns the photos off; the toggle is in the map controls.
 - The Mapillary token is registered in the FMC `radinfra` account (`mapillaryToken` in `src/config/app.const.ts`).
 
 ## Question

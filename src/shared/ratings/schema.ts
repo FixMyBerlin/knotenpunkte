@@ -19,6 +19,10 @@ export type BinaryValue = z.infer<typeof binaryValueSchema>
 export type TernaryValue = z.infer<typeof ternaryValueSchema>
 export type RapidValue = BinaryValue | TernaryValue
 
+/** Values of `Quelle`. */
+export const ratingSources = ['Mapillary', 'infra3D'] as const
+export type RatingSource = (typeof ratingSources)[number]
+
 export const binaryLabels = { 0: 'Nein', 1: 'Ja' } as const
 export const ternaryLabels = {
   keine: 'keine',
@@ -74,8 +78,14 @@ export const ratingRecordSchema = z.object({
   vorgez_Fl: ternaryValueSchema.optional(),
   KP_Nichtbetrachten: binaryValueSchema.default(0),
   ist_virtuell: binaryValueSchema.default(0),
+  /** Mapillary photos assigned to the node, `;`-separated (see `list-field.ts`). */
   'Mapillary-ID': z.string().optional(),
+  /** Imagery the rating is based on (`ratingSources`), `;`-separated. */
+  Quelle: z.string().optional(),
+  /** Note for the customer. */
   Kommentar: z.string().optional(),
+  /** Internal note. */
+  Kommentar_intern: z.string().optional(),
   suggestions: z.record(z.string(), suggestionAuditSchema).default({}),
   created_by: z.string(),
   created_at: z.string(),
@@ -99,7 +109,9 @@ export type RapidDraft = {
   KP_Nichtbetrachten: BinaryValue
   ist_virtuell: BinaryValue
   'Mapillary-ID'?: string
+  Quelle?: string
   Kommentar?: string
+  Kommentar_intern?: string
 }
 
 export function emptyRapidDraft(): RapidDraft {
@@ -122,6 +134,8 @@ export function rapidValuesFromRecord(record: RatingRecord | undefined): RapidDr
     KP_Nichtbetrachten: record.KP_Nichtbetrachten,
     ist_virtuell: record.ist_virtuell,
     'Mapillary-ID': record['Mapillary-ID'],
+    Quelle: record.Quelle,
     Kommentar: record.Kommentar,
+    Kommentar_intern: record.Kommentar_intern,
   }
 }

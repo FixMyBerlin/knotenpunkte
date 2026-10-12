@@ -16,6 +16,7 @@ import {
   useMap,
   type ViewStateChangeEvent,
 } from 'react-map-gl/maplibre'
+import { MapBackgroundFavorites } from '@/components/MapBackgroundFavorites'
 import { MapBackgroundLayerControl } from '@/components/MapBackgroundLayerControl'
 import { MapBackgroundLayerSource } from '@/components/MapBackgroundLayerSource'
 import { Infra3dLink } from '@/components/mapillary/Infra3dLink'
@@ -43,12 +44,14 @@ import {
 } from '@/shared/map/map-ids'
 import { nodeStatusColors, OPENFREEMAP_POSITRON, privateRasterStyle } from '@/shared/map/node-style'
 import {
+  POSITRON_BG,
+  PRIVATE_BG,
   readBackgroundChoice,
   readPrivateRasterUrl,
   resolveBackgroundChoice,
 } from '@/shared/map/private-raster'
 import { usePmtilesProtocol } from '@/shared/map/use-pmtiles-protocol'
-import { mapillaryProviders } from '@/shared/mapillary/junction'
+import { mapillaryProviders } from '@/shared/mapillary/photo-style'
 import { nodeLngLat, type JunctionNodeFeature } from '@/shared/nodes/schema'
 import { defaultWorkNodeId, matchesStatusFilter } from '@/shared/ratings/queue'
 import { ratingStore, ratingsQueryKey } from '@/shared/ratings/ratings-query'
@@ -310,6 +313,15 @@ export function RatingMap() {
       <div className="pointer-events-none absolute top-3 right-3 z-10 flex flex-col items-end gap-2 *:pointer-events-auto">
         <MapResetNorthPitchButton />
         <MapBackgroundLayerControl background={background} lat={map.lat} lng={map.lng} />
+        <MapBackgroundFavorites
+          activeId={
+            background.kind === 'eli'
+              ? background.id
+              : background.kind === 'private'
+                ? PRIVATE_BG
+                : POSITRON_BG
+          }
+        />
         <StreetsLegend
           streetsOn={streetsOn}
           onStreetsChange={(on) => {
@@ -328,6 +340,8 @@ export function RatingMap() {
                 replace: true,
               })
             }}
+            zoom={map.zoom}
+            viewportKey={search.map}
             photoColor={photoColor}
             onPhotoColorChange={(mode) => {
               void navigate({
@@ -340,7 +354,7 @@ export function RatingMap() {
             }}
           />
         ) : null}
-        {currentStep === 'work' && flyTo ? <Infra3dLink lngLat={flyTo} /> : null}
+        {currentStep === 'work' && photoNode ? <Infra3dLink node={photoNode} /> : null}
       </div>
     </div>
   )

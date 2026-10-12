@@ -70,13 +70,16 @@ export const indexSearchSchema = z.object({
     .transform((value) => (value === 'type' ? ('type' as const) : undefined)),
 })
 
-export const dataSearchSchema = z.object({
-  dataset: optionalTrimmedSearchString,
-  node: optionalTrimmedSearchString,
+/**
+ * The database page keeps the whole search of the rating page (project, node, map …), so
+ * switching there and back loses nothing. `q` is its own search text.
+ */
+export const dataSearchSchema = indexSearchSchema.extend({
   q: optionalTrimmedSearchString,
 })
 
 export type IndexSearch = z.infer<typeof indexSearchSchema>
+export type DataSearch = z.infer<typeof dataSearchSchema>
 
 export function searchMapParam(search: Pick<IndexSearch, 'map'>) {
   return parseMapParam(search.map) ?? mapParamFallback

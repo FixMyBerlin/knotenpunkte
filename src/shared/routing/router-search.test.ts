@@ -46,6 +46,16 @@ describe('dataSearchSchema', () => {
     const search = dataSearchSchema.parse(
       routerSearch.parse(routerSearch.stringify({ dataset: '2026', node: '32580001', q: 'note' })),
     )
-    expect(search).toEqual({ dataset: '2026', node: '32580001', q: 'note' })
+    expect(search).toMatchObject({ dataset: '2026', node: '32580001', q: 'note' })
+  })
+
+  it('keeps the search of the rating page', () => {
+    const search = dataSearchSchema.parse(
+      routerSearch.parse(
+        routerSearch.stringify({ dataset: 'a', step: 'overview', status: 'rated' }),
+      ),
+    )
+    expect(search.step).toBe('overview')
+    expect(search.status).toBe('rated')
   })
 })

@@ -1,27 +1,29 @@
-import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/20/solid'
+import { ChevronLeftIcon, ChevronRightIcon, InformationCircleIcon } from '@heroicons/react/20/solid'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { FullMask } from '@/components/FullMask'
-import { MapillaryHints } from '@/components/mapillary/MapillaryHints'
+import { INTERNAL_NOTE_ID, NodeNotes } from '@/components/NodeNotes'
 import { QaPanel } from '@/components/QaPanel'
 import { RapidActions, RapidForm } from '@/components/RapidForm'
 import { MotionCollapse } from '@/components/shared/motion/MotionCollapse'
 import { Tooltip } from '@/components/shared/Tooltip/Tooltip'
 import { useOsmAuth } from '@/components/shared/use-osm-auth'
+import { useRatingDraft } from '@/components/shared/use-rating-draft'
 import { Callout } from '@/components/ui/callout'
 import { Subheading } from '@/components/ui/heading'
 import { SidebarBody, SidebarFooter } from '@/components/ui/sidebar'
 import { Text } from '@/components/ui/text'
 import { Route } from '@/routes/index'
+import { cn } from '@/shared/cn'
 import { loadNodes, loadSuggestions } from '@/shared/datasets/dataset-idb'
-import { lsaConflict, nodeLngLat, readOnlyNodeFields } from '@/shared/nodes/schema'
+import { lsaConflict, readOnlyNodeFields } from '@/shared/nodes/schema'
 import { buildRatingRecord } from '@/shared/ratings/build-record'
 import {
   hasAllRapidAttributes,
   isRatingComplete,
   ratingProgress,
 } from '@/shared/ratings/completeness'
+import { nextHotkey, previousHotkey } from '@/shared/ratings/hotkeys'
 import { osmLoginRequiredMessage } from '@/shared/ratings/kv-rating-store'
 import { defaultWorkNodeId, nextNodeId, previousNodeId } from '@/shared/ratings/queue'
 import {
@@ -30,18 +32,9 @@ import {
   ratingStore,
   ratingsQueryKey,
 } from '@/shared/ratings/ratings-query'
-import { emptyRapidDraft, rapidValuesFromRecord, type RapidDraft } from '@/shared/ratings/schema'
-import { resolvePhotosOn, resolveStatusFilter } from '@/shared/routing/search-schema'
-import { applySuggestions } from '@/shared/suggestions/apply'
+import { rapidValuesFromRecord, type RapidDraft } from '@/shared/ratings/schema'
+import { resolveStatusFilter } from '@/shared/routing/search-schema'
 import { suggestedBetrachtung, suggestionsForNode } from '@/shared/suggestions/schema'
-
-function revealFullMask() {
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      document.getElementById('full-mask')?.scrollIntoView({ block: 'start', behavior: 'smooth' })
-    })
-  })
-}
 
 export function WorkPanel() {
   const queryClient = useQueryClient()
@@ -50,11 +43,10 @@ export function WorkPanel() {
   const { dataset, node } = search
   const statusFilter = resolveStatusFilter(search)
   const auth = useOsmAuth()
-  const [fullOpen, setFullOpen] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [correcting, setCorrecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [draftByNode, setDraftByNode] = useState<Record<string, RapidDraft>>({})
+  const [noteRequiredNodeId, setNoteRequiredNodeId] = useState<string | null>(null)
   const [rateAnywayByNode, setRateAnywayByNode] = useState<Record<string, boolean>>({})
 
   const nodesQuery = useQuery({
@@ -80,17 +72,7 @@ export function WorkPanel() {
   const feature = nodes?.features.find((item) => item.properties.id === currentId)
   const record = currentId ? records[currentId] : undefined
   const suggestionRows = suggestionsForNode(suggestionsQuery.data?.rows ?? [], currentId ?? '')
-  const storedDraft = currentId ? draftByNode[currentId] : undefined
-  const draft = storedDraft
-    ? storedDraft
-    : record
-      ? rapidValuesFromRecord(record)
-      : applySuggestions(emptyRapidDraft(), suggestionRows)
-
-  function setDraft(next: RapidDraft) {
-    if (!currentId) return
-    setDraftByNode((previous) => ({ ...previous, [currentId]: next }))
-  }
+  const { draft, setDraft, clearDraft } = useRatingDraft(currentId)
 
   function goToNode(nextId: string | undefined) {
     void navigate({
@@ -104,7 +86,11 @@ export function WorkPanel() {
   }
 
   const saveMutation = useMutation({
-    mutationFn: async (opts: { kind: 'save' | 'confirmed' | 'corrected'; draft: RapidDraft }) => {
+    mutationFn: async (opts: {
+      kind: 'save' | 'confirmed' | 'corrected'
+      draft: RapidDraft
+      deferred?: boolean
+    }) => {
       if (!dataset || !currentId) throw new Error('Kein Knoten')
       if (!auth.authenticated || !auth.displayName) throw new Error(osmLoginRequiredMessage)
       const next = buildRatingRecord({
@@ -113,8 +99,9 @@ export function WorkPanel() {
         suggestions: suggestionRows,
         actor: auth.displayName,
         kind: opts.kind,
+        deferred: opts.deferred,
       })
-      if (opts.kind === 'save' && next.status !== 'complete') {
+      if (opts.kind === 'save' && !opts.deferred && next.status !== 'complete') {
         throw new Error('Alle sieben Attribute setzen oder überspringen.')
       }
       await ratingStore.put(dataset, currentId, next)
@@ -130,13 +117,7 @@ export function WorkPanel() {
       if (variables.kind === 'save' || variables.kind === 'corrected') {
         const refreshed = await ratingStore.list(dataset)
         const next = nextNodeId(nodeIds, currentId, refreshed, statusFilter)
-        if (currentId) {
-          setDraftByNode((previous) => {
-            const copy = { ...previous }
-            delete copy[currentId]
-            return copy
-          })
-        }
+        clearDraft()
         goToNode(next)
       }
     },
@@ -183,9 +164,19 @@ export function WorkPanel() {
       isRatingComplete(draft) ||
       (hasAllRapidAttributes(draft) && draft.KP_Nichtbetrachten !== 1))
   const skip = () => {
-    const skipped = { ...emptyRapidDraft(), KP_Nichtbetrachten: 1 as const }
+    // Notes, photos and sources stay; the record builder clears the seven attributes.
+    const skipped = { ...draft, KP_Nichtbetrachten: 1 as const }
     setDraft(skipped)
     saveMutation.mutate({ kind: 'save', draft: skipped })
+  }
+  // Later, not now: the node stays open. The internal note says why.
+  const defer = () => {
+    if (!draft.Kommentar_intern?.trim()) {
+      setNoteRequiredNodeId(currentId)
+      document.getElementById(INTERNAL_NOTE_ID)?.focus()
+      return
+    }
+    saveMutation.mutate({ kind: 'save', draft, deferred: true })
   }
   const previous = () => goToNode(previousNodeId(nodeIds, currentId, records, statusFilter))
   const next = () => goToNode(nextNodeId(nodeIds, currentId, records, statusFilter))
@@ -211,17 +202,39 @@ export function WorkPanel() {
                     aria-expanded={detailsOpen}
                     aria-controls="node-details"
                     data-testid="node-details-toggle"
-                    className="rounded p-0.5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"
+                    className={cn(
+                      'rounded p-0.5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200',
+                      detailsOpen && 'bg-white/10 text-white',
+                    )}
                     aria-label={detailsOpen ? 'Knoten-Angaben schließen' : 'Knoten-Angaben'}
                     onClick={() => setDetailsOpen((open) => !open)}
                   >
-                    {detailsOpen ? (
-                      <ChevronDownIcon className="size-4" aria-hidden />
-                    ) : (
-                      <ChevronRightIcon className="size-4" aria-hidden />
-                    )}
+                    <InformationCircleIcon className="size-4" aria-hidden />
                   </button>
                 </Tooltip>
+                {(
+                  [
+                    [
+                      'prev-node',
+                      `Vorheriger Knoten (${previousHotkey})`,
+                      previous,
+                      ChevronLeftIcon,
+                    ],
+                    ['next-node', `Nächster Knoten (${nextHotkey})`, next, ChevronRightIcon],
+                  ] as const
+                ).map(([testId, label, onClick, Icon]) => (
+                  <Tooltip key={testId} text={label}>
+                    <button
+                      type="button"
+                      data-testid={testId}
+                      aria-label={label}
+                      className="rounded p-0.5 text-zinc-300 ring-1 ring-white/15 hover:bg-white/10 hover:text-white"
+                      onClick={onClick}
+                    >
+                      <Icon className="size-4" aria-hidden />
+                    </button>
+                  </Tooltip>
+                ))}
               </div>
               <Text data-testid="progress-count">
                 {rated}/{total} bewertet
@@ -242,9 +255,8 @@ export function WorkPanel() {
             </MotionCollapse>
           </div>
 
-          {resolvePhotosOn(search) ? <MapillaryHints lngLat={nodeLngLat(feature)} /> : null}
-
           <RapidForm
+            key={currentId}
             draft={draft}
             suggestions={suggestionRows}
             attributesVisible={attributesVisible}
@@ -252,39 +264,17 @@ export function WorkPanel() {
             onRateAnyway={rateAnyway}
             onChange={setDraft}
             onSkip={skip}
+            onDefer={defer}
             onPrevious={previous}
             onNext={next}
             onSave={save}
           />
 
-          <div>
-            <button
-              type="button"
-              data-testid="toggle-full-mask"
-              aria-expanded={fullOpen || correcting}
-              aria-controls="full-mask"
-              className="flex items-center gap-1 text-sm font-medium text-white"
-              onClick={() => {
-                setFullOpen((open) => {
-                  const next = !open
-                  if (next) revealFullMask()
-                  return next
-                })
-              }}
-            >
-              {fullOpen || correcting ? (
-                <ChevronDownIcon className="size-4" aria-hidden />
-              ) : (
-                <ChevronRightIcon className="size-4" aria-hidden />
-              )}
-              Weitere Angaben
-            </button>
-            <MotionCollapse open={fullOpen || correcting}>
-              <div className="pt-2">
-                <FullMask draft={draft} onChange={setDraft} />
-              </div>
-            </MotionCollapse>
-          </div>
+          <NodeNotes
+            draft={draft}
+            onChange={setDraft}
+            internalNoteRequired={noteRequiredNodeId === currentId}
+          />
 
           {record?.status === 'complete' ? (
             <QaPanel
@@ -294,11 +284,7 @@ export function WorkPanel() {
               onConfirm={() =>
                 saveMutation.mutate({ kind: 'confirmed', draft: rapidValuesFromRecord(record) })
               }
-              onMarkProblematic={() => {
-                setCorrecting(true)
-                setFullOpen(true)
-                revealFullMask()
-              }}
+              onMarkProblematic={() => setCorrecting(true)}
             />
           ) : null}
 
@@ -309,9 +295,7 @@ export function WorkPanel() {
       <SidebarFooter>
         <RapidActions
           onSkip={skip}
-          onPrevious={previous}
-          onNext={next}
-          onSave={save}
+          onDefer={defer}
           saveDisabled={!canSave || saveMutation.isPending}
         />
       </SidebarFooter>

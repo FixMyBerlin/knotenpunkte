@@ -4,7 +4,6 @@ import { Callout } from '@/components/ui/callout'
 import { Field, Label } from '@/components/ui/fieldset'
 import { Heading, Subheading } from '@/components/ui/heading'
 import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
 import {
   Table,
   TableBody,
@@ -17,11 +16,7 @@ import { Text } from '@/components/ui/text'
 import { cn } from '@/shared/cn'
 import { ignorePasswordManagerProps } from '@/shared/form-ignore-password-manager'
 import type { RatingStoreEntry } from '@/shared/ratings/rating-store'
-import {
-  allRatingsQueryKey,
-  datasetSummariesQueryKey,
-  ratingStore,
-} from '@/shared/ratings/ratings-query'
+import { allRatingsQueryKey, ratingStore } from '@/shared/ratings/ratings-query'
 import { rapidAttributeKeys, rapidAttributeMeta } from '@/shared/ratings/schema'
 
 function matchesQuery(entry: RatingStoreEntry, q: string) {
@@ -29,6 +24,8 @@ function matchesQuery(entry: RatingStoreEntry, q: string) {
     entry.dataset,
     entry.nodeId,
     entry.record.Kommentar ?? '',
+    entry.record.Kommentar_intern ?? '',
+    entry.record.Quelle ?? '',
     entry.record.created_by,
     entry.record.updated_by,
     entry.record.qa,
@@ -47,10 +44,6 @@ export function AdminRatingsPage() {
     queryKey: allRatingsQueryKey,
     queryFn: () => ratingStore.listAll(),
   })
-  const summariesQuery = useQuery({
-    queryKey: datasetSummariesQueryKey,
-    queryFn: () => ratingStore.listDatasetSummaries(),
-  })
 
   const entries = entriesQuery.data ?? []
   const filtered = entries.filter((entry) => {
@@ -68,41 +61,18 @@ export function AdminRatingsPage() {
     <div className="mx-auto flex w-full max-w-[90rem] flex-col gap-8 px-4 py-6 lg:flex-row lg:px-8">
       <div className="min-w-0 flex-1">
         <Heading level={2}>Bewertungs-Datenbank</Heading>
-        <Text className="mt-2">
-          Alle Bewertungen in der gemeinsamen Datenbank. Keine lokale Knoten-Datei nötig.
+        <Text className="mt-2" data-testid="data-page-scope">
+          {dataset
+            ? `Alle Bewertungen des Projekts „${dataset}“ in der gemeinsamen Datenbank. Das Projekt wählst du im Schritt „Datensatz“.`
+            : 'Kein Projekt gewählt: alle Bewertungen der gemeinsamen Datenbank. Ein Projekt wählst du im Schritt „Datensatz“.'}
         </Text>
 
         <div className="mt-6 flex flex-wrap items-end gap-4">
-          <Field className="min-w-48">
-            <Label>Gebiet</Label>
-            <Select
-              value={dataset ?? ''}
-              aria-label="Gebiet filtern"
-              onChange={(event) => {
-                const value = event.currentTarget.value || undefined
-                void navigate({
-                  search: (previous) => ({
-                    ...previous,
-                    dataset: value,
-                    node: previous.dataset === value ? previous.node : undefined,
-                  }),
-                  replace: true,
-                })
-              }}
-            >
-              <option value="">Alle Gebiete</option>
-              {(summariesQuery.data ?? []).map((row) => (
-                <option key={row.dataset} value={row.dataset}>
-                  {row.dataset} ({row.entryCount})
-                </option>
-              ))}
-            </Select>
-          </Field>
           <Field className="min-w-64 flex-1">
             <Label>Suche</Label>
             <Input
               value={q ?? ''}
-              placeholder="Knoten, Kommentar, Autor…"
+              placeholder="Knoten, Hinweis, Autor…"
               aria-label="Bewertungen durchsuchen"
               {...ignorePasswordManagerProps}
               onChange={(event) => {
@@ -211,10 +181,19 @@ export function AdminRatingsPage() {
                     <dd>{String(selected.record[key] ?? '—')}</dd>
                   </div>
                 ))}
-                <div className="flex justify-between gap-2">
-                  <dt className="text-zinc-400">Kommentar</dt>
-                  <dd>{selected.record.Kommentar || '—'}</dd>
-                </div>
+                {(
+                  [
+                    ['Hinweis an den Kunden', selected.record.Kommentar],
+                    ['Hinweis intern', selected.record.Kommentar_intern],
+                    ['Quelle', selected.record.Quelle],
+                    ['Mapillary-Fotos', selected.record['Mapillary-ID']],
+                  ] as const
+                ).map(([label, value]) => (
+                  <div key={label} className="flex justify-between gap-2">
+                    <dt className="shrink-0 text-zinc-400">{label}</dt>
+                    <dd className="min-w-0 text-right break-words">{value || '—'}</dd>
+                  </div>
+                ))}
               </dl>
             </>
           ) : (

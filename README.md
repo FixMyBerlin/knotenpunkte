@@ -35,9 +35,9 @@ Writes to the rating database require a logged-in OSM user (`Authorization: Bear
 
 Pick or create an area slug (`^[a-z0-9]+(-[a-z0-9]+)*$`, 3–60 chars), upload a node GeoJSON (`NUMMER` or `Knotenpunkt-ID`, including Unicode hyphen U+2010; Point or MultiPoint), then land on the next unrated node. The map shows that point and the always-on StEP street layer.
 
-Seven Zustand-nach-OSM attributes (two Ja/Nein, five keine/teilweise/gänzlich), skip, Enter saves and advances. Key caps are on the buttons. Keyboard is ignored while a text field is focused.
+Seven Zustand-nach-OSM attributes (two Ja/Nein, five keine/teilweise/gänzlich). One attribute is active (highlighted); every node starts at the top one. `Q` / `W` / `E` answer its first, second and third choice and move on to the next attribute; `Tab` and `Shift+Tab` move without answering. The footer has **Speichern** (`Enter`, saves and goes to the next node), **Nicht relevant** (`X`) and **Zurückstellen** (`Z`). `J` / `K` and the arrows next to the node id step through the nodes. Keyboard is ignored while a text field is focused.
 
-Progress is **bewertet/gesamt**. Completeness ignores virtual, Mapillary, and comment: a node is complete when it is skipped or all seven answers are set. Skip (`KP_Nichtbetrachten`) clears the seven and still counts as complete.
+Progress is **bewertet/gesamt**. Completeness ignores virtual, photos, source and notes: a node is complete when it is not relevant or all seven answers are set. **Nicht relevant** (`KP_Nichtbetrachten`) sets `KP_HVS` and `LSA_KP` to Nein, clears the other five and counts as complete. **Zurückstellen** (later) needs an internal note: without one the note field gets the focus and is marked; **Fehlendes Fotomaterial** above the field fills it in. The node is saved as incomplete, so it stays in **Offen**.
 
 `Betrachtung` is derived from the suggestions: `0` when both `KP_HVS` and `LSA_KP` are suggested as `0`, else `1` (also without those two suggestions, and never when the node has an `LSA_Konflikt`). At `0` the form shows a short hint instead of the seven attributes, and Enter skips the node; **Doch bewerten** reveals the attributes. Nodes that already have a rating (not skipped) show the attributes. With an `LSA_Konflikt` (`nur_OSM` / `nur_OpenData`: the sources disagree whether an LSA exists) the attributes stay visible and a warning says it is uncertain whether an LSA exists.
 
@@ -45,9 +45,9 @@ Progress is **bewertet/gesamt**. Completeness ignores virtual, Mapillary, and co
 
 Optional JSON array per area: `{ id, attribute, value, confidence, probabilities? }` with confidence 0–1. Optional `probabilities` maps every possible value (`"0"`/`"1"` or `keine`/`teilweise`/`gänzlich`) to its probability; the rapid form then shows the percentage on every button, otherwise only on the suggested one. `id` must match the node ID (`NUMMER` or `Knotenpunkt-ID`). `value` is `0`/`1` for `KP_HVS` and `LSA_KP`, `keine`/`teilweise`/`gänzlich` for the other five; one row per node and attribute. [infravelo-ml-knotenpunkte](https://github.com/FixMyBerlin/infravelo-ml-knotenpunkte) writes this file with `06_export_knotenpunkte.py`. Re-upload replaces suggestions for that area. Prefills empty rapid attributes; the cursor jumps to the first empty one. If all seven are suggested, Enter accepts them. Each suggested attribute is stored as `{ suggested, confidence, accepted }`. A mismatch shows “Vorschlag A, gewählt B”.
 
-## Weitere Angaben
+## Notes, source and photos
 
-**Weitere Angaben** (disclosure) has virtual (`ist_virtuell`), Mapillary-ID, and Kommentar. Completeness still ignores those three. They save with Speichern und weiter.
+Always shown below the attributes: **Hinweis an den Kunden** (`Kommentar`), **Hinweis intern** (`Kommentar_intern`), **Quelle** (`Quelle`: `Mapillary`, `infra3D`, `;`-separated) and virtual (`ist_virtuell`). Assigning a Mapillary photo ticks Mapillary, opening infra3D ticks infra3D; both can be unticked. The pipette above the photo in the viewer assigns the shown photo to the node; assigned photos are buttons next to it (click shows the photo, × removes it) and are stored `;`-separated in `Mapillary-ID`. All of these save with Speichern.
 
 ## Overview
 
@@ -59,15 +59,15 @@ The **Übersicht** step sits between Bewerten and Export. The map shows every up
 
 ## Export and /data
 
-JSON of full records (audit included). GeoJSON of local points with the result-file properties plus `qa` and a short correction summary. `/data` lists every KV rating for the project and does not need the local file.
+The Export step has three exports, each with a description: GeoJSON of the local points with the result-file properties, the rating, `qa` and a short correction summary (for GIS and delivery); JSON of the project's full records (history and suggestion audit included); JSON of all projects. All contain both notes, the source and the photos. `/data` (database icon in the header) lists the KV ratings of the project selected in the Datensatz step and does not need the local file. It keeps the rating page's URL state, so the same icon leads back to where you were; a clicked row becomes the selected node.
 
 ## Map
 
-OpenFreeMap Positron, Editor Layer Index backgrounds, and a private raster URL template (`{z}/{x}/{y}`) kept in this browser’s localStorage. Once set, that URL is the default here; `bg` can still pick Positron or an ELI layer. The key inside the URL stays on this machine and is never committed.
+OpenFreeMap Positron, Editor Layer Index backgrounds, and a private raster URL template (`{z}/{x}/{y}`) kept in this browser’s localStorage. Once set, that URL is the default here; `bg` can still pick Positron or an ELI layer. The key inside the URL stays on this machine and is never committed. The star at the end of a row in the background list makes it a favourite: favourites are buttons on the map with a short name (the year in the name) and the keys `1`–`9` by position, kept in localStorage.
 
 Street network: [Berlin Straßenabschnitte](https://tilda-geo.de/api/uploads/strassennetz-berlin-strassenabschnitte.pmtiles), source-layer `default`, colored by `strassenklasse1`. The legend starts closed. **An / Aus** toggles the layer and is stored in the URL (`streets=false` when off; omitted when on). Opening the color list stays in this browser session. Attribution: Geoportal Berlin / Detailnetz Berlin Straßenabschnitte, DL-DE/BY-2.0.
 
-Mapillary (rating step only, `photos=false` in the URL turns it off): photos of the last two years, detected traffic lights and markings from zoom 16, and one suggested view per street that reaches the node, looking into the junction. The best view opens in a floating photo viewer; the others are chips in the viewer and cones on the map. Above the form, counts of what Mapillary detected within 40 m open the nearest object in its best photo. Objects that Mapillary last saw before 2024 (`mapillaryFeaturesSeenFrom`) are not counted. Photos are coloured by age; the Mapillary control on the map switches to colours by photo type (`photoColor=type`). **Markierungen** in the viewer outlines bike-lane surfaces and markings. **Angezeigtes Foto übernehmen** in Weitere Angaben fills the Mapillary-ID. Built with `@osm-editor-kit/street-imagery` and `@osm-editor-kit/street-imagery-react`; the plan and its status are in [`MAPILLARY-PLAN.md`](MAPILLARY-PLAN.md). The token is `mapillaryToken` in [`src/config/app.const.ts`](src/config/app.const.ts).
+Mapillary (rating step only, `photos=false` in the URL turns it off): photos from the cut-off day on (`mapillaryCutoffDate`, 2024-01-01) and one suggested view per street that reaches the node, looking into the junction. The best view opens in a floating photo viewer; the others are chips in the viewer and cones on the map. The Mapillary control on the map switches the photos on and off and folds out the settings, as in TILDA: colour by age or photo type (`photoColor=type`), only 360° or only classic photos, and the package's date slider with marks for the photos in view and a line at the cut-off day. Type and date filter also apply to the suggested views; they reset on reload. Layers and their look come from `@osm-editor-kit/street-imagery-react`; the plan and its status are in [`MAPILLARY-PLAN.md`](MAPILLARY-PLAN.md). The token is `mapillaryToken` in [`src/config/app.const.ts`](src/config/app.const.ts).
 
 Fallback camera: zoom 14.6, lat 52.5076, lng 13.3115.
 
@@ -81,15 +81,15 @@ Fallback camera: zoom 14.6, lat 52.5076, lng 13.3115.
 
 Rapid form (required for complete unless skipped):
 
-- Knotenpunkt mit Hauptverkehrsstraße (HVS) — `KP_HVS` — Nein / Ja (`Q` / `W`)
-- LSA-Knotenpunkt — `LSA_KP` — Nein / Ja (`A` / `S`)
-- Markierte Radverkehrsfurten im Knotenpunkt — `Mar_RVF_KP` — keine / teilweise / gänzlich (`1` / `2` / `3`)
-- Rotmarkierung der Furt — `Furt_rot` — keine / teilweise / gänzlich (`4` / `5` / `6`)
-- Radfahrstreifen in Mittellage — `RFS_Mitte` — keine / teilweise / gänzlich (`7` / `8` / `9`)
-- Rad-Aufstellflächen für Linksabbiegen vorhanden — `Fl_Linksab` — keine / teilweise / gänzlich (`E` / `R` / `T`)
-- Vorgezogene Aufstellflächen vorhanden — `vorgez_Fl` — keine / teilweise / gänzlich (`D` / `F` / `G`)
+- Knotenpunkt mit Hauptverkehrsstraße (HVS) — `KP_HVS` — Nein / Ja
+- LSA-Knotenpunkt — `LSA_KP` — Nein / Ja
+- Markierte Radverkehrsfurten im Knotenpunkt — `Mar_RVF_KP` — keine / teilweise / gänzlich
+- Rotmarkierung der Furt — `Furt_rot` — keine / teilweise / gänzlich
+- Radfahrstreifen in Mittellage — `RFS_Mitte` — keine / teilweise / gänzlich
+- Rad-Aufstellflächen für Linksabbiegen vorhanden — `Fl_Linksab` — keine / teilweise / gänzlich
+- Vorgezogene Aufstellflächen vorhanden — `vorgez_Fl` — keine / teilweise / gänzlich
 
-Also: skip `X` (`KP_Nichtbetrachten`), previous `J`, next `K`, Enter save-and-next. The node heading can open compact read-only fields from the point: Referenz im Detailnetz (`okstra_id`), Bezirksnummer, Radverkehrsnetz (`ist_radvorrangnetz`).
+The choices of the active attribute are `Q` / `W` / `E`. The info button next to the node id opens compact read-only fields from the point: Referenz im Detailnetz (`okstra_id`), Bezirksnummer, Radverkehrsnetz (`ist_radvorrangnetz`).
 
 ## Deploy
 

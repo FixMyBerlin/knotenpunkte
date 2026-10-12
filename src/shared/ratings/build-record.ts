@@ -10,6 +10,8 @@ type BuildArgs = {
   actor: string
   at?: string
   kind?: HistoryKind
+  /** Put off for later: the record stays incomplete, whatever is filled in. */
+  deferred?: boolean
 }
 
 export function buildRatingRecord({
@@ -19,10 +21,14 @@ export function buildRatingRecord({
   actor,
   at = new Date().toISOString(),
   kind = 'save',
+  deferred = false,
 }: BuildArgs): RatingRecord {
   const skipped = isSkipped(draft)
-  const attributes = skipped ? { ...draft, ...clearedRapidAttributes() } : draft
-  const status = isRatingComplete(attributes) ? 'complete' : 'incomplete'
+  // A node that is not relevant is neither HVS nor LSA; the other attributes stay empty.
+  const attributes = skipped
+    ? { ...draft, ...clearedRapidAttributes(), KP_HVS: 0 as const, LSA_KP: 0 as const }
+    : draft
+  const status = !deferred && isRatingComplete(attributes) ? 'complete' : 'incomplete'
   const nextValues = {
     KP_HVS: attributes.KP_HVS,
     LSA_KP: attributes.LSA_KP,
@@ -33,8 +39,10 @@ export function buildRatingRecord({
     vorgez_Fl: attributes.vorgez_Fl,
     KP_Nichtbetrachten: attributes.KP_Nichtbetrachten,
     ist_virtuell: attributes.ist_virtuell,
-    'Mapillary-ID': attributes['Mapillary-ID'],
-    Kommentar: attributes.Kommentar,
+    'Mapillary-ID': attributes['Mapillary-ID'] || undefined,
+    Quelle: attributes.Quelle || undefined,
+    Kommentar: attributes.Kommentar || undefined,
+    Kommentar_intern: attributes.Kommentar_intern || undefined,
   }
   const history = [
     ...(previous?.history ?? []),
