@@ -4,13 +4,13 @@ export const OSM_OAUTH_LAND_FILENAME = 'osm-oauth-land.html'
 export const OSM_AUTH_RETURN_URL_KEY = '__osmAuthReturnUrl'
 
 /**
- * Non-confidential OSM OAuth 2 app (shared with Parkraum-Zählung for now).
+ * Non-confidential OSM OAuth 2 app of Knotenpunkte.
  * Redirect URIs that must be registered on the OSM app before login works:
  * - `http://127.0.0.1:33479/osm-oauth-land.html`
  * - `https://fixmyberlin.github.io/knotenpunkte/osm-oauth-land.html`
  * Scope: `read_prefs`. Public client id only, never a client secret.
  */
-export const osmClientId = 'j4p1-aU0G5a8JiWPMlTBaZhGMN-N-RHTEuO2qdSdyh8'
+export const osmClientId = 'mV4q3_OPMrW4kCfnPON30BRxAoKZPX0ZLxh8EjmHP-o'
 
 /**
  * Production key-value Worker. `kvApiKey` is a public project selector (`X-Api-Key`),
