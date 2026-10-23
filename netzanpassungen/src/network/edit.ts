@@ -59,6 +59,31 @@ function routeNameNear(network: Network, coords: LngLat[]) {
   return best?.name
 }
 
+type EdgeSnapTarget = Extract<SnapTarget, { type: 'edge' }>
+
+/** A virtual node on the edge at the target, named after the rule in `naming.ts`. */
+function newVirtualNode(network: Network, target: EdgeSnapTarget, extraTaken: string[]) {
+  const suggestion = suggestVirtualNodeName({
+    network,
+    host: target.edge,
+    stationM: target.stationM,
+    extraTaken,
+  })
+  const data: VirtualNodeEntry = {
+    kind: 'virtual_node',
+    name: suggestion.name,
+    name_vorschlag: suggestion.name,
+    lngLat: target.lngLat,
+    traeger: { art: target.edge.kind, ref: target.edge.ref, station_m: target.stationM },
+  }
+  return { id: newEntryId(), data }
+}
+
+/** The virtual node of a node suggestion; it is the only write. */
+export function planSuggestedNode(network: Network, target: EdgeSnapTarget): EntryWrite[] {
+  return [newVirtualNode(network, target, [])]
+}
+
 export type PlannedEdge = {
   writes: EntryWrite[]
   /** Keys of the virtual nodes created for the ends. */
@@ -84,22 +109,9 @@ export function planNewEdge(
 
   function nodeAt(target: SnapTarget) {
     if (target.type === 'node') return target.node.key
-    const id = newEntryId()
-    const suggestion = suggestVirtualNodeName({
-      network: current,
-      host: target.edge,
-      stationM: target.stationM,
-      extraTaken: pendingNames,
-    })
-    const data: VirtualNodeEntry = {
-      kind: 'virtual_node',
-      name: suggestion.name,
-      name_vorschlag: suggestion.name,
-      lngLat: target.lngLat,
-      traeger: { art: target.edge.kind, ref: target.edge.ref, station_m: target.stationM },
-    }
+    const { id, data } = newVirtualNode(current, target, pendingNames)
     writes.push({ id, data })
-    pendingNames.push(suggestion.name)
+    pendingNames.push(data.name)
     current = withPendingNode(current, id, data)
     newNodeKeys.push(virtualNodeKey(id))
     return virtualNodeKey(id)

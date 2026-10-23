@@ -18,6 +18,7 @@ import {
   useLastNewNodes,
   useVertexIndex,
 } from '@/components/draw-store'
+import { SuggestionsPanel } from '@/components/SuggestionsPanel'
 import { useDeleteSelection } from '@/components/use-delete-selection'
 import { useNetwork, useSaveEntries } from '@/components/use-netz'
 import { nodeName } from '@/network/element-nr'
@@ -130,12 +131,14 @@ export function DrawPanel() {
 
       {newNodes.length > 0 ? (
         <div className="space-y-3">
-          <Subheading>Neue virtuelle Knoten der letzten Kante</Subheading>
+          <Subheading>Zuletzt angelegte virtuelle Knoten</Subheading>
           {newNodes.map((node) => (
             <VirtualNodeName key={`${node.key}:${node.name}`} network={network} node={node} />
           ))}
         </div>
       ) : null}
+
+      <SuggestionsPanel />
 
       {sel ? <Selection network={network} selected={sel} /> : null}
     </div>

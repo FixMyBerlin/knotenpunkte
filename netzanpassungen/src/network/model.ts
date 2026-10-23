@@ -1,6 +1,7 @@
 import { lineLengthM, type LngLat } from './geo'
 import type { InputFile } from './input-schema'
 import type { HostKind, NewEdgeEntry, Stored, VirtualNodeEntry } from './schema'
+import { suggestionsOf, type NodeSuggestion } from './suggestions'
 
 /** `amtlich`: Detailnetz node; `bestand`: virtual node of the input file; `neu`: drawn here. */
 type NodeKind = 'amtlich' | 'bestand' | 'neu'
@@ -105,6 +106,7 @@ export type BaseNetwork = {
   edgeIndex: GridIndex
   routes: { name: string; coords: LngLat[] }[]
   routeIndex: GridIndex
+  suggestions: NodeSuggestion[]
 }
 
 const baseNamesCache = new WeakMap<BaseNetwork, Set<string>>()
@@ -209,6 +211,7 @@ export function buildBaseNetwork(file: InputFile): BaseNetwork {
     edgeIndex: buildGridIndex(edges.map((edge) => edge.coords)),
     routes,
     routeIndex: buildGridIndex(routes.map((route) => route.coords)),
+    suggestions: suggestionsOf(file.knoten_vorschlaege?.features ?? []),
   }
 }
 

@@ -19,6 +19,7 @@ bun run dev-netz
 - `ren_netz`: the REN+ Kartierungs-Netz with `element_nr`, `von_knoten`, `bis_knoten`, `radverkehrsnetz`
 - `radfernwege`: `name`
 - `luecken`: parts of the Radfernwege more than 10 m from any edge, at least 20 m long
+- `knoten_vorschlaege` (optional): where a Radfernweg crosses a Detailnetz edge at least 15 m from any node; with `winkel_grad`, `steil` (30° or more) and `luecke_nah`
 
 The **Gebiet** step imports it into IndexedDB of this browser (about 25 MB for Berlin). Drawn nodes and edges are shared.
 
@@ -35,6 +36,10 @@ A start or end on an edge creates a virtual node there. The sidebar shows its na
 Selected edges drawn here show their points: drag a point, drag a middle point for a new one, click a point and press `Entf` to delete it. A selected virtual node drawn here can be dragged along its edge. `Entf` deletes the selected edge or node (marked as deleted, history stays). Edges with virtual nodes on them and nodes with edges cannot be deleted.
 
 The Mapillary photos and infra3D work as in the Knotenpunkte app, at the selected node.
+
+## Node suggestions
+
+In the **Zeichnen** step the sidebar section **Knotenvorschläge** lists the crossings of `knoten_vorschlaege` as orange rings on the map (default: only steep ones; filter: steep with a gap nearby, steep, all). Click a ring or **Ersten Vorschlag zeigen**. **Übernehmen** creates the virtual node on the edge (same host rule and name suggestion as when drawing) and moves on to the next suggestion; **Überspringen** hides it (kept in this browser only, **zurücksetzen** brings them back). A suggestion with a node within 3 m counts as taken over.
 
 ## Names of virtual nodes
 

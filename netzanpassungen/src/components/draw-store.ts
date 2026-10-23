@@ -44,6 +44,7 @@ interface DrawStore {
     setMessage: (message: DrawStore['message']) => void
     finished: (endTarget: SnapTarget, newNodes: string[]) => void
     flyTo: (lngLat: LngLat) => void
+    setLastNewNodes: (keys: string[]) => void
   }
 }
 
@@ -78,6 +79,7 @@ const useDrawStore = create<DrawStore>()((set) => ({
     // The end of an edge is the start of the next one, so a route is drawn in one go.
     finished: (endTarget, newNodes) =>
       set({ start: endTarget, points: [], lastNewNodes: newNodes, message: null }),
+    setLastNewNodes: (lastNewNodes) => set({ lastNewNodes, message: null }),
     flyTo: (lngLat) =>
       set((state) => ({ flyTarget: { lngLat, id: (state.flyTarget?.id ?? 0) + 1 } })),
   },

@@ -8,11 +8,17 @@ const entries = [
   { label: 'Radfernweg', color: '#16a34a', style: 'wide' },
   { label: 'Lücke (Radfernweg ohne Kante)', color: '#dc2626', style: 'dashed' },
   { label: 'Neue Kante', color: '#a855f7', style: 'line' },
+  { label: 'Knotenvorschlag (Kreuzung)', color: '#ea580c', style: 'ring' },
   { label: 'Virtueller Knoten, neu', color: '#a855f7', style: 'dot' },
   { label: 'Virtueller Knoten, Bestand', color: '#d8b4fe', style: 'dot' },
 ] as const
 
 function Swatch({ color, style }: { color: string; style: (typeof entries)[number]['style'] }) {
+  if (style === 'ring') {
+    return (
+      <span className="size-2.5 rounded-full bg-white" style={{ border: `2px solid ${color}` }} />
+    )
+  }
   if (style === 'dot') {
     return (
       <span className="size-2.5 rounded-full ring-1 ring-white" style={{ background: color }} />

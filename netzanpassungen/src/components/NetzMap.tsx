@@ -29,8 +29,10 @@ import {
   useVertexIndex,
 } from '@/components/draw-store'
 import { NetzLegend } from '@/components/NetzLegend'
+import { useSuggestionActions, useSuggestionsVisible } from '@/components/suggestion-store'
 import { useDeleteSelection } from '@/components/use-delete-selection'
 import { useNetwork, useSaveEntries } from '@/components/use-netz'
+import { useOpenSuggestions } from '@/components/use-suggestions'
 import { planEditEdgeCoords, planMoveVirtualNode, planNewEdge } from '@/network/edit'
 import { distanceM, metersPerPixel, nearestOnLine, type LngLat } from '@/network/geo'
 import { hostKey, type NetNode } from '@/network/model'
@@ -50,6 +52,7 @@ const EDGE_TOLERANCE_PX = 10
 const HANDLE_TOLERANCE_PX = 9
 
 const NEW_COLOR = '#a855f7'
+const SUGGESTION_COLOR = '#ea580c'
 const SELECTED_COLOR = '#facc15'
 
 const emptyCollection: FeatureCollection = { type: 'FeatureCollection', features: [] }
@@ -109,6 +112,12 @@ export function NetzMap() {
   const deleteSelection = useDeleteSelection()
   const textEntryFocused = useTextEntryFocused()
   const handleMapillaryClick = useMapillaryMapClick()
+  const suggestionActions = useSuggestionActions()
+  const suggestionsVisible = useSuggestionsVisible() && step === 'zeichnen'
+  const { open: openSuggestions, selected: selectedSuggestion } = useOpenSuggestions(
+    gebiet,
+    network,
+  )
 
   const drawing = step === 'zeichnen' && active
   const selectedNode = sel && network && isNodeKey(sel) ? network.nodeByKey(sel) : undefined
@@ -217,7 +226,19 @@ export function NetzMap() {
         return
       }
     }
+    if (suggestionsVisible) {
+      const suggestion = openSuggestions
+        .map((item) => ({ item, distance: distanceM(item.lngLat, lngLat) }))
+        .filter(({ distance }) => distance <= tolerance.handle)
+        .sort((a, b) => a.distance - b.distance)[0]
+      if (suggestion) {
+        suggestionActions.select(suggestion.item.id)
+        select(undefined)
+        return
+      }
+    }
     const target = snap(network, lngLat, tolerance.node, tolerance.edge)
+    suggestionActions.select(null)
     select(target ? (target.type === 'node' ? target.node.key : target.edge.key) : undefined)
   }
 
@@ -333,6 +354,16 @@ export function NetzMap() {
   )
 
   // Sources of the map.
+  const suggestionPoints: FeatureCollection = {
+    type: 'FeatureCollection',
+    features: suggestionsVisible
+      ? openSuggestions.map((suggestion) => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: suggestion.lngLat },
+          properties: { selected: suggestion.id === selectedSuggestion?.id ? 1 : 0 },
+        }))
+      : [],
+  }
   const virtualNodes: FeatureCollection = {
     type: 'FeatureCollection',
     features: (network?.virtualNodes ?? []).map((node) => {
@@ -686,6 +717,18 @@ export function NetzMap() {
             'text-anchor': 'top',
           }}
           paint={{ 'text-color': '#581c87', 'text-halo-color': '#fff', 'text-halo-width': 1.5 }}
+        />
+      </Source>
+      <Source id="na-vorschlaege" type="geojson" data={suggestionPoints}>
+        <Layer
+          id="na-vorschlaege-circle"
+          type="circle"
+          paint={{
+            'circle-radius': ['case', ['==', ['get', 'selected'], 1], 9, 6],
+            'circle-color': ['case', ['==', ['get', 'selected'], 1], SELECTED_COLOR, '#ffffff'],
+            'circle-stroke-color': SUGGESTION_COLOR,
+            'circle-stroke-width': 3,
+          }}
         />
       </Source>
       <Source id="na-draft" type="geojson" data={draft}>

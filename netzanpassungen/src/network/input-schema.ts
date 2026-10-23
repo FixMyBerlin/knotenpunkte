@@ -45,6 +45,18 @@ const routeProperties = z.object({ name: optionalText })
 
 const gapProperties = z.object({ name: optionalText, laenge_m: z.number() })
 
+const suggestionProperties = z.object({
+  element_nr: optionalText,
+  strassenname: optionalText,
+  verkehrsebene: z.number().nullable().optional(),
+  routen: optionalText,
+  winkel_grad: z.number(),
+  steil: z.boolean(),
+  luecke_nah: z.boolean(),
+  station_m: z.number(),
+  abstand_ende_m: z.number(),
+})
+
 const inputFileSchema = z.object({
   schema: z.literal(INPUT_SCHEMA),
   gebiet: z.string(),
@@ -55,6 +67,8 @@ const inputFileSchema = z.object({
   ren_netz: featureCollection(renProperties, lineString),
   radfernwege: featureCollection(routeProperties, lineString),
   luecken: featureCollection(gapProperties, lineString),
+  /** Missing in files from before the suggestions. */
+  knoten_vorschlaege: featureCollection(suggestionProperties, point).optional(),
 })
 
 export type InputFile = z.infer<typeof inputFileSchema>
