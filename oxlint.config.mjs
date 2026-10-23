@@ -34,7 +34,7 @@ export default defineConfig({
       },
     },
     {
-      files: ['src/components/**', 'src/routes/**'],
+      files: ['src/components/**', 'src/routes/**', 'shared/components/**'],
       excludeFiles: ['**/*.test.ts', '**/*.test.tsx'],
       jsPlugins: [{ name: 'compat', specifier: 'eslint-plugin-compat' }],
       rules: {

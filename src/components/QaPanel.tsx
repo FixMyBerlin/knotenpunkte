@@ -1,6 +1,6 @@
-import { Button } from '@/components/ui/button'
-import { Callout } from '@/components/ui/callout'
-import { Text } from '@/components/ui/text'
+import { Button } from '@shared/components/ui/button'
+import { Callout } from '@shared/components/ui/callout'
+import { Text } from '@shared/components/ui/text'
 import { canRunQa } from '@/shared/qa/qa'
 import type { RatingRecord } from '@/shared/ratings/schema'
 

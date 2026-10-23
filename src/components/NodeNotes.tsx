@@ -1,10 +1,10 @@
+import { Field, Fieldset, Label } from '@shared/components/ui/fieldset'
+import { Textarea } from '@shared/components/ui/textarea'
+import { useFocusInside } from '@shared/dom/text-entry-focus'
+import { ignorePasswordManagerProps } from '@shared/form-ignore-password-manager'
+import { addToList, removeFromList, splitList } from '@shared/list-field'
 import { useHotkeys } from '@tanstack/react-hotkeys'
-import { Field, Fieldset, Label } from '@/components/ui/fieldset'
-import { Textarea } from '@/components/ui/textarea'
-import { useFocusInside } from '@/shared/dom/text-entry-focus'
-import { ignorePasswordManagerProps } from '@/shared/form-ignore-password-manager'
 import { customerNoteHotkey, internalNoteHotkey, sourceHotkey } from '@/shared/ratings/hotkeys'
-import { addToList, removeFromList, splitList } from '@/shared/ratings/list-field'
 import { ratingSources, type RapidDraft } from '@/shared/ratings/schema'
 
 type Props = {

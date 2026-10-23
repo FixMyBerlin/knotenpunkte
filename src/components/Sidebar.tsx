@@ -1,10 +1,10 @@
+import { Button } from '@shared/components/ui/button'
+import { Callout } from '@shared/components/ui/callout'
+import { Sidebar as SidebarNav, SidebarBody, SidebarSection } from '@shared/components/ui/sidebar'
 import { DatasetPanel } from '@/components/DatasetPanel'
 import { ExportPanel } from '@/components/ExportPanel'
 import { OverviewPanel } from '@/components/OverviewPanel'
 import { useAppStepNav } from '@/components/shared/use-app-step-nav'
-import { Button } from '@/components/ui/button'
-import { Callout } from '@/components/ui/callout'
-import { Sidebar as SidebarNav, SidebarBody, SidebarSection } from '@/components/ui/sidebar'
 import { WorkPanel } from '@/components/WorkPanel'
 
 export function AppSidebar() {

@@ -1,5 +1,5 @@
+import { routerSearch } from '@shared/routing/router-search'
 import { describe, expect, it } from 'vitest'
-import { routerSearch } from './router-search'
 import { dataSearchSchema, indexSearchSchema } from './search-schema'
 
 function roundTrip(search: Record<string, unknown>) {

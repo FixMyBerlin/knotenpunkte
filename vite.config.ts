@@ -39,6 +39,7 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       '@': path.resolve(projectRoot, 'src'),
+      '@shared': path.resolve(projectRoot, 'shared'),
     },
   },
   server: {

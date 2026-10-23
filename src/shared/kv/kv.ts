@@ -1,6 +1,7 @@
-import { kvApiKey, kvBaseUrl, kvProject } from '@/config/app.const'
-import { createKvClient } from '@/shared/kv-client'
-import { getOsmToken } from '@/shared/osm/osm-auth'
+import { kvBaseUrl } from '@shared/config/shared.const'
+import { createKvClient } from '@shared/kv-client'
+import { getOsmToken } from '@shared/osm/osm-auth'
+import { kvApiKey, kvProject } from '@/config/app.const'
 import type { RatingRecord } from '@/shared/ratings/schema'
 
 /** Shared Worker client. Reads send Origin + X-Api-Key; writes add OSM Bearer. */

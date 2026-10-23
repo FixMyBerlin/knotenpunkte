@@ -1,5 +1,5 @@
 {
-  "include": ["**/*.ts", "**/*.tsx", "vite.config.ts"],
+  "include": ["src", "shared", "tests", "*.ts"],
   "exclude": ["node_modules", "**/*.e2e.ts", "dist"],
   "compilerOptions": {
     "target": "ES2025",
@@ -30,7 +30,8 @@
     "noErrorTruncation": true,
 
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@shared/*": ["./shared/*"]
     }
   }
 }

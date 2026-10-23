@@ -17,7 +17,7 @@ export default defineConfig({
     newlinesBetween: false,
   },
   sortTailwindcss: {
-    stylesheet: 'src/components/layouts/global.css',
+    stylesheet: 'shared/components/layouts/global.css',
     functions: ['twMerge', 'twJoin', 'clsx'],
   },
   sortPackageJson: true,

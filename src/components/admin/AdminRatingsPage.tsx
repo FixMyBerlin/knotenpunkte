@@ -1,9 +1,8 @@
-import { useQuery } from '@tanstack/react-query'
-import { useNavigate, useSearch } from '@tanstack/react-router'
-import { Callout } from '@/components/ui/callout'
-import { Field, Label } from '@/components/ui/fieldset'
-import { Heading, Subheading } from '@/components/ui/heading'
-import { Input } from '@/components/ui/input'
+import { cn } from '@shared/cn'
+import { Callout } from '@shared/components/ui/callout'
+import { Field, Label } from '@shared/components/ui/fieldset'
+import { Heading, Subheading } from '@shared/components/ui/heading'
+import { Input } from '@shared/components/ui/input'
 import {
   Table,
   TableBody,
@@ -11,10 +10,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { Text } from '@/components/ui/text'
-import { cn } from '@/shared/cn'
-import { ignorePasswordManagerProps } from '@/shared/form-ignore-password-manager'
+} from '@shared/components/ui/table'
+import { Text } from '@shared/components/ui/text'
+import { ignorePasswordManagerProps } from '@shared/form-ignore-password-manager'
+import { useQuery } from '@tanstack/react-query'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 import type { RatingStoreEntry } from '@/shared/ratings/rating-store'
 import { allRatingsQueryKey, ratingStore } from '@/shared/ratings/ratings-query'
 import { rapidAttributeKeys, rapidAttributeMeta } from '@/shared/ratings/schema'

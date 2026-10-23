@@ -1,0 +1,31 @@
+import { Button } from '@shared/components/ui/button'
+import { Callout } from '@shared/components/ui/callout'
+import { useOsmAuth } from '@shared/components/use-osm-auth'
+
+export function AuthButton() {
+  const auth = useOsmAuth()
+
+  if (!auth.configured) {
+    return (
+      <Callout title="OSM-Login nicht konfiguriert">
+        Client-ID in <code>app.const.ts</code> eintragen.
+      </Callout>
+    )
+  }
+
+  if (auth.authenticated) {
+    const displayName = auth.displayName ?? 'OSM'
+    const label = `Abmelden (${displayName})`
+    return (
+      <Button outline onClick={auth.logout} title={label} aria-label={label}>
+        Abmelden
+      </Button>
+    )
+  }
+
+  return (
+    <Button color="sky" onClick={auth.login}>
+      Anmelden
+    </Button>
+  )
+}

@@ -1,12 +1,12 @@
+import { cn } from '@shared/cn'
+import { Tooltip } from '@shared/components/Tooltip/Tooltip'
+import { Button } from '@shared/components/ui/button'
+import { Callout } from '@shared/components/ui/callout'
+import { scrollIntoContainer } from '@shared/dom/scroll-into-container'
+import { useFocusInside, useTextEntryFocused } from '@shared/dom/text-entry-focus'
 import { useHotkeys } from '@tanstack/react-hotkeys'
 import { useEffect, useRef, useState } from 'react'
 import { CUSTOMER_NOTE_ID, NODE_NOTES_ID } from '@/components/NodeNotes'
-import { Tooltip } from '@/components/shared/Tooltip/Tooltip'
-import { Button } from '@/components/ui/button'
-import { Callout } from '@/components/ui/callout'
-import { cn } from '@/shared/cn'
-import { scrollIntoContainer } from '@/shared/dom/scroll-into-container'
-import { useFocusInside, useTextEntryFocused } from '@/shared/dom/text-entry-focus'
 import {
   choiceHotkeys,
   deferHotkey,

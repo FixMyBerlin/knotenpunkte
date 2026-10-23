@@ -2,55 +2,27 @@ import {
   streetImageryInteractiveLayerIds,
   VIEWPOINT_DIRECTION_LAYER_ID,
 } from '@osm-editor-kit/street-imagery-react'
+import { BaseMap } from '@shared/components/map/BaseMap'
+import { MapillaryLayers, useMapillaryMapClick } from '@shared/components/mapillary/MapillaryLayers'
+import { MapillaryToggle } from '@shared/components/mapillary/MapillaryToggle'
+import { MAIN_MAP_ID } from '@shared/map/map-ids'
+import { mapillaryProviders } from '@shared/mapillary/photo-style'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import type { MapLayerMouseEvent, MapLibreEvent } from 'maplibre-gl'
+import type { MapLayerMouseEvent } from 'maplibre-gl'
 import { useEffect } from 'react'
-import 'maplibre-gl/dist/maplibre-gl.css'
-import '@/shared/map/maplibre-worker'
-import {
-  AttributionControl,
-  Layer,
-  Map,
-  Source,
-  useMap,
-  type ViewStateChangeEvent,
-} from 'react-map-gl/maplibre'
-import { MapBackgroundFavorites } from '@/components/MapBackgroundFavorites'
-import { MapBackgroundLayerControl } from '@/components/MapBackgroundLayerControl'
-import { MapBackgroundLayerSource } from '@/components/MapBackgroundLayerSource'
-import { Infra3dLink } from '@/components/mapillary/Infra3dLink'
-import { MapillaryLayers, useMapillaryMapClick } from '@/components/mapillary/MapillaryLayers'
-import { MapillaryToggle } from '@/components/mapillary/MapillaryToggle'
-import { NodePhotoViewer } from '@/components/mapillary/NodePhotoViewer'
-import { MapResetNorthPitchButton } from '@/components/MapResetNorthPitchButton'
-import {
-  useBackgroundChoice,
-  useMapUiActions,
-  usePrivateRasters,
-} from '@/components/shared/map-ui-store'
-import { StreetsLayer } from '@/components/StreetsLayer'
-import { StreetsLegend } from '@/components/StreetsLegend'
+import { Layer, Source, useMap } from 'react-map-gl/maplibre'
+import { RatingInfra3dLink, RatingPhotoViewer } from '@/components/RatingPhotoLinks'
 import { Route } from '@/routes/index'
 import { loadNodes } from '@/shared/datasets/dataset-idb'
-import { exposeMainMapForDebugging } from '@/shared/map/expose-main-map'
 import {
   interactiveNodeLayerIds,
-  MAIN_MAP_ID,
   NODES_LABELS_LAYER_ID,
   NODES_LAYER_ID,
   NODES_SELECTED_LAYER_ID,
   NODES_SOURCE_ID,
 } from '@/shared/map/map-ids'
-import { nodeStatusColors, OPENFREEMAP_POSITRON, privateRasterStyle } from '@/shared/map/node-style'
-import {
-  backgroundChoiceId,
-  readBackgroundChoice,
-  readPrivateRasters,
-  resolveBackgroundChoice,
-} from '@/shared/map/private-raster'
-import { usePmtilesProtocol } from '@/shared/map/use-pmtiles-protocol'
-import { mapillaryProviders } from '@/shared/mapillary/photo-style'
+import { nodeStatusColors } from '@/shared/map/node-style'
 import { nodeLngLat, type JunctionNodeFeature } from '@/shared/nodes/schema'
 import { defaultWorkNodeId, matchesStatusFilter } from '@/shared/ratings/queue'
 import { ratingStore, ratingsQueryKey } from '@/shared/ratings/ratings-query'
@@ -97,7 +69,6 @@ const photoLayerIds = [
 ]
 
 export function RatingMap() {
-  usePmtilesProtocol()
   const navigate = useNavigate({ from: Route.fullPath })
   const search = Route.useSearch()
   const map = searchMapParam(search)
@@ -108,17 +79,6 @@ export function RatingMap() {
   const photosOn = resolvePhotosOn(search) && currentStep === 'work'
   const photoColor = resolvePhotoColor(search)
   const handleMapillaryClick = useMapillaryMapClick()
-  const { setBackgroundChoice, setMapBearing, setMapPitch, setPrivateRasters } = useMapUiActions()
-  const privateRasters = usePrivateRasters()
-  const storedBackground = useBackgroundChoice()
-
-  useEffect(
-    function hydrateBackgroundFromStorage() {
-      setPrivateRasters(readPrivateRasters())
-      setBackgroundChoice(readBackgroundChoice())
-    },
-    [setPrivateRasters, setBackgroundChoice],
-  )
 
   const nodesQuery = useQuery({
     queryKey: ['dataset', dataset],
@@ -174,172 +134,130 @@ export function RatingMap() {
   const photoNode =
     selectedFeature && flyTo ? { id: selectedFeature.properties.id, lngLat: flyTo } : null
 
-  const effectiveBg = bg ?? (storedBackground || undefined)
-  const background = resolveBackgroundChoice(effectiveBg, privateRasters)
-  const mapStyle =
-    background.kind === 'private' ? privateRasterStyle(background.url) : OPENFREEMAP_POSITRON
-  const eliId = background.kind === 'eli' ? background.id : null
-
   return (
-    <div className="relative h-full w-full">
-      <Map
-        id={MAIN_MAP_ID}
-        mapStyle={mapStyle}
-        initialViewState={{
-          longitude: map.lng,
-          latitude: map.lat,
-          zoom: map.zoom,
-        }}
-        style={{ width: '100%', height: '100%' }}
-        attributionControl={false}
-        interactiveLayerIds={[...interactiveNodeLayerIds, ...(photosOn ? photoLayerIds : [])]}
-        onLoad={(event: MapLibreEvent) => {
-          exposeMainMapForDebugging(event.target)
-          setMapBearing(event.target.getBearing())
-          setMapPitch(event.target.getPitch())
-        }}
-        onRotate={(event: ViewStateChangeEvent) => {
-          setMapBearing(event.viewState.bearing)
-        }}
-        onRotateEnd={(event: ViewStateChangeEvent) => {
-          setMapBearing(event.viewState.bearing)
-        }}
-        onPitch={(event: ViewStateChangeEvent) => {
-          setMapPitch(event.viewState.pitch)
-        }}
-        onPitchEnd={(event: ViewStateChangeEvent) => {
-          setMapPitch(event.viewState.pitch)
-        }}
-        onMoveEnd={(event: ViewStateChangeEvent) => {
-          const { latitude, longitude, zoom } = event.viewState
-          void navigate({
-            search: (previous) => ({
-              ...previous,
-              map: serializeIndexSearchMap({ zoom, lat: latitude, lng: longitude }),
-            }),
-            replace: true,
-          })
-        }}
-        onClick={(event: MapLayerMouseEvent) => {
-          const id = nodeIdFromEvent(event)
-          if (!id) {
-            if (photosOn) handleMapillaryClick(event)
-            return
-          }
-          void navigate({
-            search: (previous) => ({
-              ...previous,
-              node: id,
-              step: 'work',
-            }),
-            replace: true,
-          })
-        }}
-      >
-        <AttributionControl compact position="bottom-right" />
-        <MapBackgroundLayerSource backgroundLayerId={eliId} />
-        {streetsOn ? <StreetsLayer /> : null}
-        {flyTo ? <FlyToSelected lng={flyTo[0]} lat={flyTo[1]} /> : null}
-        {photosOn ? (
-          <MapillaryLayers
-            node={photoNode}
-            zoom={map.zoom}
-            viewportKey={search.map}
-            streetsOn={streetsOn}
-            photoColor={photoColor}
-          />
-        ) : null}
-        <Source id={NODES_SOURCE_ID} type="geojson" data={geojson}>
-          <Layer
-            id={NODES_LAYER_ID}
-            type="circle"
-            paint={{
-              'circle-color': ['get', 'color'],
-              'circle-stroke-color': ['get', 'stroke'],
-              'circle-stroke-width': ['case', ['==', ['get', 'selected'], 1], 3, 1],
-              'circle-radius': [
-                'case',
-                ['==', ['get', 'selected'], 1],
-                8,
-                ['==', ['get', 'workDim'], 1],
-                5.5,
-                6,
-              ],
-              'circle-opacity': ['case', ['==', ['get', 'workDim'], 1], 0.8, 1],
-              'circle-stroke-opacity': ['case', ['==', ['get', 'workDim'], 1], 0.8, 1],
-            }}
-          />
-          <Layer
-            id={NODES_SELECTED_LAYER_ID}
-            type="circle"
-            filter={['==', ['get', 'selected'], 1]}
-            paint={{
-              'circle-color': 'transparent',
-              'circle-stroke-color': '#fff',
-              'circle-stroke-width': 2,
-              'circle-radius': 11,
-            }}
-          />
-          <Layer
-            id={NODES_LABELS_LAYER_ID}
-            type="symbol"
-            minzoom={15}
-            layout={{
-              'text-field': ['get', 'id'],
-              'text-size': 10,
-              'text-font': ['Noto Sans Regular'],
-              'text-offset': [0, 1.1],
-              'text-anchor': 'top',
-            }}
-            paint={{
-              'text-color': '#222',
-              'text-halo-color': '#fff',
-              'text-halo-width': 1,
-              'text-opacity': ['step', ['zoom'], 0, 15, 1],
-            }}
-          />
-        </Source>
-      </Map>
-      {photosOn && photoNode ? <NodePhotoViewer node={photoNode} /> : null}
-      <div className="pointer-events-none absolute top-3 right-3 z-10 flex flex-col items-end gap-2 *:pointer-events-auto">
-        <MapResetNorthPitchButton />
-        <MapBackgroundLayerControl background={background} lat={map.lat} lng={map.lng} />
-        <MapBackgroundFavorites activeId={backgroundChoiceId(background)} />
-        <StreetsLegend
+    <BaseMap
+      view={map}
+      bg={bg}
+      onViewChange={(view) => {
+        void navigate({
+          search: (previous) => ({ ...previous, map: serializeIndexSearchMap(view) }),
+          replace: true,
+        })
+      }}
+      streetsOn={streetsOn}
+      onStreetsChange={(on) => {
+        void navigate({
+          search: (previous) => ({ ...previous, streets: on ? undefined : false }),
+          replace: true,
+        })
+      }}
+      interactiveLayerIds={[...interactiveNodeLayerIds, ...(photosOn ? photoLayerIds : [])]}
+      onClick={(event: MapLayerMouseEvent) => {
+        const id = nodeIdFromEvent(event)
+        if (!id) {
+          if (photosOn) handleMapillaryClick(event)
+          return
+        }
+        void navigate({
+          search: (previous) => ({
+            ...previous,
+            node: id,
+            step: 'work',
+          }),
+          replace: true,
+        })
+      }}
+      overlay={photosOn && photoNode ? <RatingPhotoViewer node={photoNode} /> : null}
+      controls={
+        currentStep === 'work' ? (
+          <>
+            <MapillaryToggle
+              photosOn={photosOn}
+              onPhotosChange={(on) => {
+                void navigate({
+                  search: (previous) => ({ ...previous, photos: on ? undefined : false }),
+                  replace: true,
+                })
+              }}
+              zoom={map.zoom}
+              viewportKey={search.map}
+              photoColor={photoColor}
+              onPhotoColorChange={(mode) => {
+                void navigate({
+                  search: (previous) => ({
+                    ...previous,
+                    photoColor: mode === 'type' ? ('type' as const) : undefined,
+                  }),
+                  replace: true,
+                })
+              }}
+            />
+            {photoNode ? <RatingInfra3dLink node={photoNode} /> : null}
+          </>
+        ) : null
+      }
+    >
+      {flyTo ? <FlyToSelected lng={flyTo[0]} lat={flyTo[1]} /> : null}
+      {photosOn ? (
+        <MapillaryLayers
+          node={photoNode}
+          zoom={map.zoom}
+          viewportKey={search.map}
           streetsOn={streetsOn}
-          onStreetsChange={(on) => {
-            void navigate({
-              search: (previous) => ({ ...previous, streets: on ? undefined : false }),
-              replace: true,
-            })
+          photoColor={photoColor}
+        />
+      ) : null}
+      <Source id={NODES_SOURCE_ID} type="geojson" data={geojson}>
+        <Layer
+          id={NODES_LAYER_ID}
+          type="circle"
+          paint={{
+            'circle-color': ['get', 'color'],
+            'circle-stroke-color': ['get', 'stroke'],
+            'circle-stroke-width': ['case', ['==', ['get', 'selected'], 1], 3, 1],
+            'circle-radius': [
+              'case',
+              ['==', ['get', 'selected'], 1],
+              8,
+              ['==', ['get', 'workDim'], 1],
+              5.5,
+              6,
+            ],
+            'circle-opacity': ['case', ['==', ['get', 'workDim'], 1], 0.8, 1],
+            'circle-stroke-opacity': ['case', ['==', ['get', 'workDim'], 1], 0.8, 1],
           }}
         />
-        {currentStep === 'work' ? (
-          <MapillaryToggle
-            photosOn={photosOn}
-            onPhotosChange={(on) => {
-              void navigate({
-                search: (previous) => ({ ...previous, photos: on ? undefined : false }),
-                replace: true,
-              })
-            }}
-            zoom={map.zoom}
-            viewportKey={search.map}
-            photoColor={photoColor}
-            onPhotoColorChange={(mode) => {
-              void navigate({
-                search: (previous) => ({
-                  ...previous,
-                  photoColor: mode === 'type' ? ('type' as const) : undefined,
-                }),
-                replace: true,
-              })
-            }}
-          />
-        ) : null}
-        {currentStep === 'work' && photoNode ? <Infra3dLink node={photoNode} /> : null}
-      </div>
-    </div>
+        <Layer
+          id={NODES_SELECTED_LAYER_ID}
+          type="circle"
+          filter={['==', ['get', 'selected'], 1]}
+          paint={{
+            'circle-color': 'transparent',
+            'circle-stroke-color': '#fff',
+            'circle-stroke-width': 2,
+            'circle-radius': 11,
+          }}
+        />
+        <Layer
+          id={NODES_LABELS_LAYER_ID}
+          type="symbol"
+          minzoom={15}
+          layout={{
+            'text-field': ['get', 'id'],
+            'text-size': 10,
+            'text-font': ['Noto Sans Regular'],
+            'text-offset': [0, 1.1],
+            'text-anchor': 'top',
+          }}
+          paint={{
+            'text-color': '#222',
+            'text-halo-color': '#fff',
+            'text-halo-width': 1,
+            'text-opacity': ['step', ['zoom'], 0, 15, 1],
+          }}
+        />
+      </Source>
+    </BaseMap>
   )
 }
 

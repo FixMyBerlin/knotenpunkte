@@ -1,6 +1,6 @@
+import { berlinMapFallback } from '@shared/config/shared.const'
+import { parseMapParam, serializeMapParam, type MapParam } from '@shared/map/map-param'
 import { z } from 'zod'
-import { berlinMapFallback } from '@/config/app.const'
-import { parseMapParam, serializeMapParam, type MapParam } from '@/shared/map/map-param'
 import { statusFilters } from '@/shared/ratings/queue'
 
 const mapParamFallback: MapParam = berlinMapFallback

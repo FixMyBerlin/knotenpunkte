@@ -1,13 +1,15 @@
 import { StreetImageryLocaleProvider } from '@osm-editor-kit/street-imagery-react'
+import { KvClientProvider } from '@shared/kv/kv-context'
+import { routerSearch } from '@shared/routing/router-search'
+import { viteBaseToRouterBasepath } from '@shared/site-base'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
+import '@shared/mapillary/setup'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { routerSearch } from '@/shared/routing/router-search'
-import { viteBaseToRouterBasepath } from '@/shared/site-base'
+import '@shared/components/layouts/global.css'
+import { kv } from '@/shared/kv/kv'
 import { routeTree } from './routeTree.gen'
-import './components/layouts/global.css'
-import '@/shared/mapillary/setup'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,9 +36,11 @@ declare module '@tanstack/react-router' {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <StreetImageryLocaleProvider locale="de">
-        <RouterProvider router={router} />
-      </StreetImageryLocaleProvider>
+      <KvClientProvider client={kv}>
+        <StreetImageryLocaleProvider locale="de">
+          <RouterProvider router={router} />
+        </StreetImageryLocaleProvider>
+      </KvClientProvider>
     </QueryClientProvider>
   </StrictMode>,
 )

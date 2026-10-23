@@ -1,5 +1,5 @@
+import { KvError, type KvClient } from '@shared/kv-client'
 import { describe, expect, it, vi } from 'vitest'
-import { KvError, type KvClient } from '@/shared/kv-client'
 import { buildRatingRecord } from './build-record'
 import { createKvRatingStore, RatingConflictError } from './kv-rating-store'
 import { emptyRapidDraft, type RatingRecord } from './schema'

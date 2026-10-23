@@ -1,5 +1,5 @@
+import { KvError, type KvClient } from '@shared/kv-client'
 import { z } from 'zod'
-import { KvError, type KvClient } from '@/shared/kv-client'
 import type { ProjectMeta, RatingStore, RatingStoreEntry } from './rating-store'
 import { ratingRecordSchema, type RatingRecord } from './schema'
 

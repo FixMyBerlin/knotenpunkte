@@ -1,9 +1,10 @@
+import { AppHeader } from '@shared/components/AppHeader'
+import { SidebarLayout } from '@shared/components/SidebarLayout'
 import { MapProvider } from 'react-map-gl/maplibre'
-import { AppHeader } from '@/components/AppHeader'
+import { DataPageLink } from '@/components/DataPageLink'
 import { RatingMap } from '@/components/RatingMap'
 import { useAppStepNav } from '@/components/shared/use-app-step-nav'
 import { AppSidebar } from '@/components/Sidebar'
-import { SidebarLayout } from '@/components/SidebarLayout'
 
 export function AppShell() {
   const { steps, goToStep, search } = useAppStepNav()
@@ -13,10 +14,11 @@ export function AppShell() {
       <SidebarLayout
         header={({ onOpenSidebar }) => (
           <AppHeader
+            title="Knotenpunkte"
             steps={steps}
             onSelect={goToStep}
             onOpenSidebar={onOpenSidebar}
-            search={search}
+            actions={<DataPageLink search={search} />}
           />
         )}
         sidebar={<AppSidebar />}

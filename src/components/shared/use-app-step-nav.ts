@@ -1,6 +1,6 @@
+import type { StepNavItem } from '@shared/components/StepNav'
 import { useQuery } from '@tanstack/react-query'
 import { useMatch, useNavigate, useRouterState } from '@tanstack/react-router'
-import type { StepNavItem } from '@/components/StepNav'
 import { loadNodes } from '@/shared/datasets/dataset-idb'
 import { ratingStore, ratingsQueryKey } from '@/shared/ratings/ratings-query'
 import {
@@ -44,8 +44,9 @@ export function useAppStepNav() {
   const remoteCount = dataset ? Object.keys(records).length : 0
   const nodes = nodesQuery.data?.collection
 
-  const steps: StepNavItem[] = appSteps.map((id) => ({
+  const steps: StepNavItem<AppStep>[] = appSteps.map((id) => ({
     id,
+    descriptionTestId: id === 'work' ? 'progress-summary' : undefined,
     label: appStepLabels[id].label,
     description: stepDescription({
       step: id,

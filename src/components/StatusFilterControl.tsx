@@ -1,6 +1,6 @@
+import { cn } from '@shared/cn'
 import { useNavigate } from '@tanstack/react-router'
 import { Route } from '@/routes/index'
-import { cn } from '@/shared/cn'
 import { statusFilters, type StatusFilter } from '@/shared/ratings/queue'
 import { resolveStatusFilter } from '@/shared/routing/search-schema'
 
