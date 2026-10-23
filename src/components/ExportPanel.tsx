@@ -3,13 +3,13 @@ import { Callout } from '@shared/components/ui/callout'
 import { Subheading } from '@shared/components/ui/heading'
 import { Text } from '@shared/components/ui/text'
 import { useOsmAuth } from '@shared/components/use-osm-auth'
+import { downloadJson } from '@shared/download'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Route } from '@/routes/index'
 import { loadNodes } from '@/shared/datasets/dataset-idb'
 import {
   buildAllRatingsFile,
   buildRatingsFile,
-  downloadJson,
   exportFilename,
   exportGeojsonFilename,
   mergeRatingsIntoNodes,

@@ -1,6 +1,22 @@
-# Detailnetz ergänzen – Plan
+# Netzanpassungen – Plan
 
-Stand 2026-10-23. Noch nichts gebaut. Ersetzt den Entwurf vom 2026-10-22.
+Stand 2026-10-23, Branch `netzanpassungen` (hier und in `infravelo-radnetz`). Die App ist gebaut, aber noch nicht von Hand getestet. Bedienung und Formate: [`netzanpassungen/README.md`](netzanpassungen/README.md).
+
+## Stand gegenüber dem Plan
+
+| Plan                                                       | Gebaut                                                                                                                                                                                                                                                             |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Ordner `detailnetz/`, Bun-Workspaces mit `packages/shared` | Ordner `netzanpassungen/`, URL `/knotenpunkte/netzanpassungen/`. Gemeinsamer Code in `shared/` (Alias `@shared`) bei **einem** `package.json`: kein Workspace-Umbau, kein zweites Lockfile. Jede App hat eine eigene tsconfig, weil beide den Router registrieren. |
+| Phase 1 Modularisieren                                     | Erledigt, eigener Commit. Zusätzlich gemeinsam: `DataTablePage`, Versionsprüfung (`version-tracker`), `downloadJson`, Vite-Plugins für `shared/public`.                                                                                                            |
+| Phase 2 `export_app_daten.py`                              | Erledigt in `infravelo-radnetz/netzanpassungen/`, einmal für Berlin ausgeführt (24,8 MB, 291 Lücken, 111 km).                                                                                                                                                      |
+| Phase 3–5 App                                              | Erledigt: Import, Karte mit allen Layern und Beschriftungen, Zeichnen mit Fangen, Namensvorschlag mit Bearbeitung, Verschieben, Stützpunkte, Löschen, Übersicht, Prüfliste, Export, `/data`.                                                                       |
+| KV-Projekt                                                 | Noch nicht angelegt (braucht den Admin-Schlüssel). Bis dahin **Testmodus**: Speichern nur im Browser.                                                                                                                                                              |
+| Rückfrage bei verschiedenen `verkehrsebene`n               | Nicht gebaut: die Kante auf Ebene 0 gewinnt.                                                                                                                                                                                                                       |
+| Phase 6 Rückweg in `infravelo-radnetz`                     | Offen                                                                                                                                                                                                                                                              |
+| Phase 7 Strecke übernehmen (`R`)                           | Offen                                                                                                                                                                                                                                                              |
+| Smoke-Test Playwright                                      | Nicht geschrieben. Unit-Tests für Namensregel, Fangen und Elementnummern liegen bei, sind aber nicht ausgeführt.                                                                                                                                                   |
+
+Der folgende Text ist der Plan vom 2026-10-23, nur die Namen sind auf `netzanpassungen` angepasst.
 
 ## Ziel
 
@@ -14,10 +30,10 @@ Für jeden neuen virtuellen Knoten schlägt die App einen Namen nach dem Muster 
 
 ## Entscheidungen
 
-- **Eigene App in eigenem Ordner** `detailnetz/` im Repo `knotenpunkte`, eigene URL `/knotenpunkte/detailnetz/`. **Kein Wechsel zwischen den Apps über die Oberfläche.**
+- **Eigene App in eigenem Ordner** `netzanpassungen/` im Repo `knotenpunkte`, eigene URL `/knotenpunkte/netzanpassungen/`. **Kein Wechsel zwischen den Apps über die Oberfläche.**
 - **Gemeinsamer Code wird verschoben, nicht kopiert**: nach `packages/shared/`, genutzt von beiden Apps (Bun-Workspaces).
 - Die Knotenpunkte-App bleibt im Repo-Root. Das hält die Pfade für CI, Deploy und OSM-OAuth stabil.
-- Eigenes KV-Projekt `detailnetz`, gleicher Worker, gleiche OSM-Anmeldung.
+- Eigenes KV-Projekt `netzanpassungen`, gleicher Worker, gleiche OSM-Anmeldung.
 - Daten kommen aus `infravelo-radnetz`. Ein neues Skript dort schreibt die Eingabedatei der App, ein zweites übernimmt das Ergebnis zurück.
 
 ## Was in `infravelo-radnetz` liegt (geprüft am 2026-10-23)
@@ -83,7 +99,7 @@ knotenpunkte/
 ├── src/                    # Knotenpunkte-App (nur noch Bewerten-spezifischer Code)
 ├── packages/shared/        # @knotenpunkte/shared, TypeScript-Quellen, kein eigener Build
 │   └── src/{ui,map,mapillary,auth,kv,shell,datasets,dom,config}
-└── detailnetz/             # neue App
+└── netzanpassungen/             # neue App
     ├── index.html, vite.config.ts (Port 33480), package.json
     ├── public/osm-oauth-land.html
     └── src/{routes,components,network,config}
@@ -92,8 +108,8 @@ knotenpunkte/
 - `@knotenpunkte/shared` wird per Workspace verlinkt und von Vite direkt aus `src` übersetzt. Ein Build-Schritt entfällt, und der React Compiler greift weiter.
 - Tailwind v4: Beide Apps scannen das Paket mit `@source "../packages/shared/src"` (Pfad je App).
 - `oxlint`, `oxfmt`, `knip` und `tsc` laufen vom Root aus über alle Workspaces. `bun run check` prüft beide Apps.
-- Deploy: Der Pages-Workflow baut beide Apps und legt `detailnetz/dist` nach `dist/detailnetz/`. Basis `/knotenpunkte/detailnetz/`, eigener `404.html`-Fallback.
-- OSM-OAuth: dieselbe OAuth-App mit zwei zusätzlichen Redirect-URIs: `http://127.0.0.1:33480/osm-oauth-land.html` und `https://fixmyberlin.github.io/knotenpunkte/detailnetz/osm-oauth-land.html`.
+- Deploy: Der Pages-Workflow baut beide Apps und legt `netzanpassungen/` nach `dist/netzanpassungen/`. Basis `/knotenpunkte/netzanpassungen/`, eigener `404.html`-Fallback.
+- OSM-OAuth: dieselbe OAuth-App mit zwei zusätzlichen Redirect-URIs: `http://127.0.0.1:33480/osm-oauth-land.html` und `https://fixmyberlin.github.io/knotenpunkte/netzanpassungen/osm-oauth-land.html`.
 - Private Hintergründe und Favoriten liegen in localStorage. In Produktion haben beide Apps dieselbe Origin und teilen sie automatisch. Lokal (andere Ports) nicht.
 
 ## Was nach `packages/shared` wandert
@@ -115,7 +131,7 @@ Verschoben, nicht kopiert. Die Knotenpunkte-App importiert danach aus dem Paket.
 
 Bleibt in der Knotenpunkte-App: Bewertung, Vorschläge, QA, Queue, RapidForm, NodeNotes, WorkPanel, OverviewPanel, ExportPanel, DatasetPanel.
 
-## Neue App `detailnetz/`
+## Neue App `netzanpassungen/`
 
 ### Schritte
 
@@ -127,7 +143,7 @@ Eine Datei pro Gebiet, erzeugt in `infravelo-radnetz` (siehe unten), hochgeladen
 
 ```jsonc
 {
-  "schema": "detailnetz-app/v1",
+  "schema": "netzanpassungen-app/v1",
   "gebiet": "berlin", // oder Bezirk
   "erzeugt_am": "…",
   "quellen": { "detailnetz": "2025-11-17", "ren_netz": "2026-10-08", "radfernwege": "260414" },
@@ -178,7 +194,7 @@ Jede Kante und jeder Knoten zeigt beim Klick: Elementnummer bzw. ID, Straße, `v
 
 Tastatur mit `@tanstack/react-hotkeys` wie in der Knotenpunkte-App. Kürzel werden ignoriert, solange ein Textfeld den Fokus hat ([`text-entry-focus.ts`](src/shared/dom/text-entry-focus.ts), dann aus dem Paket).
 
-### Datenmodell (KV-Projekt `detailnetz`)
+### Datenmodell (KV-Projekt `netzanpassungen`)
 
 Schlüssel sind interne UUIDs. Namen und Elementnummern lassen sich so ändern bzw. ableiten, ohne dass Einträge umziehen.
 
@@ -217,7 +233,7 @@ type NewEdge = {
 
 ### Code der neuen App
 
-`detailnetz/src/network/`, reine Funktionen mit Unit-Tests (Bun-Test wie heute):
+`netzanpassungen/src/network/`, reine Funktionen mit Unit-Tests (Vitest wie heute):
 
 | Datei                 | Inhalt                                                                        |
 | --------------------- | ----------------------------------------------------------------------------- |
@@ -249,7 +265,7 @@ Geometrie mit Turf-Einzelpaketen: `@turf/nearest-point-on-line`, `@turf/line-sli
 
 ## Arbeiten in `infravelo-radnetz`
 
-Neuer Ordner `detailnetz-ergaenzung/` mit README, wie die anderen Ordner:
+Neuer Ordner `netzanpassungen/` mit README, wie die anderen Ordner:
 
 - **`export_app_daten.py [--bezirk NN]`** schreibt `output/detailnetz_app_<gebiet>.json` (Format oben):
   - Detailnetz reduziert auf die nötigen Spalten
@@ -268,16 +284,16 @@ Neuer Ordner `detailnetz-ergaenzung/` mit README, wie die anderen Ordner:
 
 ## Phasen
 
-| Phase | Inhalt                                                                                                                                                 | Fertig, wenn                                                                               |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| 0     | Klären (offene Fragen 1–4), KV-Projekt `detailnetz` anlegen, Redirect-URIs eintragen                                                                   | Antworten liegen vor                                                                       |
-| 1     | **Modularisieren:** Bun-Workspaces, `packages/shared`, Verschieben und Umbauen laut Tabelle. Eigener PR, ohne neue Funktion.                           | Knotenpunkte-App verhält sich unverändert, `bun run check` und `bun run e2e` sind grün     |
-| 2     | `export_app_daten.py` in `infravelo-radnetz`                                                                                                           | Datei für Berlin und einen Bezirk erzeugt, Lücken-Layer in QGIS plausibel                  |
-| 3     | `detailnetz/` aufsetzen: Rahmen, Login, Schritt Gebiet mit Import, Karte mit allen Layern und Beschriftungen, Deploy unter `/knotenpunkte/detailnetz/` | Alle Daten sichtbar, Elementnummern und IDs lesbar                                         |
-| 4     | Werkzeug „Neue Kante“: Fangen, virtuelle Knoten, Namensvorschlag mit Bearbeitung, Speichern in KV, Konflikte                                           | Smoke-Test: Kante von Knoten zu Kantenmitte, Vorschlag `V<A>-<B>`, umbenennen, gespeichert |
-| 5     | Bearbeiten, Löschen, Übersicht mit Lückenliste, Export, Datenseite                                                                                     | Export lässt sich mit `import_app_export.py` einlesen                                      |
-| 6     | Rückweg in `infravelo-radnetz`: `import_app_export.py`, vierte Netzquelle in `unify_networks.py`, `routen_fernradweg`                                  | Neue Kanten im REN+, virtuelle Knoten in `knotenpunkte_bewerten.geojson`                   |
-| 7     | Strecke aus dem Radfernweg übernehmen (`R`)                                                                                                            | Ein Radfernweg-Abschnitt in einem Schritt                                                  |
+| Phase | Inhalt                                                                                                                                                           | Fertig, wenn                                                                               |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| 0     | Klären (offene Fragen 1–4), KV-Projekt `netzanpassungen` anlegen, Redirect-URIs eintragen                                                                        | Antworten liegen vor                                                                       |
+| 1     | **Modularisieren:** Bun-Workspaces, `packages/shared`, Verschieben und Umbauen laut Tabelle. Eigener PR, ohne neue Funktion.                                     | Knotenpunkte-App verhält sich unverändert, `bun run check` und `bun run e2e` sind grün     |
+| 2     | `export_app_daten.py` in `infravelo-radnetz`                                                                                                                     | Datei für Berlin und einen Bezirk erzeugt, Lücken-Layer in QGIS plausibel                  |
+| 3     | `netzanpassungen/` aufsetzen: Rahmen, Login, Schritt Gebiet mit Import, Karte mit allen Layern und Beschriftungen, Deploy unter `/knotenpunkte/netzanpassungen/` | Alle Daten sichtbar, Elementnummern und IDs lesbar                                         |
+| 4     | Werkzeug „Neue Kante“: Fangen, virtuelle Knoten, Namensvorschlag mit Bearbeitung, Speichern in KV, Konflikte                                                     | Smoke-Test: Kante von Knoten zu Kantenmitte, Vorschlag `V<A>-<B>`, umbenennen, gespeichert |
+| 5     | Bearbeiten, Löschen, Übersicht mit Lückenliste, Export, Datenseite                                                                                               | Export lässt sich mit `import_app_export.py` einlesen                                      |
+| 6     | Rückweg in `infravelo-radnetz`: `import_app_export.py`, vierte Netzquelle in `unify_networks.py`, `routen_fernradweg`                                            | Neue Kanten im REN+, virtuelle Knoten in `knotenpunkte_bewerten.geojson`                   |
+| 7     | Strecke aus dem Radfernweg übernehmen (`R`)                                                                                                                      | Ein Radfernweg-Abschnitt in einem Schritt                                                  |
 
 Phase 1 ist der größte Umbau am Bestand. Sie geht vor allem anderen und einzeln in einen PR, damit die laufende Bewertung nicht leidet.
 

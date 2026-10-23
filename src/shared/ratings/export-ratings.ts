@@ -72,16 +72,6 @@ export function mergeRatingsIntoNodes(
   return { ...geojson, metadata: collection.metadata }
 }
 
-export function downloadJson(filename: string, data: unknown) {
-  const blob = new Blob([`${JSON.stringify(data, null, 2)}\n`], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = filename
-  link.click()
-  URL.revokeObjectURL(url)
-}
-
 export function exportFilename(kind: 'ratings' | 'nodes', dataset: string, date = new Date()) {
   const stamp = date.toISOString().slice(0, 10)
   return `${kind}-${dataset}-${stamp}.json`

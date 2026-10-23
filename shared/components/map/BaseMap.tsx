@@ -40,6 +40,8 @@ type Props = {
   onClick?: (event: MapLayerMouseEvent) => void
   onMouseMove?: (event: MapLayerMouseEvent) => void
   onMouseOut?: (event: MapLayerMouseEvent) => void
+  onMouseDown?: (event: MapLayerMouseEvent) => void
+  onMouseUp?: (event: MapLayerMouseEvent) => void
   cursor?: string
   doubleClickZoom?: boolean
   /** Layers of the app, above the background and the street network. */
@@ -65,6 +67,8 @@ export function BaseMap({
   onClick,
   onMouseMove,
   onMouseOut,
+  onMouseDown,
+  onMouseUp,
   cursor,
   doubleClickZoom,
   children,
@@ -129,6 +133,8 @@ export function BaseMap({
         onClick={onClick}
         onMouseMove={onMouseMove}
         onMouseOut={onMouseOut}
+        onMouseDown={onMouseDown}
+        onMouseUp={onMouseUp}
       >
         <AttributionControl compact position="bottom-right" />
         <MapBackgroundLayerSource backgroundLayerId={eliId} />

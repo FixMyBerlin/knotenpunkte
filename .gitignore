@@ -8,3 +8,4 @@ test-results
 
 # The committed `.env` holds the public KV project selector, not an admin secret.
 !.env
+.tsbuildinfo-netzanpassungen

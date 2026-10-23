@@ -10,6 +10,7 @@ export default defineConfig({
     'playwright-report/**',
     'test-results/**',
     'src/routeTree.gen.ts',
+    'netzanpassungen/src/routeTree.gen.ts',
     'public/fixtures/**',
   ],
   rules: {
@@ -34,7 +35,13 @@ export default defineConfig({
       },
     },
     {
-      files: ['src/components/**', 'src/routes/**', 'shared/components/**'],
+      files: [
+        'src/components/**',
+        'src/routes/**',
+        'shared/components/**',
+        'netzanpassungen/src/components/**',
+        'netzanpassungen/src/routes/**',
+      ],
       excludeFiles: ['**/*.test.ts', '**/*.test.tsx'],
       jsPlugins: [{ name: 'compat', specifier: 'eslint-plugin-compat' }],
       rules: {

@@ -4,6 +4,14 @@ Web app to rate junction nodes one after another. Ratings persist in the shared 
 
 Dev server: [http://127.0.0.1:33479](http://127.0.0.1:33479) (fixed host and port so OSM OAuth redirect URIs stay stable). OSM only accepts `http` redirects on `127.0.0.1`.
 
+## Repo layout
+
+Two apps share one `package.json`:
+
+- `src/`: Knotenpunkte (this README)
+- [`netzanpassungen/`](netzanpassungen/README.md): drawing new edges and virtual nodes into the Detailnetz, at `/knotenpunkte/netzanpassungen/`. The apps do not link to each other.
+- `shared/` (alias `@shared`): code of both apps, moved there instead of copied. UI kit, header and step navigation, sidebar layout, `BaseMap` (backgrounds, favourites, street network, camera in the URL), Mapillary and infra3D, OSM login, KV client, the database table page and the Vite plugins for `shared/public`.
+
 ## Run
 
 ```bash
@@ -22,12 +30,12 @@ bun run e2e
 
 ## OSM login
 
-Public client id lives in [`src/config/app.const.ts`](src/config/app.const.ts) (`osmClientId`). Those redirect URIs must be registered on the OSM OAuth app before login works:
+Public client id lives in [`shared/config/shared.const.ts`](shared/config/shared.const.ts) (`osmClientId`). Those redirect URIs must be registered on the OSM OAuth app before login works:
 
 - `http://127.0.0.1:33479/osm-oauth-land.html`
 - `https://fixmyberlin.github.io/knotenpunkte/osm-oauth-land.html`
 
-The app is **non-confidential** (`read_prefs`). Public client id only, never a client secret. Login uses [`osm-api`](https://github.com/osmlab/osm-api-js) v4 in **redirect PKCE** mode. The land page is `public/osm-oauth-land.html`. Smoke tests stub auth, so `bun run e2e` does not need a live login.
+The app is **non-confidential** (`read_prefs`). Public client id only, never a client secret. Login uses [`osm-api`](https://github.com/osmlab/osm-api-js) v4 in **redirect PKCE** mode. The land page is `shared/public/osm-oauth-land.html`, served by both apps. Smoke tests stub auth, so `bun run e2e` does not need a live login.
 
 Writes to the rating database require a logged-in OSM user (`Authorization: Bearer <OSM token>`).
 
@@ -73,7 +81,7 @@ OpenFreeMap Positron, Editor Layer Index backgrounds, and private backgrounds: a
 
 Street network: [Berlin Straßenabschnitte](https://tilda-geo.de/api/uploads/strassennetz-berlin-strassenabschnitte.pmtiles), source-layer `default`, colored by `strassenklasse1`. The legend starts closed. **An / Aus** toggles the layer and is stored in the URL (`streets=false` when off; omitted when on). Opening the color list stays in this browser session. Attribution: Geoportal Berlin / Detailnetz Berlin Straßenabschnitte, DL-DE/BY-2.0.
 
-Mapillary (rating step only, `photos=false` in the URL turns it off): photos from the cut-off day on (`mapillaryCutoffDate`, 2024-01-01) and one suggested view per street that reaches the node, looking into the junction. The best view opens in a floating photo viewer; the others are chips in the viewer and cones on the map. The Mapillary control on the map switches the photos on and off and folds out the settings, as in TILDA: colour by age or photo type (`photoColor=type`), only 360° or only classic photos, and the package's date slider with marks for the photos in view and a line at the cut-off day. Type and date filter also apply to the suggested views; they reset on reload. Layers and their look come from `@osm-editor-kit/street-imagery-react`; the plan and its status are in [`MAPILLARY-PLAN.md`](MAPILLARY-PLAN.md). The token is `mapillaryToken` in [`src/config/app.const.ts`](src/config/app.const.ts).
+Mapillary (rating step only, `photos=false` in the URL turns it off): photos from the cut-off day on (`mapillaryCutoffDate`, 2024-01-01) and one suggested view per street that reaches the node, looking into the junction. The best view opens in a floating photo viewer; the others are chips in the viewer and cones on the map. The Mapillary control on the map switches the photos on and off and folds out the settings, as in TILDA: colour by age or photo type (`photoColor=type`), only 360° or only classic photos, and the package's date slider with marks for the photos in view and a line at the cut-off day. Type and date filter also apply to the suggested views; they reset on reload. Layers and their look come from `@osm-editor-kit/street-imagery-react`; the plan and its status are in [`MAPILLARY-PLAN.md`](MAPILLARY-PLAN.md). The token is `mapillaryToken` in [`shared/config/shared.const.ts`](shared/config/shared.const.ts).
 
 Fallback camera: zoom 14.6, lat 52.5076, lng 13.3115.
 
@@ -99,4 +107,4 @@ The choices of the active attribute are `Q` / `W` / `E`. The info button next to
 
 ## Deploy
 
-GitHub Pages workflow is in `.github/workflows/deploy-pages.yml`. Production origin: `https://fixmyberlin.github.io`. Base path: `/knotenpunkte/`.
+GitHub Pages workflow is in `.github/workflows/deploy-pages.yml`. Production origin: `https://fixmyberlin.github.io`. Base path: `/knotenpunkte/`. `bun run build` builds Knotenpunkte into `dist/` and then Netzanpassungen into `dist/netzanpassungen/` (base `/knotenpunkte/netzanpassungen/`).

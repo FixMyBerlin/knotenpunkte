@@ -1,4 +1,5 @@
 import { KvError, type KvClient } from '@shared/kv-client'
+import { createVersionTracker } from '@shared/kv/version-tracker'
 import { z } from 'zod'
 import type { ProjectMeta, RatingStore, RatingStoreEntry } from './rating-store'
 import { ratingRecordSchema, type RatingRecord } from './schema'
@@ -56,9 +57,7 @@ function datasetAndNodeFromId(id: string) {
 }
 
 export function createKvRatingStore(client: KvClient<RatingRecord>): RatingStore {
-  // Version of each entry as last read or written here. A save sends it along, so the store
-  // refuses to overwrite an entry that somebody else changed in the meantime.
-  const versions = new Map<string, number>()
+  const versions = createVersionTracker()
 
   const store: RatingStore = {
     async list(dataset) {
@@ -73,8 +72,7 @@ export function createKvRatingStore(client: KvClient<RatingRecord>): RatingStore
         })
         const prefix = `${dataset}:`
         for (const item of page.items) {
-          // A list that was requested before a save of ours may arrive after it.
-          versions.set(item.id, Math.max(item.version, versions.get(item.id) ?? 0))
+          versions.seen(item.id, item.version)
           const record = ratingRecordSchema.safeParse(item.data)
           const nodeId = item.id.startsWith(prefix) ? item.id.slice(prefix.length) : ''
           if (record.success && nodeId) records[nodeId] = record.data
@@ -85,15 +83,9 @@ export function createKvRatingStore(client: KvClient<RatingRecord>): RatingStore
     },
     async put(dataset, nodeId, record) {
       const id = entryId(dataset, nodeId)
-      const version = versions.get(id)
       try {
-        const saved = await client.put(
-          id,
-          record,
-          [dataset],
-          version === undefined ? undefined : { ifMatch: `"${version}"` },
-        )
-        versions.set(id, saved.version)
+        const saved = await client.put(id, record, [dataset], versions.putOptions(id))
+        versions.saved(id, saved.version)
         return record
       } catch (error) {
         rethrowMapped(error)

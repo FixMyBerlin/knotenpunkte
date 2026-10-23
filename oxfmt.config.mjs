@@ -28,6 +28,7 @@ export default defineConfig({
     'playwright-report/**',
     'test-results/**',
     'src/routeTree.gen.ts',
+    'netzanpassungen/src/routeTree.gen.ts',
     'public/fixtures/**',
   ],
 })
