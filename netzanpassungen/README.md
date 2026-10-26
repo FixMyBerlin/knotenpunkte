@@ -55,7 +55,7 @@ The name field is filled with the suggestion and can be changed. It checks the p
 
 KV project `netzanpassungen` on the same Worker as Knotenpunkte. Entries `{gebiet}:vk:{uuid}` (virtual node) and `{gebiet}:kante:{uuid}` (edge), tags `[gebiet, vk|kante]`. Saves send `If-Match`; on a conflict the current state is loaded again.
 
-Until `VITE_KV_API_KEY` in [`.env`](.env) is set, the app runs in **Testmodus**: entries stay in this browser's IndexedDB. To set up the project, call MCP `create_project` (key-value-db) with slug `netzanpassungen` and origins `http://127.0.0.1:33480` and `https://fixmyberlin.github.io`, then put the returned `api_key` into `.env`.
+The project exists (created 2026-10-26 with MCP `create_project`, origins `http://127.0.0.1:33480` and `https://fixmyberlin.github.io`); its public `api_key` is `VITE_KV_API_KEY` in [`.env`](.env). Without a key (empty or `REPLACE_ME`) the app runs in **Testmodus**: entries stay in this browser's IndexedDB.
 
 OSM login uses the OAuth app of Knotenpunkte. These redirect URIs must be added to it:
 
