@@ -25,7 +25,7 @@ import {
 } from '@/shared/map/map-ids'
 import { nodeStatusColors } from '@/shared/map/node-style'
 import { nodeLngLat, type JunctionNodeFeature } from '@/shared/nodes/schema'
-import { defaultWorkNodeId, matchesStatusFilter } from '@/shared/ratings/queue'
+import { defaultWorkNodeId, isDeferred, matchesStatusFilter } from '@/shared/ratings/queue'
 import { ratingStore, ratingsQueryKey } from '@/shared/ratings/ratings-query'
 import type { RatingRecord } from '@/shared/ratings/schema'
 import { resolveStep } from '@/shared/routing/app-step'
@@ -39,6 +39,7 @@ import {
 } from '@/shared/routing/search-schema'
 
 function nodePaintStatus(record: RatingRecord | undefined) {
+  if (isDeferred(record)) return 'deferred'
   if (!record || record.status !== 'complete') return 'unrated'
   if (record.ist_virtuell === 1) return 'virtual'
   if (record.qa === 'corrected') return 'corrected'
@@ -48,6 +49,7 @@ function nodePaintStatus(record: RatingRecord | undefined) {
 
 function nodeColor(record: RatingRecord | undefined) {
   const status = nodePaintStatus(record)
+  if (status === 'deferred') return nodeStatusColors.deferred
   if (status === 'corrected') return nodeStatusColors.corrected
   if (status === 'virtual') return nodeStatusColors.virtual
   if (status === 'skipped') return nodeStatusColors.skipped
@@ -61,6 +63,7 @@ function nodeStroke(record: RatingRecord | undefined) {
   if (record?.ist_virtuell === 1) return '#7c3aed'
   if (record?.KP_Nichtbetrachten === 1) return '#111827'
   if (record?.status === 'complete') return '#15803d'
+  if (isDeferred(record)) return '#be185d'
   return '#b45309'
 }
 

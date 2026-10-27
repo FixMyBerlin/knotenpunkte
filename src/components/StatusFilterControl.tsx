@@ -7,6 +7,7 @@ import { resolveStatusFilter } from '@/shared/routing/search-schema'
 const labels: Record<StatusFilter, string> = {
   all: 'Alle',
   unrated: 'Offen',
+  deferred: 'Zurückgestellt',
   rated: 'Bewertet',
   confirmed: 'Bestätigt',
   corrected: 'Korrigiert',
@@ -34,7 +35,7 @@ export function StatusFilterControl() {
             data-testid={`status-filter-${filter}`}
             className={cn(
               'rounded-md px-2 py-1.5 text-sm font-medium',
-              filter === 'all' && 'col-span-2',
+              (filter === 'all' || filter === 'corrected') && 'col-span-2',
               selected
                 ? 'bg-white text-zinc-950 shadow-sm'
                 : 'text-zinc-300 hover:bg-white/10 hover:text-white',

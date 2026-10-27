@@ -6,14 +6,16 @@ import { useNavigate } from '@tanstack/react-router'
 import { StatusFilterControl } from '@/components/StatusFilterControl'
 import { Route } from '@/routes/index'
 import { loadNodes } from '@/shared/datasets/dataset-idb'
-import { matchesStatusFilter } from '@/shared/ratings/queue'
+import { isDeferred, matchesStatusFilter } from '@/shared/ratings/queue'
 import { ratingStore, ratingsQueryKey } from '@/shared/ratings/ratings-query'
+import type { RatingRecord } from '@/shared/ratings/schema'
 import { resolveStatusFilter } from '@/shared/routing/search-schema'
 
-function statusLabel(record: { status?: string; qa?: string } | undefined) {
+function statusLabel(record: RatingRecord | undefined) {
   if (record?.qa === 'corrected') return 'Korrigiert'
   if (record?.qa === 'confirmed') return 'Bestätigt'
   if (record?.status === 'complete') return 'Bewertet'
+  if (isDeferred(record)) return 'Zurückgestellt'
   return 'Offen'
 }
 
@@ -48,6 +50,9 @@ export function OverviewPanel() {
         {features.map((feature) => {
           const id = feature.properties.id
           const selected = id === node
+          const record = records[id]
+          // Why the node was put off.
+          const deferNote = isDeferred(record) ? record?.Kommentar_intern?.trim() : undefined
           return (
             <li key={id}>
               <button
@@ -67,8 +72,15 @@ export function OverviewPanel() {
                   })
                 }}
               >
-                <span>{id}</span>
-                <span className="text-xs text-zinc-400">{statusLabel(records[id])}</span>
+                <span className="min-w-0">
+                  {id}
+                  {deferNote ? (
+                    <span className="block truncate text-xs text-zinc-400" title={deferNote}>
+                      {deferNote}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="shrink-0 text-xs text-zinc-400">{statusLabel(record)}</span>
               </button>
             </li>
           )
