@@ -4,9 +4,11 @@ import { Field, Label } from '@shared/components/ui/fieldset'
 import { Subheading } from '@shared/components/ui/heading'
 import { Select } from '@shared/components/ui/select'
 import { Text } from '@shared/components/ui/text'
+import { useHotkeys } from '@tanstack/react-hotkeys'
 import { useDrawActions } from '@/components/draw-store'
 import {
   useSelectedSuggestionId,
+  useNoActionSuggestions,
   useSkippedSuggestions,
   useSuggestionActions,
   useSuggestionFilter,
@@ -40,11 +42,7 @@ function SuggestionDetails({
   const save = useSaveEntries(gebiet)
   const draw = useDrawActions()
   const actions = useSuggestionActions()
-  if (!network) return null
-  const host = suggestionHost(network, suggestion)
-  const name = host
-    ? suggestVirtualNodeName({ network, host: host.edge, stationM: host.stationM })
-    : null
+  const host = network ? suggestionHost(network, suggestion) : null
 
   function goTo(next: NodeSuggestion | undefined) {
     actions.select(next?.id ?? null)
@@ -61,6 +59,40 @@ function SuggestionDetails({
       },
     })
   }
+
+  function skip() {
+    if (gebiet) actions.skip(gebiet, suggestion.id)
+    goTo(neighbour)
+  }
+
+  function markNoAction() {
+    if (gebiet) actions.markNoAction(gebiet, suggestion.id)
+    goTo(neighbour)
+  }
+
+  const canTake = Boolean(host) && !save.isPending
+  useHotkeys([
+    {
+      hotkey: 'W',
+      callback: () => {
+        if (canTake) take()
+      },
+      options: { meta: { name: 'Vorschlag übernehmen' } },
+    },
+    { hotkey: 'E', callback: skip, options: { meta: { name: 'Vorschlag überspringen' } } },
+    {
+      hotkey: 'R',
+      callback: () => {
+        markNoAction()
+      },
+      options: { meta: { name: 'Keine Aktion nötig' } },
+    },
+  ])
+
+  if (!network) return null
+  const name = host
+    ? suggestVirtualNodeName({ network, host: host.edge, stationM: host.stationM })
+    : null
 
   return (
     <div className="space-y-3 rounded-lg bg-zinc-800 p-3" data-testid="suggestion-details">
@@ -97,7 +129,7 @@ function SuggestionDetails({
           Hier liegt keine Kante (mehr); der Knoten kann nicht angelegt werden.
         </Text>
       )}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button
           type="button"
           color="sky"
@@ -105,17 +137,13 @@ function SuggestionDetails({
           onClick={take}
           data-testid="suggestion-take"
         >
-          Übernehmen
+          Übernehmen <kbd className="ml-1 text-xs opacity-60">W</kbd>
         </Button>
-        <Button
-          type="button"
-          outline
-          onClick={() => {
-            if (gebiet) actions.skip(gebiet, suggestion.id)
-            goTo(neighbour)
-          }}
-        >
-          Überspringen
+        <Button type="button" outline onClick={skip}>
+          Überspringen <kbd className="ml-1 text-xs opacity-60">E</kbd>
+        </Button>
+        <Button type="button" outline onClick={markNoAction} data-testid="suggestion-no-action">
+          Keine Aktion nötig <kbd className="ml-1 text-xs opacity-60">R</kbd>
         </Button>
       </div>
     </div>
@@ -130,12 +158,14 @@ export function SuggestionsPanel() {
   const filter = useSuggestionFilter()
   const visible = useSuggestionsVisible()
   const skipped = useSkippedSuggestions()
+  const noAction = useNoActionSuggestions()
   const selectedId = useSelectedSuggestionId()
   const actions = useSuggestionActions()
   const draw = useDrawActions()
   if (!network || network.base.suggestions.length === 0) return null
 
   const skippedCount = gebiet ? (skipped[gebiet]?.length ?? 0) : 0
+  const noActionCount = gebiet ? (noAction[gebiet]?.length ?? 0) : 0
   const index = selected ? open.indexOf(selected) : -1
   const neighbour = open[index + 1] ?? open[index - 1]
 
@@ -170,7 +200,8 @@ export function SuggestionsPanel() {
       </Field>
       <Text className="text-xs" data-testid="suggestions-count">
         {open.length} offen{skippedCount > 0 ? `, ${skippedCount} übersprungen` : ''}
-        {skippedCount > 0 && gebiet ? (
+        {noActionCount > 0 ? `, ${noActionCount} ohne Aktion` : ''}
+        {skippedCount + noActionCount > 0 && gebiet ? (
           <>
             {' · '}
             <button

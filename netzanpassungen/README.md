@@ -29,17 +29,18 @@ The **Gebiet** step imports it into IndexedDB of this browser (about 25 MB for B
 
 1. Click a node or an edge for the start. Nodes win within 12 px, edges within 10 px. Where edges lie on top of each other (0.5 m), REN+ wins over the Detailnetz, the Detailnetz over edges drawn here, and level 0 over bridges and tunnels.
 2. Click points in between. Near a Radfernweg (10 px) they go onto it; `Alt` sets a point freely. `Backspace` takes the last point back.
-3. Click a node or an edge for the end. The edge is saved, and its end is the start of the next one. `Esc` drops the line, a second `Esc` ends the tool.
+3. Click a node or an edge for the end. The edge is saved, and its end is the start of the next one. Or end it as a dead end: `Enter`, a click on the last point again (double click) or **Als Sackgasse speichern**. Its free end becomes a virtual node lying on the edge itself (named `V<nearest Detailnetz node>-<n>`), so every edge still has a node at both ends; the next line starts with a click again.
+4. `Esc`, `N`, **Zeichnen beenden** or leaving the step with points drawn do not drop the line: the sidebar asks to save it as a dead end (`Enter`), drop it (`Esc`) or go on drawing (or a click on the map). Without points `Esc` drops the start, a second `Esc` ends the tool. Closing the tab with a line asks the browser first.
 
 A start or end on an edge creates a virtual node there. The sidebar shows its name field after the edge is saved.
 
-Selected edges drawn here show their points: drag a point, drag a middle point for a new one, click a point and press `Entf` to delete it. A selected virtual node drawn here can be dragged along its edge. `Entf` deletes the selected edge or node (marked as deleted, history stays). Edges with virtual nodes on them and nodes with edges cannot be deleted.
+Selected edges drawn here show their points: drag a point, drag a middle point for a new one, click a point and press `Entf` to delete it. A selected virtual node drawn here can be dragged along its edge; the free end of a dead end moves freely, and the end of its edge follows. `Entf` deletes the selected edge or node (marked as deleted, history stays). Edges with virtual nodes on them and nodes with edges cannot be deleted; the free end of a dead end goes with its edge, unless another edge is attached to it.
 
 The Mapillary photos and infra3D work as in the Knotenpunkte app, at the selected node.
 
 ## Node suggestions
 
-In the **Zeichnen** step the sidebar section **Knotenvorschläge** lists the crossings of `knoten_vorschlaege` as orange rings on the map (default: only steep ones; filter: steep with a gap nearby, steep, all). Click a ring or **Ersten Vorschlag zeigen**. **Übernehmen** creates the virtual node on the edge (same host rule and name suggestion as when drawing) and moves on to the next suggestion; **Überspringen** hides it (kept in this browser only, **zurücksetzen** brings them back). A suggestion with a node within 3 m counts as taken over.
+In the **Zeichnen** step the sidebar section **Knotenvorschläge** lists the crossings of `knoten_vorschlaege` as orange rings on the map (default: only steep ones; filter: steep with a gap nearby, steep, all). Click a ring or **Ersten Vorschlag zeigen**. **Übernehmen** creates the virtual node on the edge (same host rule and name suggestion as when drawing) and moves on to the next suggestion; **Überspringen** and **Keine Aktion nötig** hide it (both kept in this browser only, **zurücksetzen** brings them back). The keys `W`, `E`, `R` press the three buttons in this order. A suggestion with a node within 3 m counts as taken over.
 
 ## Names of virtual nodes
 

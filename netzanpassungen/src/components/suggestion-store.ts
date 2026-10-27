@@ -2,22 +2,23 @@ import { create } from 'zustand'
 import type { SuggestionFilter } from '@/network/suggestions'
 
 const skippedKey = 'na:skipped-suggestions'
+const noActionKey = 'na:no-action-suggestions'
 
-/** Skipped suggestions per area. They stay in this browser only; storage may be blocked. */
-function loadSkipped(): Record<string, string[]> {
+/** Suggestions per area that were skipped or need no action. They stay in this browser only; storage may be blocked. */
+function loadIds(key: string): Record<string, string[]> {
   try {
-    const parsed: unknown = JSON.parse(localStorage.getItem(skippedKey) ?? '{}')
+    const parsed: unknown = JSON.parse(localStorage.getItem(key) ?? '{}')
     return parsed && typeof parsed === 'object' ? (parsed as Record<string, string[]>) : {}
   } catch {
     return {}
   }
 }
 
-function saveSkipped(skipped: Record<string, string[]>) {
+function saveIds(key: string, ids: Record<string, string[]>) {
   try {
-    localStorage.setItem(skippedKey, JSON.stringify(skipped))
+    localStorage.setItem(key, JSON.stringify(ids))
   } catch {
-    // The skips only last for this session then.
+    // They only last for this session then.
   }
 }
 
@@ -26,6 +27,7 @@ interface SuggestionStore {
   visible: boolean
   filter: SuggestionFilter
   skipped: Record<string, string[]>
+  noAction: Record<string, string[]>
   /** Id of the suggestion shown in the sidebar. */
   selectedId: string | null
   actions: {
@@ -33,6 +35,7 @@ interface SuggestionStore {
     setFilter: (filter: SuggestionFilter) => void
     select: (id: string | null) => void
     skip: (gebiet: string, id: string) => void
+    markNoAction: (gebiet: string, id: string) => void
     clearSkipped: (gebiet: string) => void
   }
 }
@@ -40,7 +43,8 @@ interface SuggestionStore {
 const useSuggestionStore = create<SuggestionStore>()((set) => ({
   visible: true,
   filter: 'steil',
-  skipped: loadSkipped(),
+  skipped: loadIds(skippedKey),
+  noAction: loadIds(noActionKey),
   selectedId: null,
   actions: {
     setVisible: (visible) => set({ visible }),
@@ -49,14 +53,22 @@ const useSuggestionStore = create<SuggestionStore>()((set) => ({
     skip: (gebiet, id) =>
       set((state) => {
         const skipped = { ...state.skipped, [gebiet]: [...(state.skipped[gebiet] ?? []), id] }
-        saveSkipped(skipped)
+        saveIds(skippedKey, skipped)
         return { skipped }
+      }),
+    markNoAction: (gebiet, id) =>
+      set((state) => {
+        const noAction = { ...state.noAction, [gebiet]: [...(state.noAction[gebiet] ?? []), id] }
+        saveIds(noActionKey, noAction)
+        return { noAction }
       }),
     clearSkipped: (gebiet) =>
       set((state) => {
-        const { [gebiet]: _removed, ...skipped } = state.skipped
-        saveSkipped(skipped)
-        return { skipped }
+        const { [gebiet]: _skipped, ...skipped } = state.skipped
+        const { [gebiet]: _noAction, ...noAction } = state.noAction
+        saveIds(skippedKey, skipped)
+        saveIds(noActionKey, noAction)
+        return { skipped, noAction }
       }),
   },
 }))
@@ -64,5 +76,6 @@ const useSuggestionStore = create<SuggestionStore>()((set) => ({
 export const useSuggestionsVisible = () => useSuggestionStore((state) => state.visible)
 export const useSuggestionFilter = () => useSuggestionStore((state) => state.filter)
 export const useSkippedSuggestions = () => useSuggestionStore((state) => state.skipped)
+export const useNoActionSuggestions = () => useSuggestionStore((state) => state.noAction)
 export const useSelectedSuggestionId = () => useSuggestionStore((state) => state.selectedId)
 export const useSuggestionActions = () => useSuggestionStore((state) => state.actions)
