@@ -39,10 +39,23 @@ describe('buildRatingRecord', () => {
     expect(record.Furt_rot).toBe('keine')
   })
 
-  it('sets HVS and LSA to Nein and clears the rest for a node that is not relevant', () => {
-    const record = build({ draft: { ...complete, KP_Nichtbetrachten: 1, Kommentar: 'x' } })
-    expect(record).toMatchObject({ status: 'complete', KP_HVS: 0, LSA_KP: 0, Kommentar: 'x' })
-    expect(record.Furt_rot).toBeUndefined()
+  it('finishes a node that is not considered and keeps all its answers', () => {
+    const record = build({
+      draft: { ...complete, KP_HVS: 1, KP_Nichtbetrachten: 1, Kommentar: 'x' },
+    })
+    expect(record).toMatchObject({
+      status: 'complete',
+      KP_Nichtbetrachten: 1,
+      KP_HVS: 1,
+      Furt_rot: 'keine',
+      Kommentar: 'x',
+    })
+  })
+
+  it('finishes a node with open attributes when it is not considered', () => {
+    const record = build({ draft: { ...emptyRapidDraft(), KP_HVS: 1, KP_Nichtbetrachten: 1 } })
+    expect(record).toMatchObject({ status: 'complete', KP_HVS: 1 })
+    expect(record.LSA_KP).toBeUndefined()
   })
 
   it('merges autosaves of the same person into one history entry', () => {

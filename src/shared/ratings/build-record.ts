@@ -1,4 +1,4 @@
-import { clearedRapidAttributes, isRatingComplete, isSkipped } from '@/shared/ratings/completeness'
+import { isRatingComplete, isSkipped } from '@/shared/ratings/completeness'
 import type { HistoryKind, RapidDraft, RatingRecord } from '@/shared/ratings/schema'
 import { buildSuggestionAudit } from '@/shared/suggestions/apply'
 import type { SuggestionRow } from '@/shared/suggestions/schema'
@@ -11,9 +11,9 @@ type BuildArgs = {
   at?: string
   kind?: HistoryKind
   /**
-   * Saved in the background while editing. It never finishes a node: only "Speichern" and
-   * "Nicht relevant" make an open node complete. The last history entry is updated instead of a
-   * new one added, when it is a recent save by the same person.
+   * Saved in the background while editing. It never finishes a node: only "Speichern",
+   * "Nicht relevant" and "Nicht betrachten" make an open node complete. The last history entry is
+   * updated instead of a new one added, when it is a recent save by the same person.
    */
   autosave?: boolean
 }
@@ -31,10 +31,9 @@ export function buildRatingRecord({
   autosave = false,
 }: BuildArgs): RatingRecord {
   const skipped = isSkipped(draft)
-  // A node that is not relevant is neither HVS nor LSA; the other attributes stay empty.
-  const attributes = skipped
-    ? { ...draft, ...clearedRapidAttributes(), KP_HVS: 0 as const, LSA_KP: 0 as const }
-    : draft
+  // A node that is not considered is finished as it is; "Nicht relevant" sets its attributes
+  // before the save.
+  const attributes = draft
   // A node that is put off stays open, whatever is filled in.
   const deferred = !skipped && draft.Zurueckgestellt === 1
   const staysOpen = deferred || (autosave && previous?.status !== 'complete')

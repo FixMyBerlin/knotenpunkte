@@ -327,7 +327,9 @@ export function DatasetPanel() {
                           })
                           return
                         }
-                        const records = await fetchRatings(queryClient, row.dataset).catch(() => ({}))
+                        const records = await fetchRatings(queryClient, row.dataset).catch(
+                          () => ({}),
+                        )
                         const first = defaultWorkNodeId(
                           stored.collection.features.map((feature) => feature.properties.id),
                           records,

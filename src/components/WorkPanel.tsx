@@ -23,7 +23,11 @@ import { Route } from '@/routes/index'
 import { loadNodes, loadSuggestions } from '@/shared/datasets/dataset-idb'
 import { lsaConflict, readOnlyNodeFields } from '@/shared/nodes/schema'
 import { buildRatingRecord } from '@/shared/ratings/build-record'
-import { hasAllRapidAttributes, isRatingComplete } from '@/shared/ratings/completeness'
+import {
+  hasAllRapidAttributes,
+  isRatingComplete,
+  notRelevantAttributes,
+} from '@/shared/ratings/completeness'
 import { nextHotkey, previousHotkey } from '@/shared/ratings/hotkeys'
 import { osmLoginRequiredMessage, RatingConflictError } from '@/shared/ratings/kv-rating-store'
 import { defaultWorkNodeId, nextNodeId, previousNodeId } from '@/shared/ratings/queue'
@@ -135,7 +139,7 @@ export function WorkPanel() {
         next.Zurueckgestellt !== 1 &&
         next.status !== 'complete'
       ) {
-        throw new Error('Alle sieben Attribute setzen oder „Nicht relevant“ wählen.')
+        throw new Error('Alle sieben Attribute setzen oder „Nicht relevant“ oder „Nicht betrachten“ wählen.')
       }
       try {
         await ratingStore.put(dataset, nodeId, next)
@@ -288,9 +292,18 @@ export function WorkPanel() {
     (!attributesVisible ||
       isRatingComplete(draft) ||
       (hasAllRapidAttributes(draft) && draft.KP_Nichtbetrachten !== 1))
-  // Not relevant. Notes, photos and sources stay; the record builder sets HVS and LSA to Nein
-  // and clears the other attributes.
+  // Not relevant. Notes, photos and sources stay; HVS and LSA are set to Nein and the other
+  // attributes are cleared.
   const skip = () => {
+    if (busy || unreadable) return
+    saveMutation.mutate({
+      kind: 'save',
+      draft: { ...draft, ...notRelevantAttributes(), KP_Nichtbetrachten: 1, Zurueckgestellt: 0 },
+    })
+  }
+  // Not considered, e.g. a motorway node: HVS and LSA and all other answers stay as they are,
+  // the node counts as finished.
+  const exclude = () => {
     if (busy || unreadable) return
     saveMutation.mutate({
       kind: 'save',
@@ -430,6 +443,7 @@ export function WorkPanel() {
             onRateAnyway={rateAnyway}
             onChange={setDraft}
             onSkip={skip}
+            onExclude={exclude}
             onDefer={defer}
             onPrevious={previous}
             onNext={next}
@@ -461,6 +475,7 @@ export function WorkPanel() {
       <SidebarFooter>
         <RapidActions
           onSkip={skip}
+          onExclude={exclude}
           onDefer={defer}
           busy={busy || unreadable}
           saveDisabled={!canSave || busy}

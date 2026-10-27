@@ -12,6 +12,7 @@ import {
   deferHotkey,
   nextHotkey,
   previousHotkey,
+  excludeHotkey,
   skipHotkey,
 } from '@/shared/ratings/hotkeys'
 import {
@@ -55,6 +56,7 @@ type Props = {
   draft: RapidDraft
   onChange: (next: RapidDraft) => void
   onSkip: () => void
+  onExclude: () => void
   onDefer: () => void
   onPrevious: () => void
   onNext: () => void
@@ -73,6 +75,7 @@ export function RapidForm({
   draft,
   onChange,
   onSkip,
+  onExclude,
   onDefer,
   onPrevious,
   onNext,
@@ -138,6 +141,11 @@ export function RapidForm({
         hotkey: skipHotkey,
         callback: unlessBusyOrOnButton(onSkip),
         options: { meta: { name: 'Nicht relevant' } },
+      },
+      {
+        hotkey: excludeHotkey,
+        callback: unlessBusyOrOnButton(onExclude),
+        options: { meta: { name: 'Nicht betrachten' } },
       },
       {
         hotkey: deferHotkey,
@@ -283,13 +291,14 @@ export function RapidForm({
 
 const actionKbdClass = 'rounded bg-black/30 px-1 font-sans text-xs font-medium'
 
-/** Save, and the two ways to leave a node unrated; each with its key. All go to the next node. */
+/** Save, and the three ways to leave a node unrated; each with its key. All go to the next node. */
 export function RapidActions({
   onSkip,
+  onExclude,
   onDefer,
   saveDisabled,
   busy = false,
-}: Pick<Props, 'onSkip' | 'onDefer' | 'busy'> & { saveDisabled?: boolean }) {
+}: Pick<Props, 'onSkip' | 'onExclude' | 'onDefer' | 'busy'> & { saveDisabled?: boolean }) {
   return (
     <div className="flex w-full flex-wrap gap-1" {...{ [OWN_ENTER_ATTRIBUTE]: '' }}>
       <Tooltip text="Speichern und zum nächsten Knoten" className="w-full">
@@ -319,6 +328,22 @@ export function RapidActions({
         >
           Nicht relevant
           <kbd className={actionKbdClass}>{skipHotkey}</kbd>
+        </Button>
+      </Tooltip>
+      <Tooltip
+        text="Knotenpunkt nicht betrachten (z. B. Autobahn): HVS, LSA und alle Antworten bleiben, der Knoten gilt als bewertet"
+        className="min-w-0 flex-1"
+      >
+        <Button
+          type="button"
+          outline
+          data-testid="exclude-node"
+          disabled={busy}
+          onClick={onExclude}
+          className="w-full"
+        >
+          Nicht betrachten
+          <kbd className={actionKbdClass}>{excludeHotkey}</kbd>
         </Button>
       </Tooltip>
       <Tooltip

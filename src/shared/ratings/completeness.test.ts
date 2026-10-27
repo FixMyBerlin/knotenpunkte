@@ -4,6 +4,8 @@ import {
   hasAllRapidAttributes,
   isRatingComplete,
   isSkipped,
+  notRelevantAttributes,
+  clearedRapidAttributes,
 } from './completeness'
 import { emptyRapidDraft } from './schema'
 
@@ -29,5 +31,13 @@ describe('completeness', () => {
     const skipped = { ...emptyRapidDraft(), KP_Nichtbetrachten: 1 as const }
     expect(isSkipped(skipped)).toBe(true)
     expect(isRatingComplete(skipped)).toBe(true)
+  })
+
+  it('sets HVS and LSA to Nein and clears the rest for not relevant', () => {
+    expect(notRelevantAttributes()).toEqual({
+      ...clearedRapidAttributes(),
+      KP_HVS: 0,
+      LSA_KP: 0,
+    })
   })
 })

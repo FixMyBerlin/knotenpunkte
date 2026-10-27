@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
 import { kvQueryOptions } from '@shared/kv/query-options'
+import { useQuery } from '@tanstack/react-query'
 import { create } from 'zustand'
 import { Route } from '@/routes/index'
 import { loadSuggestions } from '@/shared/datasets/dataset-idb'

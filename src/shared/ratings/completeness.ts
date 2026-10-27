@@ -29,6 +29,11 @@ export function clearedRapidAttributes(): Pick<RapidDraft, RapidAttributeKey> {
   }
 }
 
+/** Not relevant: neither HVS nor LSA, the other attributes stay empty. */
+export function notRelevantAttributes(): Pick<RapidDraft, RapidAttributeKey> {
+  return { ...clearedRapidAttributes(), KP_HVS: 0, LSA_KP: 0 }
+}
+
 export function firstEmptyRapidKey(draft: RapidDraft): RapidAttributeKey | undefined {
   if (isSkipped(draft)) return undefined
   return rapidAttributeKeys.find((key) => draft[key] === undefined)
