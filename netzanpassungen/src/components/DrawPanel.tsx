@@ -7,7 +7,7 @@ import { Text } from '@shared/components/ui/text'
 import { Textarea } from '@shared/components/ui/textarea'
 import { ignorePasswordManagerProps } from '@shared/form-ignore-password-manager'
 import { useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   useDrawActions,
   useDrawActive,
@@ -76,6 +76,15 @@ export function DrawPanel() {
   const leavePrompt = useLeavePrompt()
   const actions = useDrawActions()
   const deadEnd = useFinishDeadEnd()
+  const messageRef = useRef<HTMLDivElement>(null)
+
+  useEffect(
+    function showErrorMessage() {
+      // Deleting and editing happen far below in the sidebar; an error up here would go unseen.
+      if (message?.tone === 'error') messageRef.current?.scrollIntoView({ block: 'nearest' })
+    },
+    [message],
+  )
 
   if (!network) return <Text>Lade Netz …</Text>
 
@@ -171,9 +180,11 @@ export function DrawPanel() {
           </Text>
         ) : null}
         {message ? (
-          <Callout tone={message.tone === 'error' ? 'error' : 'info'} title="Hinweis">
-            {message.text}
-          </Callout>
+          <div ref={messageRef}>
+            <Callout tone={message.tone === 'error' ? 'error' : 'info'} title="Hinweis">
+              {message.text}
+            </Callout>
+          </div>
         ) : null}
       </div>
 
