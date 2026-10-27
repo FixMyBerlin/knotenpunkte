@@ -1,4 +1,5 @@
 import type { StepNavItem } from '@shared/components/StepNav'
+import { kvQueryOptions } from '@shared/kv/query-options'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMatch, useNavigate, useRouterState } from '@tanstack/react-router'
 import { useDrawActions } from '@/components/draw-store'
@@ -8,6 +9,7 @@ import { newEdgeElementNrs } from '@/network/element-nr'
 import { buildNetwork } from '@/network/model'
 import type { Stored } from '@/network/schema'
 import {
+  areasQueryKey,
   entriesQueryKey,
   NetworkConflictError,
   networkStore,
@@ -47,6 +49,7 @@ export function useNetwork(gebiet: string | undefined) {
     queryKey: entriesQueryKey(gebiet ?? ''),
     queryFn: () => networkStore.list(gebiet!),
     enabled: Boolean(gebiet),
+    ...kvQueryOptions,
   })
   const loaded = baseQuery.data ?? null
   const entries = entriesQuery.data?.entries ?? []
@@ -92,6 +95,10 @@ export function useSaveEntries(gebiet: string | undefined) {
         )
       }
       return saved
+    },
+    onSuccess: () => {
+      // The entry count of the area is shown in the area list.
+      void queryClient.invalidateQueries({ queryKey: areasQueryKey })
     },
     onError: (error) => {
       if (error instanceof NetworkConflictError && gebiet) {

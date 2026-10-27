@@ -1,5 +1,6 @@
 import { isOsmLoginConfigured } from '@shared/config/shared.const'
 import { useKvClient } from '@shared/kv/kv-context'
+import { kvQueryOptions } from '@shared/kv/query-options'
 import { loginWithOsm, logoutOsm, waitForOsmAuth } from '@shared/osm/osm-auth'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
@@ -25,6 +26,7 @@ export function useOsmAuth() {
   const meQuery = useQuery({
     queryKey: ['me'],
     queryFn: () => kv.me(),
+    ...kvQueryOptions,
     enabled: loggedIn,
   })
 

@@ -1,5 +1,6 @@
 import { cn } from '@shared/cn'
 import { Subheading } from '@shared/components/ui/heading'
+import { kvQueryOptions } from '@shared/kv/query-options'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { StatusFilterControl } from '@/components/StatusFilterControl'
@@ -31,6 +32,7 @@ export function OverviewPanel() {
     queryKey: ratingsQueryKey(dataset ?? ''),
     queryFn: () => ratingStore.list(dataset!),
     enabled: Boolean(dataset),
+    ...kvQueryOptions,
   })
 
   const records = ratingsQuery.data ?? {}

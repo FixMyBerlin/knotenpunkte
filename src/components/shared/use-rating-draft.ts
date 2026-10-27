@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { kvQueryOptions } from '@shared/kv/query-options'
 import { create } from 'zustand'
 import { Route } from '@/routes/index'
 import { loadSuggestions } from '@/shared/datasets/dataset-idb'
@@ -50,6 +51,7 @@ export function useRatingDraft(nodeId: string | undefined) {
     queryKey: ratingsQueryKey(dataset ?? ''),
     queryFn: () => ratingStore.list(dataset!),
     enabled: Boolean(dataset),
+    ...kvQueryOptions,
   })
   const suggestionsQuery = useQuery({
     queryKey: ['suggestions', dataset],

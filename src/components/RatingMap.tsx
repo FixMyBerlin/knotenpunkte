@@ -7,6 +7,7 @@ import { MapillaryLayers, useMapillaryMapClick } from '@shared/components/mapill
 import { MapillaryToggle } from '@shared/components/mapillary/MapillaryToggle'
 import { MAIN_MAP_ID } from '@shared/map/map-ids'
 import { mapillaryProviders } from '@shared/mapillary/photo-style'
+import { kvQueryOptions } from '@shared/kv/query-options'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import type { MapLayerMouseEvent } from 'maplibre-gl'
@@ -89,6 +90,7 @@ export function RatingMap() {
     queryKey: ratingsQueryKey(dataset ?? ''),
     queryFn: () => ratingStore.list(dataset!),
     enabled: Boolean(dataset),
+    ...kvQueryOptions,
   })
   const records = ratingsQuery.data ?? {}
   const features = nodesQuery.data?.collection.features ?? []

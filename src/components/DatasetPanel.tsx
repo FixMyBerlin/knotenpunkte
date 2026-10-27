@@ -11,6 +11,7 @@ import { Text, TextLink } from '@shared/components/ui/text'
 import { useOsmAuth } from '@shared/components/use-osm-auth'
 import { isValidDatasetName } from '@shared/datasets/dataset-name'
 import { ignorePasswordManagerProps } from '@shared/form-ignore-password-manager'
+import { kvQueryOptions } from '@shared/kv/query-options'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import clsx from 'clsx'
@@ -31,6 +32,7 @@ import { defaultWorkNodeId } from '@/shared/ratings/queue'
 import {
   datasetSummariesQueryKey,
   projectMetaQueryKey,
+  fetchRatings,
   ratingStore,
   ratingsQueryKey,
 } from '@/shared/ratings/ratings-query'
@@ -59,10 +61,12 @@ export function DatasetPanel() {
   const summariesQuery = useQuery({
     queryKey: datasetSummariesQueryKey,
     queryFn: () => ratingStore.listDatasetSummaries(),
+    ...kvQueryOptions,
   })
   const projectMetaQuery = useQuery({
     queryKey: projectMetaQueryKey,
     queryFn: () => ratingStore.listProjectMeta(),
+    ...kvQueryOptions,
   })
   const localDatasets = datasetsQuery.data ?? []
   const suggestionQueries = useQuery({
@@ -134,7 +138,7 @@ export function DatasetPanel() {
     mutationFn: async ({ text, name }: { text: string; name: string }) => {
       const parsed = parseNodesText(text, name)
       const stored = await saveNodes(parsed.collection, name)
-      const records = await ratingStore.list(name).catch(() => ({}))
+      const records = await fetchRatings(queryClient, name).catch(() => ({}))
       const first = defaultWorkNodeId(
         stored.collection.features.map((feature) => feature.properties.id),
         records,
@@ -323,7 +327,7 @@ export function DatasetPanel() {
                           })
                           return
                         }
-                        const records = await ratingStore.list(row.dataset).catch(() => ({}))
+                        const records = await fetchRatings(queryClient, row.dataset).catch(() => ({}))
                         const first = defaultWorkNodeId(
                           stored.collection.features.map((feature) => feature.properties.id),
                           records,

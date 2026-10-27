@@ -4,6 +4,7 @@ import { Subheading } from '@shared/components/ui/heading'
 import { Text } from '@shared/components/ui/text'
 import { useOsmAuth } from '@shared/components/use-osm-auth'
 import { downloadJson } from '@shared/download'
+import { kvQueryOptions } from '@shared/kv/query-options'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Route } from '@/routes/index'
 import { loadNodes } from '@/shared/datasets/dataset-idb'
@@ -33,6 +34,7 @@ export function ExportPanel() {
     queryKey: ratingsQueryKey(dataset ?? ''),
     queryFn: () => ratingStore.list(dataset!),
     enabled: Boolean(dataset),
+    ...kvQueryOptions,
   })
 
   const unreadableQuery = useQuery({

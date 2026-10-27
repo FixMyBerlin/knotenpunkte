@@ -1,4 +1,5 @@
 import type { StepNavItem } from '@shared/components/StepNav'
+import { kvQueryOptions } from '@shared/kv/query-options'
 import { useQuery } from '@tanstack/react-query'
 import { useMatch, useNavigate, useRouterState } from '@tanstack/react-router'
 import { loadNodes } from '@/shared/datasets/dataset-idb'
@@ -38,6 +39,7 @@ export function useAppStepNav() {
     queryKey: ratingsQueryKey(dataset ?? ''),
     queryFn: () => ratingStore.list(dataset!),
     enabled: Boolean(dataset),
+    ...kvQueryOptions,
   })
   const hasLocalNodes = Boolean(nodesQuery.data)
   const records = ratingsQuery.data ?? {}

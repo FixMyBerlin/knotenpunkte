@@ -7,6 +7,7 @@ import { Subheading } from '@shared/components/ui/heading'
 import { SidebarBody, SidebarFooter } from '@shared/components/ui/sidebar'
 import { Text } from '@shared/components/ui/text'
 import { useOsmAuth } from '@shared/components/use-osm-auth'
+import { kvQueryOptions } from '@shared/kv/query-options'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
@@ -75,6 +76,7 @@ export function WorkPanel() {
     queryKey: ratingsQueryKey(dataset ?? ''),
     queryFn: () => ratingStore.list(dataset!),
     enabled: Boolean(dataset),
+    ...kvQueryOptions,
   })
   const suggestionsQuery = useQuery({
     queryKey: ['suggestions', dataset],

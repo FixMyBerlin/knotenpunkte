@@ -59,27 +59,47 @@ function datasetAndNodeFromId(id: string) {
 export function createKvRatingStore(client: KvClient<RatingRecord>): RatingStore {
   const versions = createVersionTracker()
 
+  /** One scan of a dataset gives both the records and the unreadable entries. */
+  async function scan(dataset: string) {
+    const records: Record<string, RatingRecord> = {}
+    const unreadable: string[] = []
+    const prefix = `${dataset}:`
+    let cursor: string | undefined
+    do {
+      const page = await client.list({ tags: [dataset], match: 'all', limit: 500, cursor })
+      for (const item of page.items) {
+        versions.seen(item.id, item.version)
+        const record = ratingRecordSchema.safeParse(item.data)
+        const nodeId = item.id.startsWith(prefix) ? item.id.slice(prefix.length) : ''
+        if (record.success && nodeId) records[nodeId] = record.data
+        if (isReservedMetaEntry(item.id, item.tags) || record.success) continue
+        unreadable.push(nodeId || item.id)
+      }
+      cursor = page.next_cursor ?? undefined
+    } while (cursor)
+    return { records, unreadable }
+  }
+
+  const scans = new Map<string, Promise<Awaited<ReturnType<typeof scan>>>>()
+  const lastUnreadable = new Map<string, string[]>()
+
+  /** Requests for the same dataset that overlap share one scan. */
+  function scanShared(dataset: string) {
+    const running = scans.get(dataset)
+    if (running) return running
+    const next = scan(dataset)
+      .then((result) => {
+        lastUnreadable.set(dataset, result.unreadable)
+        return result
+      })
+      .finally(() => scans.delete(dataset))
+    scans.set(dataset, next)
+    return next
+  }
+
   const store: RatingStore = {
     async list(dataset) {
-      const records: Record<string, RatingRecord> = {}
-      let cursor: string | undefined
-      do {
-        const page = await client.list({
-          tags: [dataset],
-          match: 'all',
-          limit: 500,
-          cursor,
-        })
-        const prefix = `${dataset}:`
-        for (const item of page.items) {
-          versions.seen(item.id, item.version)
-          const record = ratingRecordSchema.safeParse(item.data)
-          const nodeId = item.id.startsWith(prefix) ? item.id.slice(prefix.length) : ''
-          if (record.success && nodeId) records[nodeId] = record.data
-        }
-        cursor = page.next_cursor ?? undefined
-      } while (cursor)
-      return records
+      return (await scanShared(dataset)).records
     },
     async put(dataset, nodeId, record) {
       const id = entryId(dataset, nodeId)
@@ -119,19 +139,8 @@ export function createKvRatingStore(client: KvClient<RatingRecord>): RatingStore
       return entries
     },
     async listUnreadable(dataset) {
-      const nodeIds: string[] = []
-      const prefix = `${dataset}:`
-      let cursor: string | undefined
-      do {
-        const page = await client.list({ tags: [dataset], match: 'all', limit: 500, cursor })
-        for (const item of page.items) {
-          if (isReservedMetaEntry(item.id, item.tags)) continue
-          if (ratingRecordSchema.safeParse(item.data).success) continue
-          nodeIds.push(item.id.startsWith(prefix) ? item.id.slice(prefix.length) : item.id)
-        }
-        cursor = page.next_cursor ?? undefined
-      } while (cursor)
-      return nodeIds
+      // The latest scan of the dataset, from `list` or an earlier call, is enough.
+      return lastUnreadable.get(dataset) ?? (await scanShared(dataset)).unreadable
     },
     async putProjectMeta(dataset, meta) {
       const payload = { name: dataset, created_at: meta.createdAt, created_by: meta.createdBy }

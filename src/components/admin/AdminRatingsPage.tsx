@@ -1,6 +1,7 @@
 import { DataTablePage, type DataColumn } from '@shared/components/data/DataTablePage'
 import { Subheading } from '@shared/components/ui/heading'
 import { Text } from '@shared/components/ui/text'
+import { kvQueryOptions } from '@shared/kv/query-options'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import type { RatingStoreEntry } from '@/shared/ratings/rating-store'
@@ -31,6 +32,7 @@ export function AdminRatingsPage() {
   const entriesQuery = useQuery({
     queryKey: allRatingsQueryKey,
     queryFn: () => ratingStore.listAll(),
+    ...kvQueryOptions,
   })
 
   const entries = entriesQuery.data ?? []

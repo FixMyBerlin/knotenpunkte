@@ -7,6 +7,7 @@ import { Input } from '@shared/components/ui/input'
 import { Text } from '@shared/components/ui/text'
 import { isValidDatasetName, slugifyDatasetName } from '@shared/datasets/dataset-name'
 import { ignorePasswordManagerProps } from '@shared/form-ignore-password-manager'
+import { kvQueryOptions } from '@shared/kv/query-options'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -30,7 +31,11 @@ export function GebietPanel() {
   const navigate = useNavigate({ from: Route.fullPath })
   const gebiet = Route.useSearch({ select: (search) => search.gebiet })
   const inputsQuery = useQuery({ queryKey: inputsQueryKey, queryFn: listInputs })
-  const areasQuery = useQuery({ queryKey: areasQueryKey, queryFn: () => networkStore.listAreas() })
+  const areasQuery = useQuery({
+    queryKey: areasQueryKey,
+    queryFn: () => networkStore.listAreas(),
+    ...kvQueryOptions,
+  })
   const { input, network, entries } = useNetwork(gebiet)
 
   const [pending, setPending] = useState<{ file: InputFile; fileName: string } | null>(null)
