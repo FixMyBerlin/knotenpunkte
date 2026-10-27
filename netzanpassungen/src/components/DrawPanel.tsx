@@ -109,7 +109,7 @@ export function DrawPanel() {
             ? 'Ein Klick auf einen Knoten oder eine Kante zeigt sie hier. Neue Kante mit N.'
             : !start
               ? 'Start: einen Knoten oder eine Kante anklicken.'
-              : 'Punkte setzen (in der Nähe eines Radfernwegs auf ihm). Ende mit Klick auf einen Knoten oder eine Kante, Sackgasse mit Enter oder erneutem Klick auf den letzten Punkt. Alt: Punkt frei setzen · Backspace: Punkt zurück · Esc: Linie abbrechen.'}
+              : 'Punkte setzen (in der Nähe eines Radfernwegs auf ihm). Ende mit Klick auf einen Knoten oder eine Kante, Sackgasse mit Enter. Alt: Punkt frei setzen · Backspace: Punkt zurück · Esc: Linie abbrechen.'}
         </Text>
         {active && start ? (
           <Text className="text-xs">

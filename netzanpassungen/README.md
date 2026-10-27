@@ -29,7 +29,7 @@ The **Gebiet** step imports it into IndexedDB of this browser (about 25 MB for B
 
 1. Click a node or an edge for the start. Nodes win within 12 px, edges within 10 px. Where edges lie on top of each other (0.5 m), REN+ wins over the Detailnetz, the Detailnetz over edges drawn here, and level 0 over bridges and tunnels.
 2. Click points in between. Near a Radfernweg (10 px) they go onto it; `Alt` sets a point freely. `Backspace` takes the last point back.
-3. Click a node or an edge for the end. The edge is saved, and its end is the start of the next one. Or end it as a dead end: `Enter`, a click on the last point again (double click) or **Als Sackgasse speichern**. Its free end becomes a virtual node lying on the edge itself (named `V<nearest Detailnetz node>-<n>`), so every edge still has a node at both ends; the next line starts with a click again.
+3. Click a node or an edge for the end. The edge is saved, and its end is the start of the next one. Or end it as a dead end: `Enter` or **Als Sackgasse speichern**. Its free end becomes a virtual node lying on the edge itself (named `V<nearest Detailnetz node>-<n>`), so every edge still has a node at both ends; the next line starts with a click again.
 4. `Esc`, `N`, **Zeichnen beenden** or leaving the step with points drawn do not drop the line: the sidebar asks to save it as a dead end (`Enter`), drop it (`Esc`) or go on drawing (or a click on the map). Without points `Esc` drops the start, a second `Esc` ends the tool. Closing the tab with a line asks the browser first.
 
 A start or end on an edge creates a virtual node there. The sidebar shows its name field after the edge is saved.

@@ -139,7 +139,9 @@ export function WorkPanel() {
         next.Zurueckgestellt !== 1 &&
         next.status !== 'complete'
       ) {
-        throw new Error('Alle sieben Attribute setzen oder „Nicht relevant“ oder „Nicht betrachten“ wählen.')
+        throw new Error(
+          'Alle sieben Attribute setzen oder „Nicht relevant“ oder „Nicht betrachten“ wählen.',
+        )
       }
       try {
         await ratingStore.put(dataset, nodeId, next)

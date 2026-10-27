@@ -194,12 +194,6 @@ export function NetzMap() {
       return
     }
     if (!target) {
-      // A click on the last point again (or a double click) ends the line as a dead end.
-      const last = points[points.length - 1]
-      if (last && distanceM(last, lngLat) <= tolerance.handle) {
-        deadEnd.finish()
-        return
-      }
       const route = free ? null : snapToRoute(network, lngLat, tolerance.edge)
       actions.addPoint(route?.lngLat ?? lngLat)
       return
