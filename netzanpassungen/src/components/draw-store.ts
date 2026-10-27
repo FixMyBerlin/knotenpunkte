@@ -26,6 +26,11 @@ interface DrawStore {
   drag: Drag | null
   /** Selected point of the selected edge, for deleting it. */
   vertexIndex: number | null
+  /**
+   * Set when the line would be dropped while it has points: the sidebar asks to save it as a dead
+   * end, drop it or go on. `stopTool`: the tool goes off after that.
+   */
+  leavePrompt: { stopTool: boolean } | null
   /** Shown in the sidebar until the next action. */
   message: { tone: 'info' | 'error'; text: string } | null
   /** Virtual nodes created with the last edge, to name them. */
@@ -35,6 +40,11 @@ interface DrawStore {
   actions: {
     toggle: () => void
     stop: () => void
+    /** Drops the line, or asks first when it has points (see `leavePrompt`). */
+    cancelLine: (stopTool: boolean) => void
+    /** Drops the line after `leavePrompt`. */
+    discardLine: () => void
+    keepDrawing: () => void
     setStart: (start: SnapTarget | null) => void
     addPoint: (point: LngLat) => void
     removeLastPoint: () => void
@@ -43,10 +53,14 @@ interface DrawStore {
     setVertexIndex: (index: number | null) => void
     setMessage: (message: DrawStore['message']) => void
     finished: (endTarget: SnapTarget, newNodes: string[]) => void
+    finishedDeadEnd: (newNodes: string[]) => void
     flyTo: (lngLat: LngLat) => void
     setLastNewNodes: (keys: string[]) => void
   }
 }
+
+const stopped = { active: false, start: null, points: [], hover: null, leavePrompt: null }
+const dropped = { start: null, points: [], leavePrompt: null }
 
 const useDrawStore = create<DrawStore>()((set) => ({
   active: false,
@@ -55,22 +69,34 @@ const useDrawStore = create<DrawStore>()((set) => ({
   hover: null,
   drag: null,
   vertexIndex: null,
+  leavePrompt: null,
   message: null,
   lastNewNodes: [],
   flyTarget: null,
   actions: {
     toggle: () =>
       set((state) =>
-        state.active
-          ? { active: false, start: null, points: [], hover: null }
-          : { active: true, message: null },
+        !state.active
+          ? { active: true, message: null }
+          : state.points.length > 0
+            ? { leavePrompt: { stopTool: true } }
+            : stopped,
       ),
-    stop: () => set({ active: false, start: null, points: [], hover: null }),
-    setStart: (start) => set({ start, points: [], message: null }),
-    addPoint: (point) => set((state) => ({ points: [...state.points, point], message: null })),
+    stop: () => set(stopped),
+    cancelLine: (stopTool) =>
+      set((state) =>
+        state.points.length > 0 ? { leavePrompt: { stopTool } } : stopTool ? stopped : dropped,
+      ),
+    discardLine: () => set((state) => (state.leavePrompt?.stopTool ? stopped : dropped)),
+    keepDrawing: () => set({ leavePrompt: null }),
+    setStart: (start) => set({ start, points: [], message: null, leavePrompt: null }),
+    addPoint: (point) =>
+      set((state) => ({ points: [...state.points, point], message: null, leavePrompt: null })),
     removeLastPoint: () =>
       set((state) =>
-        state.points.length > 0 ? { points: state.points.slice(0, -1) } : { start: null },
+        state.points.length > 0
+          ? { points: state.points.slice(0, -1), leavePrompt: null }
+          : { start: null },
       ),
     setHover: (hover) => set({ hover }),
     setDrag: (drag) => set({ drag }),
@@ -78,7 +104,20 @@ const useDrawStore = create<DrawStore>()((set) => ({
     setMessage: (message) => set({ message }),
     // The end of an edge is the start of the next one, so a route is drawn in one go.
     finished: (endTarget, newNodes) =>
-      set({ start: endTarget, points: [], lastNewNodes: newNodes, message: null }),
+      set({
+        start: endTarget,
+        points: [],
+        lastNewNodes: newNodes,
+        message: null,
+        leavePrompt: null,
+      }),
+    // A dead end has no node to go on from; the next line starts with a click again.
+    finishedDeadEnd: (newNodes) =>
+      set((state) => ({
+        ...(state.leavePrompt?.stopTool ? stopped : dropped),
+        lastNewNodes: newNodes,
+        message: null,
+      })),
     setLastNewNodes: (lastNewNodes) => set({ lastNewNodes, message: null }),
     flyTo: (lngLat) =>
       set((state) => ({ flyTarget: { lngLat, id: (state.flyTarget?.id ?? 0) + 1 } })),
@@ -91,6 +130,7 @@ export const useDrawPoints = () => useDrawStore((state) => state.points)
 export const useDrawHover = () => useDrawStore((state) => state.hover)
 export const useDrawDrag = () => useDrawStore((state) => state.drag)
 export const useVertexIndex = () => useDrawStore((state) => state.vertexIndex)
+export const useLeavePrompt = () => useDrawStore((state) => state.leavePrompt)
 export const useDrawMessage = () => useDrawStore((state) => state.message)
 export const useLastNewNodes = () => useDrawStore((state) => state.lastNewNodes)
 export const useFlyTarget = () => useDrawStore((state) => state.flyTarget)

@@ -1,5 +1,12 @@
 import { lineLengthM, sliceLine, type LngLat } from './geo'
-import { hostKey, virtualNodesOn, type BaseNetwork, type NetEdge, type Network } from './model'
+import {
+  deadEndHost,
+  hostKey,
+  virtualNodesOn,
+  type BaseNetwork,
+  type NetEdge,
+  type Network,
+} from './model'
 
 /**
  * Element numbers as in the Detailnetz and in the 2025 delivery: `<von>_<bis>.<nn>`, e.g.
@@ -86,9 +93,10 @@ export function splitEdges(network: Network) {
     )
   }
 
+  // The free end of a dead end lies on its own edge but does not cut it.
   const hostKeys = new Set(
     network.virtualNodes.flatMap((node) =>
-      node.stored ? [hostKey(node.stored.data.traeger)] : [],
+      node.stored && !deadEndHost(network, node) ? [hostKey(node.stored.data.traeger)] : [],
     ),
   )
   const parts: EdgePart[] = []
@@ -99,7 +107,9 @@ export function splitEdges(network: Network) {
     .filter((edge): edge is NetEdge => edge !== undefined)
     .sort((a, b) => Number(a.kind !== 'neu') - Number(b.kind !== 'neu'))
   for (const edge of hosts) {
-    const onEdge = virtualNodesOn(network, edge.key)
+    const onEdge = virtualNodesOn(network, edge.key).filter(
+      (node) => node.key !== edge.from && node.key !== edge.to,
+    )
     split.add(edge.key)
     const stops = [
       { name: nodeName(network, edge.from), stationM: 0 },

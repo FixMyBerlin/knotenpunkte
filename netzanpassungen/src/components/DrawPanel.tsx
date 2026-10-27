@@ -16,13 +16,16 @@ import {
   useDrawPoints,
   useDrawStart,
   useLastNewNodes,
+  useLeavePrompt,
   useVertexIndex,
 } from '@/components/draw-store'
 import { SuggestionsPanel } from '@/components/SuggestionsPanel'
 import { useDeleteSelection } from '@/components/use-delete-selection'
+import { useFinishDeadEnd } from '@/components/use-finish-dead-end'
 import { useNetwork, useSaveEntries } from '@/components/use-netz'
 import { nodeName } from '@/network/element-nr'
 import {
+  deadEndHost,
   edgesAtNode,
   hostKey,
   virtualNodesOn,
@@ -70,7 +73,9 @@ export function DrawPanel() {
   const hover = useDrawHover()
   const message = useDrawMessage()
   const lastNewNodes = useLastNewNodes()
+  const leavePrompt = useLeavePrompt()
   const actions = useDrawActions()
+  const deadEnd = useFinishDeadEnd()
 
   if (!network) return <Text>Lade Netz …</Text>
 
@@ -104,12 +109,55 @@ export function DrawPanel() {
             ? 'Ein Klick auf einen Knoten oder eine Kante zeigt sie hier. Neue Kante mit N.'
             : !start
               ? 'Start: einen Knoten oder eine Kante anklicken.'
-              : 'Punkte setzen (in der Nähe eines Radfernwegs auf ihm). Ende mit Klick auf einen Knoten oder eine Kante. Alt: Punkt frei setzen · Backspace: Punkt zurück · Esc: Linie abbrechen.'}
+              : 'Punkte setzen (in der Nähe eines Radfernwegs auf ihm). Ende mit Klick auf einen Knoten oder eine Kante, Sackgasse mit Enter oder erneutem Klick auf den letzten Punkt. Alt: Punkt frei setzen · Backspace: Punkt zurück · Esc: Linie abbrechen.'}
         </Text>
         {active && start ? (
           <Text className="text-xs">
             Start: {targetText(start, elementNrs)} · {points.length} Punkte
           </Text>
+        ) : null}
+        {leavePrompt ? (
+          <Callout tone="warning" title="Linie nicht gespeichert">
+            <p>
+              Die Linie hängt erst an einem Ende am Netz. Als Sackgasse speichern (das freie Ende
+              wird ein virtueller Knoten) oder verwerfen?
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                type="button"
+                color="sky"
+                disabled={!deadEnd.possible}
+                onClick={deadEnd.finish}
+                data-testid="leave-save-dead-end"
+              >
+                Als Sackgasse speichern
+                <kbd className="ml-2 rounded bg-black/20 px-1 text-xs">Enter</kbd>
+              </Button>
+              <Button
+                type="button"
+                outline
+                onClick={actions.discardLine}
+                data-testid="leave-discard"
+              >
+                Verwerfen
+                <kbd className="ml-2 rounded bg-black/20 px-1 text-xs">Esc</kbd>
+              </Button>
+              <Button type="button" plain onClick={actions.keepDrawing}>
+                Weiterzeichnen
+              </Button>
+            </div>
+          </Callout>
+        ) : active && start && points.length > 0 ? (
+          <Button
+            type="button"
+            outline
+            disabled={!deadEnd.possible}
+            onClick={deadEnd.finish}
+            data-testid="finish-dead-end"
+          >
+            Als Sackgasse speichern
+            <kbd className="ml-2 rounded bg-black/20 px-1 text-xs">Enter</kbd>
+          </Button>
         ) : null}
         {active && hover ? (
           <Text className="text-xs text-zinc-300" data-testid="hover-target">
@@ -204,7 +252,11 @@ function NodeDetails({ network, node }: { network: Network; node: NetNode }) {
             stored={node.stored!}
             value={node.stored!.data.kommentar ?? ''}
           />
-          <Text className="text-xs">Zum Verschieben den Knoten entlang seiner Kante ziehen.</Text>
+          <Text className="text-xs">
+            {deadEndHost(network, node)
+              ? 'Freies Ende einer Sackgasse: zum Verschieben ziehen, die Kante folgt.'
+              : 'Zum Verschieben den Knoten entlang seiner Kante ziehen.'}
+          </Text>
           <Button type="button" plain onClick={deleteSelection}>
             Knoten löschen (Entf)
           </Button>

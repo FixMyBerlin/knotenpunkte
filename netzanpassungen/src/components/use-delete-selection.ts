@@ -1,7 +1,7 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useDrawActions } from '@/components/draw-store'
 import { useNetwork, useSaveEntries } from '@/components/use-netz'
-import { deleteBlocker, nodesLeftAlone, planDelete } from '@/network/edit'
+import { deadEndNodes, deleteBlocker, nodesLeftAlone, planDelete } from '@/network/edit'
 import { Route } from '@/routes/index'
 
 /** Deletes the selected edge or virtual node drawn here (marked as deleted, history stays). */
@@ -23,10 +23,16 @@ export function useDeleteSelection() {
     const node = sel.startsWith('v:') ? network.nodeByKey(sel) : undefined
     const stored = edge?.stored ?? node?.stored
     if (!stored) return
-    const alone = edge ? nodesLeftAlone(network, sel) : []
+    const freeEnds = edge ? deadEndNodes(network, sel) : []
+    const alone = edge
+      ? nodesLeftAlone(network, sel).filter((item) => !freeEnds.includes(item))
+      : []
     const label = edge ? 'diese Kante' : `den virtuellen Knoten ${node?.name}`
     if (!window.confirm(`Wirklich ${label} löschen?`)) return
-    const writes = [planDelete(stored)]
+    const writes = [
+      planDelete(stored),
+      ...freeEnds.flatMap((item) => (item.stored ? [planDelete(item.stored)] : [])),
+    ]
     if (
       alone.length > 0 &&
       window.confirm(

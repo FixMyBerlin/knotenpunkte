@@ -288,3 +288,14 @@ export function virtualNodesOn(network: Network, edgeKey: string) {
 export function edgesAtNode(network: Network, nodeKey: string) {
   return network.newEdges.filter((edge) => edge.from === nodeKey || edge.to === nodeKey)
 }
+
+/**
+ * The edge a virtual node lies on when the node is also an end of it: the free end of a dead end,
+ * drawn with the edge.
+ */
+export function deadEndHost(network: Network, node: NetNode) {
+  const traeger = node.stored?.data.traeger
+  if (traeger?.art !== 'neu') return undefined
+  const host = network.edgeByKey(hostKey(traeger))
+  return host && (host.from === node.key || host.to === node.key) ? host : undefined
+}

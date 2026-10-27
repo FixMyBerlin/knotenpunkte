@@ -25,17 +25,19 @@ import {
   useDrawHover,
   useDrawPoints,
   useDrawStart,
+  useLeavePrompt,
   useFlyTarget,
   useVertexIndex,
 } from '@/components/draw-store'
 import { NetzLegend } from '@/components/NetzLegend'
 import { useSuggestionActions, useSuggestionsVisible } from '@/components/suggestion-store'
 import { useDeleteSelection } from '@/components/use-delete-selection'
+import { useFinishDeadEnd } from '@/components/use-finish-dead-end'
 import { useNetwork, useSaveEntries } from '@/components/use-netz'
 import { useOpenSuggestions } from '@/components/use-suggestions'
 import { planEditEdgeCoords, planMoveVirtualNode, planNewEdge } from '@/network/edit'
 import { distanceM, metersPerPixel, nearestOnLine, type LngLat } from '@/network/geo'
-import { hostKey, type NetNode } from '@/network/model'
+import { deadEndHost, hostKey, type NetNode } from '@/network/model'
 import type { VirtualNodeEntry } from '@/network/schema'
 import { snap, snapToRoute, type SnapTarget } from '@/network/snap'
 import { Route } from '@/routes/index'
@@ -108,7 +110,9 @@ export function NetzMap() {
   const hover = useDrawHover()
   const drag = useDrawDrag()
   const vertexIndex = useVertexIndex()
+  const leavePrompt = useLeavePrompt()
   const actions = useDrawActions()
+  const deadEnd = useFinishDeadEnd()
   const deleteSelection = useDeleteSelection()
   const textEntryFocused = useTextEntryFocused()
   const handleMapillaryClick = useMapillaryMapClick()
@@ -127,9 +131,21 @@ export function NetzMap() {
 
   useEffect(
     function stopDrawingOutsideTheStep() {
-      if (step !== 'zeichnen') actions.stop()
+      // A line with points stays, with the question in the sidebar when coming back.
+      if (step !== 'zeichnen') actions.cancelLine(true)
     },
     [step, actions],
+  )
+
+  const unsavedLine = start !== null && points.length > 0
+  useEffect(
+    function warnBeforeLeavingWithALine() {
+      if (!unsavedLine) return
+      const warn = (event: BeforeUnloadEvent) => event.preventDefault()
+      window.addEventListener('beforeunload', warn)
+      return () => window.removeEventListener('beforeunload', warn)
+    },
+    [unsavedLine],
   )
 
   function select(key: string | undefined) {
@@ -150,6 +166,8 @@ export function NetzMap() {
   /** Where the selected virtual node would be with the drag: on its host edge. */
   function draggedNodePoint() {
     if (drag?.kind !== 'node' || !network || !selectedNode?.stored) return null
+    // The free end of a dead end moves freely and takes the end of its edge along.
+    if (deadEndHost(network, selectedNode)) return drag.lngLat
     const host = network.edgeByKey(hostKey(selectedNode.stored.data.traeger))
     return host ? nearestOnLine(host.coords, drag.lngLat).point : null
   }
@@ -176,6 +194,12 @@ export function NetzMap() {
       return
     }
     if (!target) {
+      // A click on the last point again (or a double click) ends the line as a dead end.
+      const last = points[points.length - 1]
+      if (last && distanceM(last, lngLat) <= tolerance.handle) {
+        deadEnd.finish()
+        return
+      }
       const route = free ? null : snapToRoute(network, lngLat, tolerance.edge)
       actions.addPoint(route?.lngLat ?? lngLat)
       return
@@ -305,11 +329,23 @@ export function NetzMap() {
       {
         hotkey: 'Escape',
         callback: () => {
-          if (drawing && start) actions.setStart(null)
+          if (drawing && leavePrompt) actions.discardLine()
+          else if (drawing && start) actions.cancelLine(false)
           else if (drawing) actions.stop()
           else select(undefined)
         },
         options: { meta: { name: 'Abbrechen' } },
+      },
+      {
+        hotkey: 'Enter',
+        callback: () => {
+          if (drawing) deadEnd.finish()
+        },
+        // Only then, so Enter still presses focused buttons otherwise.
+        options: {
+          enabled: drawing && deadEnd.possible && !textEntryFocused,
+          meta: { name: 'Als Sackgasse speichern' },
+        },
       },
       {
         hotkey: 'Backspace',

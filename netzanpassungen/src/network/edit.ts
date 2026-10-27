@@ -1,9 +1,12 @@
-import { distanceM, nearestOnLine, type LngLat } from './geo'
+import { distanceM, lineLengthM, nearestOnLine, type LngLat } from './geo'
 import {
+  deadEndHost,
+  edgesAtNode,
   hostKey,
   newEdgeKey,
   virtualNodeKey,
   virtualNodesOn,
+  type NetEdge,
   type NetNode,
   type Network,
 } from './model'
@@ -126,8 +129,22 @@ export function planNewEdge(
       : end.type === 'edge'
         ? end.edge.strassenname
         : null
+  writes.push({
+    id: newEntryId(),
+    data: newEdgeEntry(network, von, bis, coordinates, strassenname),
+  })
+  return { writes, newNodeKeys, endKey: bis }
+}
+
+function newEdgeEntry(
+  network: Network,
+  von: string,
+  bis: string,
+  coordinates: LngLat[],
+  strassenname: string | null,
+): NewEdgeEntry {
   const routeName = routeNameNear(network, coordinates)
-  const edge: NewEdgeEntry = {
+  return {
     kind: 'new_edge',
     von,
     bis,
@@ -136,7 +153,65 @@ export function planNewEdge(
     ...(strassenname ? { strassenname } : {}),
     ...(routeName ? { routen_fernradweg: routeName } : {}),
   }
-  writes.push({ id: newEntryId(), data: edge })
+}
+
+/**
+ * A dead end from `start` through `points`, at least one. Its free end gets a virtual node that
+ * lies on the new edge itself, so every edge still ends at a node; it is named after the nearest
+ * Detailnetz node back along the edge (`V<A>-2`).
+ */
+export function planDeadEnd(network: Network, start: SnapTarget, points: LngLat[]): PlannedEdge {
+  const writes: EntryWrite[] = []
+  const newNodeKeys: string[] = []
+  let current = network
+  let von: string
+  if (start.type === 'node') von = start.node.key
+  else {
+    const node = newVirtualNode(network, start, [])
+    writes.push(node)
+    current = withPendingNode(network, node.id, node.data)
+    von = virtualNodeKey(node.id)
+    newNodeKeys.push(von)
+  }
+
+  const edgeId = newEntryId()
+  const endId = newEntryId()
+  const bis = virtualNodeKey(endId)
+  const coordinates = [start.lngLat, ...points]
+  const lengthM = lineLengthM(coordinates)
+  const end = coordinates[coordinates.length - 1]!
+  const host: NetEdge = {
+    key: newEdgeKey(edgeId),
+    kind: 'neu',
+    ref: edgeId,
+    elementNr: null,
+    from: von,
+    to: null,
+    coords: coordinates,
+    lengthM,
+    verkehrsebene: 0,
+    strassenname: null,
+    radverkehrsnetz: null,
+  }
+  const suggestion = suggestVirtualNodeName({
+    network: current,
+    host,
+    stationM: lengthM,
+    extraTaken: writes.map((write) => (write.data as VirtualNodeEntry).name),
+  })
+  writes.push({
+    id: endId,
+    data: {
+      kind: 'virtual_node',
+      name: suggestion.name,
+      name_vorschlag: suggestion.name,
+      lngLat: end,
+      traeger: { art: 'neu', ref: edgeId, station_m: lengthM },
+    },
+  })
+  newNodeKeys.push(bis)
+  const strassenname = start.type === 'edge' ? start.edge.strassenname : null
+  writes.push({ id: edgeId, data: newEdgeEntry(network, von, bis, coordinates, strassenname) })
   return { writes, newNodeKeys, endKey: bis }
 }
 
@@ -160,6 +235,8 @@ function moveAttachedEnds(network: Network, nodeKey: string, lngLat: LngLat): En
 export function planMoveVirtualNode(network: Network, node: NetNode, target: LngLat): EntryWrite[] {
   const stored = node.stored
   if (!stored) return []
+  const deadEnd = deadEndHost(network, node)
+  if (deadEnd) return planMoveDeadEnd(network, node, deadEnd, target)
   const host = network.edgeByKey(hostKey(stored.data.traeger))
   if (!host) return []
   const nearest = nearestOnLine(host.coords, target)
@@ -178,6 +255,35 @@ export function planMoveVirtualNode(network: Network, node: NetNode, target: Lng
     name: followsSuggestion ? suggestion.name : stored.data.name,
   }
   return [{ id: stored.id, data }, ...moveAttachedEnds(network, node.key, nearest.point)]
+}
+
+/** The free end of a dead end moved to `target`, with the end of its edge (and of others there). */
+function planMoveDeadEnd(
+  network: Network,
+  node: NetNode,
+  host: NetEdge,
+  target: LngLat,
+): EntryWrite[] {
+  const stored = node.stored!
+  const ends = moveAttachedEnds(network, node.key, target)
+  const hostWrite = ends.find((write) => write.id === host.stored!.id)
+  const coords = (hostWrite?.data as NewEdgeEntry | undefined)?.coordinates ?? host.coords
+  const stationM = lineLengthM(coords)
+  const suggestion = suggestVirtualNodeName({
+    network,
+    host: { ...host, coords, lengthM: stationM },
+    stationM,
+    excludeNode: node.key,
+  })
+  const followsSuggestion = stored.data.name === stored.data.name_vorschlag
+  const data: VirtualNodeEntry = {
+    ...stored.data,
+    lngLat: target,
+    traeger: { ...stored.data.traeger, station_m: stationM },
+    name_vorschlag: suggestion.name,
+    name: followsSuggestion ? suggestion.name : stored.data.name,
+  }
+  return [{ id: stored.id, data }, ...ends]
 }
 
 /**
@@ -211,7 +317,12 @@ export function planEditEdgeCoords(
         traeger: { ...node.stored!.data.traeger, station_m: nearest.stationM },
       },
     })
-    writes.push(...moveAttachedEnds(network, node.key, nearest.point))
+    // The free end of a dead end is an end of this edge, too; its points are in `fixed`.
+    writes.push(
+      ...moveAttachedEnds(network, node.key, nearest.point).filter(
+        (write) => write.id !== edgeStored.id,
+      ),
+    )
   }
   return writes
 }
@@ -219,7 +330,8 @@ export function planEditEdgeCoords(
 /** Why an entry cannot be deleted, or null. */
 export function deleteBlocker(network: Network, key: string) {
   if (key.startsWith('neu:')) {
-    const hosted = virtualNodesOn(network, key)
+    const freeEnds = new Set(deadEndNodes(network, key).map((node) => node.key))
+    const hosted = virtualNodesOn(network, key).filter((node) => !freeEnds.has(node.key))
     if (hosted.length > 0) {
       return `Auf dieser Kante liegen virtuelle Knoten (${hosted.map((node) => node.name).join(', ')}). Erst die Kanten an diesen Knoten löschen.`
     }
@@ -231,6 +343,17 @@ export function deleteBlocker(network: Network, key: string) {
     return null
   }
   return 'Nur hier gezeichnete Kanten und Knoten lassen sich löschen.'
+}
+
+/**
+ * Free ends of the dead end `edgeKey` with no other edge: they go with the edge, as their host is
+ * gone then.
+ */
+export function deadEndNodes(network: Network, edgeKey: string) {
+  return virtualNodesOn(network, edgeKey).filter(
+    (node) =>
+      deadEndHost(network, node)?.key === edgeKey && edgesAtNode(network, node.key).length === 1,
+  )
 }
 
 /** Virtual nodes drawn here that have no edge left once `edgeKey` is deleted. */
