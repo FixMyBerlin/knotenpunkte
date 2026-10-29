@@ -39,6 +39,7 @@ import {
   unreadableRatingsQueryKey,
 } from '@/shared/ratings/ratings-query'
 import {
+  rapidAttributeKeys,
   rapidValuesFromRecord,
   type HistoryKind,
   type RapidDraft,
@@ -286,7 +287,10 @@ export function WorkPanel() {
     suggestedBetrachtung(suggestionRows) === 1 ||
     lsaConflictSource !== undefined ||
     rateAnywayByNode[currentId] === true ||
-    (record !== undefined && record.KP_Nichtbetrachten !== 1)
+    // A record that only holds notes, photos or sources (autosave) is no rating yet.
+    (record !== undefined &&
+      record.KP_Nichtbetrachten !== 1 &&
+      (record.Zurueckgestellt === 1 || rapidAttributeKeys.some((key) => record[key] !== undefined)))
   const busy = saveMutation.isPending
   const canSave =
     auth.authenticated &&
