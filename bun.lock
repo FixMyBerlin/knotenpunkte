@@ -10,7 +10,7 @@
         "@heroicons/react": "^2.2.0",
         "@osm-editor-kit/maplibre-editor-layer-index": "1.0.0",
         "@osm-editor-kit/street-imagery": "1.0.0",
-        "@osm-editor-kit/street-imagery-react": "1.0.0",
+        "@osm-editor-kit/street-imagery-react": "1.1.0",
         "@rapideditor/country-coder": "5.6.1",
         "@tanstack/react-hotkeys": "^0.10.0",
         "@tanstack/react-query": "^5.104.1",
@@ -189,7 +189,7 @@
 
     "@osm-editor-kit/street-imagery": ["@osm-editor-kit/street-imagery@1.0.0", "", { "dependencies": { "@mapbox/vector-tile": "^3.0.0", "@types/geojson": "^7946.0.16", "date-fns": "^4.4.0", "pbf": "^5.1.0" }, "peerDependencies": { "maplibre-gl": "^6" }, "optionalPeers": ["maplibre-gl"] }, "sha512-809xPDBFvU/kOH4xc5gSjaxzF/pTNCehjYltrBP1/C5PIR0IcE/rXXMXQEhS2038lZFeMwMGK30cDxFrMoGAAw=="],
 
-    "@osm-editor-kit/street-imagery-react": ["@osm-editor-kit/street-imagery-react@1.0.0", "", { "peerDependencies": { "@osm-editor-kit/street-imagery": "^1.0.0", "@panoramax/web-viewer": "^5", "@tanstack/react-query": "^5", "mapillary-js": "^4", "maplibre-gl": "^6", "react": "^19", "react-dom": "^19", "react-map-gl": "^8", "zustand": "^5" }, "optionalPeers": ["@panoramax/web-viewer"] }, "sha512-QtmHW26bmRut/OABxeDzjDdkGhGuRFcPJ0CTJrfz2MUKqVlQNn+9beIY6tIBhBsRVFSxR0T//fSJv4mi6MlZ5A=="],
+    "@osm-editor-kit/street-imagery-react": ["@osm-editor-kit/street-imagery-react@1.1.0", "", { "dependencies": { "@types/geojson": "^7946.0.16" }, "peerDependencies": { "@osm-editor-kit/street-imagery": "^1.0.0", "@panoramax/web-viewer": "^5", "@tanstack/react-query": "^5", "mapillary-js": "^4", "maplibre-gl": "^6", "react": "^19", "react-dom": "^19", "react-map-gl": "^8", "zustand": "^5" }, "optionalPeers": ["@panoramax/web-viewer", "mapillary-js"] }, "sha512-h7QdUI8da8qeeOIthnnLUlLlZUecs2odRcloaldqktymjYNoi31kXpyyCnaFDIWJDqW08zu0I3a/m4F0mBpelw=="],
 
     "@oxc-parser/binding-android-arm-eabi": ["@oxc-parser/binding-android-arm-eabi@0.150.0", "", { "os": "android", "cpu": "arm" }, "sha512-oQef2Zu4Prz1KLKznz3HqZzU9uVoA5PMoDZuuLmqms7hKmKSAPzlaMnLllJq3t+rgKmfJJ2siPrpZfFrW06btw=="],
 

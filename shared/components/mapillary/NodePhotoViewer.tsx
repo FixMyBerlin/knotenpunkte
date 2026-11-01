@@ -9,13 +9,13 @@ import {
   FloatingPhotoViewer,
   getViewpointSession,
   PhotoDate,
-  StreetLevelImageryViewer,
   useActiveDirectionKey,
   useCanGoBack,
   useCanGoForward,
   useCurrentHistoryEntry,
   useViewpoints,
 } from '@osm-editor-kit/street-imagery-react'
+import { StreetLevelImageryViewer } from '@osm-editor-kit/street-imagery-react/viewer'
 import { cn } from '@shared/cn'
 import { useViewpointsNodeId } from '@shared/components/map/map-ui-store'
 import {
