@@ -23,6 +23,9 @@ const DEV_PORT = 33481
 
 export default defineConfig(({ mode }) => ({
   root: appRoot,
+  // Own dep cache: the other apps use `node_modules/.vite`, and two dev servers at once (e2e)
+  // must not rewrite each other's optimized deps.
+  cacheDir: path.resolve(repoRoot, 'node_modules/.vite-fortschritt'),
   base: mode === 'production' ? PRODUCTION_BASE : '/',
   plugins: [
     tanstackRouter({
