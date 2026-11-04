@@ -11,7 +11,7 @@ export function ProgressBar({ share, label }: { share: number; label: string }) 
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.round(width)}
-        className="h-2 w-28 overflow-hidden rounded-full bg-zinc-800"
+        className="h-2 w-20 overflow-hidden rounded-full bg-zinc-800"
       >
         <div
           className="h-full rounded-full"

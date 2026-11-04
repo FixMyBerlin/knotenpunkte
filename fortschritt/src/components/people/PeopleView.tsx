@@ -1,4 +1,5 @@
 import { ClipboardDocumentIcon } from '@heroicons/react/20/solid'
+import { Badge } from '@shared/components/ui/badge'
 import { Button } from '@shared/components/ui/button'
 import {
   Table,
@@ -29,6 +30,9 @@ export function PeopleView({ dataset }: { dataset: Dataset }) {
   const rows = accountRows(dataset, now)
   const running = runningDelivery(dataset.deliveries, now)
   const later = dataset.deliveries.filter((delivery) => delivery.deadline > running.deadline)
+  const overdueNrs = [...new Set(rows.flatMap((row) => row.overdueDeliveries))].sort(
+    (a, b) => a - b,
+  )
   const [copied, setCopied] = useState<'ok' | 'fehler' | null>(null)
 
   async function copySummary() {
@@ -67,20 +71,29 @@ export function PeopleView({ dataset }: { dataset: Dataset }) {
           </div>
         </div>
 
-        <Table dense className="[--gutter:--spacing(1)]" data-testid="people-table">
+        <Table
+          dense
+          className="[--gutter:--spacing(1)] [&_td]:px-2 [&_th]:px-2"
+          data-testid="people-table"
+        >
           <TableHead>
             <TableRow>
               <TableHeader>Account</TableHeader>
-              <TableHeader className="text-right">Rest in L{running.nr}</TableHeader>
-              <TableHeader className="text-right">nötig je Woche</TableHeader>
-              <TableHeader className="text-right">Ø letzte 2 Wochen¹</TableHeader>
+              <TableHeader className="text-right">Rest L{running.nr}</TableHeader>
+              {overdueNrs.length > 0 ? (
+                <TableHeader className="text-right" data-testid="overdue-header">
+                  Rückstand L{overdueNrs.join(', L')}³
+                </TableHeader>
+              ) : null}
+              <TableHeader className="text-right">nötig/Woche</TableHeader>
+              <TableHeader className="text-right">Ø 2 Wochen¹</TableHeader>
               <TableHeader>Stand</TableHeader>
               {later.length > 0 ? (
                 <TableHeader className="text-right">
                   schon in L{later.map((delivery) => delivery.nr).join(', L')}
                 </TableHeader>
               ) : null}
-              <TableHeader className="text-right">in fremden Gebieten²</TableHeader>
+              <TableHeader className="text-right">fremde Gebiete²</TableHeader>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -97,11 +110,30 @@ export function PeopleView({ dataset }: { dataset: Dataset }) {
                   </span>
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
-                  {formatKm(row.restKm)}
-                  <span className="block text-xs text-zinc-500">von {formatKm(row.totalKm)}</span>
+                  {row.totalKm > 0 ? (
+                    <>
+                      {formatKm(row.restKm)}
+                      <span className="block text-xs text-zinc-500">
+                        von {formatKm(row.totalKm)}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      –<span className="block text-xs text-zinc-500">nichts zugeteilt</span>
+                    </>
+                  )}
                 </TableCell>
+                {overdueNrs.length > 0 ? (
+                  <TableCell className="text-right tabular-nums" data-testid="overdue-cell">
+                    {row.overdueKm > 0 ? (
+                      <Badge color="red">{formatKm(row.overdueKm)}</Badge>
+                    ) : (
+                      <span className="text-zinc-500">–</span>
+                    )}
+                  </TableCell>
+                ) : null}
                 <TableCell className="text-right tabular-nums">
-                  {perWeek(row.neededPerWeek)}
+                  {row.ampel === 'keine' ? '–' : perWeek(row.neededPerWeek)}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">{perWeek(row.pace)}</TableCell>
                 <TableCell>
@@ -125,9 +157,10 @@ export function PeopleView({ dataset }: { dataset: Dataset }) {
 
         <div className="space-y-1 text-xs text-zinc-400">
           <p>
-            Gezählt wird nach dem zugeteilten Account der Kante, nur Kanten der laufenden Lieferung.
-            Nötig je Woche = Rest ÷ Wochen bis zur Deadline, jede Woche neu gerechnet. Stand: grün
-            ab 100 % des Nötigen, gelb ab 80 %, sonst rot.
+            Gezählt wird nach dem zugeteilten Account der Kante, in der laufenden Lieferung. Nötig
+            je Woche = (Rest + Rückstand) ÷ Wochen bis zur Deadline, jede Woche neu gerechnet.
+            Stand: grün ab 100 % des Nötigen, gelb ab 80 %, sonst rot; „nichts zugeteilt“, wenn der
+            Account in dieser Lieferung keine Kanten hat.
           </p>
           <p>
             ¹ Ø letzte 2 Wochen = km, die in den letzten {paceWindowDays.account} Tagen bis jetzt
@@ -139,6 +172,12 @@ export function PeopleView({ dataset }: { dataset: Dataset }) {
             ² km, die dieser Account in Gebieten anderer Accounts als erledigt markiert hat (nach
             dem Namen, mit dem markiert wurde). Sie zählen beim zugeteilten Account.
           </p>
+          {overdueNrs.length > 0 ? (
+            <p>
+              ³ Rückstand = km einer früheren Lieferung, deren Deadline vorbei ist und die noch
+              nicht erledigt sind. Sie sind in „nötig/Woche“ enthalten.
+            </p>
+          ) : null}
         </div>
 
         <section aria-labelledby="weekly-heading" className="space-y-3">

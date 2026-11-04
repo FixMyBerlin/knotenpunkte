@@ -4,9 +4,10 @@ import { runningDelivery } from '@/stats/plan'
 import { paceKmPerWeek, weeklyBuckets, type WeekBucket } from '@/stats/series'
 import { neededPerWeek, sumKm } from '@/stats/status'
 
-export type Ampel = 'fertig' | 'gruen' | 'gelb' | 'rot'
+export type Ampel = 'keine' | 'fertig' | 'gruen' | 'gelb' | 'rot'
 
 export const ampelLabels: Record<Ampel, string> = {
+  keine: 'nichts zugeteilt',
   fertig: 'fertig',
   gruen: 'schnell genug',
   gelb: 'knapp',
@@ -30,7 +31,15 @@ export type AccountRow = {
   totalKm: number
   doneKm: number
   restKm: number
+  /**
+   * km still open in earlier deliveries whose deadline is over (the Rückstand), e.g. Lieferung 2
+   * while Lieferung 3 runs. They count into `neededPerWeek`.
+   */
+  overdueKm: number
+  /** Numbers of the earlier deliveries with `overdueKm` > 0. */
+  overdueDeliveries: number[]
   weeksLeft: number
+  /** (rest + overdue) ÷ weeks to the deadline of the running delivery. */
   neededPerWeek: number
   /** km/week in the running delivery over the last 14 days, see `paceKmPerWeek`. */
   pace: number
@@ -55,6 +64,9 @@ export function accountRows(dataset: Dataset, now: number): AccountRow[] {
   const later = dataset.deliveries
     .filter((delivery) => delivery.deadline > running.deadline)
     .map((delivery) => delivery.nr)
+  const earlier = dataset.deliveries.filter(
+    (delivery) => delivery.deadline <= now && delivery.deadline < running.deadline,
+  )
   const weeksLeft = Math.max(0, (running.deadline - now) / 7)
   const doneNow = dataset.done.filter((item) => item.t <= now)
 
@@ -68,7 +80,25 @@ export function accountRows(dataset: Dataset, now: number): AccountRow[] {
     const totalKm = sumKm(own)
     const doneKm = sumKm(ownDone)
     const restKm = Math.max(0, totalKm - doneKm)
-    const needed = neededPerWeek(restKm, weeksLeft)
+    const overdue = earlier
+      .map((delivery) => ({
+        delivery: delivery.nr,
+        restKm: Math.max(
+          0,
+          sumKm(
+            dataset.edges.filter(
+              (edge) => edge.account === account && edge.delivery === delivery.nr,
+            ),
+          ) -
+            sumKm(
+              doneNow.filter((item) => item.account === account && item.delivery === delivery.nr),
+            ),
+        ),
+      }))
+      .filter((item) => item.restKm > 0)
+    const overdueKm = sumKm(overdue.map((item) => ({ km: item.restKm })))
+    const openKm = restKm + overdueKm
+    const needed = neededPerWeek(openKm, weeksLeft)
     const pace = paceKmPerWeek(ownDone, now, paceWindowDays.account, dataset.start)
     const foreign = doneNow.filter((item) => item.by === account && item.account !== account)
     return {
@@ -77,11 +107,13 @@ export function accountRows(dataset: Dataset, now: number): AccountRow[] {
       totalKm,
       doneKm,
       restKm,
+      overdueKm,
+      overdueDeliveries: overdue.map((item) => item.delivery),
       weeksLeft,
       neededPerWeek: needed,
       pace,
       ratio: needed > 0 && Number.isFinite(needed) ? pace / needed : null,
-      ampel: ampelFor(restKm, pace, needed),
+      ampel: totalKm === 0 && overdueKm === 0 ? 'keine' : ampelFor(openKm, pace, needed),
       laterDoneKm: sumKm(
         doneNow.filter(
           (item) =>

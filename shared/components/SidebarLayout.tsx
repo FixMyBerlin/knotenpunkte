@@ -13,10 +13,17 @@ import { useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode
 type SidebarLayoutProps = {
   header: (opts: { onOpenSidebar: () => void }) => ReactNode
   sidebar: ReactNode
+  /** Fixed sidebar width in px (desktop): no resize handle, ignores the stored width. */
+  fixedSidebarWidth?: number
   children: ReactNode
 }
 
-export function SidebarLayout({ header, sidebar, children }: SidebarLayoutProps) {
+export function SidebarLayout({
+  header,
+  sidebar,
+  fixedSidebarWidth,
+  children,
+}: SidebarLayoutProps) {
   const sidebarWidth = useSidebarWidth()
   const { setWidth } = useSidebarWidthActions()
   const [showSidebar, setShowSidebar] = useState(false)
@@ -27,12 +34,14 @@ export function SidebarLayout({ header, sidebar, children }: SidebarLayoutProps)
       <div className="relative isolate flex min-h-0 flex-1">
         <aside
           className="relative hidden h-full min-h-0 shrink-0 bg-zinc-900 lg:flex lg:flex-col"
-          style={{ width: `${sidebarWidth}px` }}
+          style={{ width: `${fixedSidebarWidth ?? sidebarWidth}px` }}
         >
           <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
             {sidebar}
           </div>
-          <SidebarResizeHandle width={sidebarWidth} setWidth={setWidth} />
+          {fixedSidebarWidth === undefined ? (
+            <SidebarResizeHandle width={sidebarWidth} setWidth={setWidth} />
+          ) : null}
         </aside>
 
         <Dialog open={showSidebar} onClose={setShowSidebar} className="relative z-50 lg:hidden">

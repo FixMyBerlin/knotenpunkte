@@ -1,5 +1,6 @@
 import { onPlanToleranceKm, paceWindowDays } from '@/config/plan.const'
 import type { Dataset, DoneEdge, Edge } from '@/stats/model'
+import { runningDelivery } from '@/stats/plan'
 import {
   cumulativePoints,
   forecastDay,
@@ -108,4 +109,38 @@ export function scopeStatus(dataset: Dataset, scope: Scope, now: number): ScopeS
     forecast: forecastDay(doneKm, targetKm, pace, now),
     points: cumulativePoints(done, dataset.start, now),
   }
+}
+
+export type OverdueDelivery = {
+  nr: number
+  deadline: number
+  targetKm: number
+  doneKm: number
+  /** > 0 */
+  restKm: number
+}
+
+/**
+ * Deliveries before the running one whose deadline is over but whose edges are not all done
+ * (the Rückstand). Marks made after the deadline count as done.
+ */
+export function overdueDeliveries(dataset: Dataset, now: number): OverdueDelivery[] {
+  const running = runningDelivery(dataset.deliveries, now)
+  return dataset.deliveries
+    .filter((delivery) => delivery.deadline <= now && delivery.deadline < running.deadline)
+    .map((delivery) => {
+      const targetKm = sumKm(dataset.edges.filter((edge) => edge.delivery === delivery.nr))
+      const doneKm = kmUntil(
+        dataset.done.filter((item) => item.delivery === delivery.nr),
+        now,
+      )
+      return {
+        nr: delivery.nr,
+        deadline: delivery.deadline,
+        targetKm,
+        doneKm,
+        restKm: Math.max(0, targetKm - doneKm),
+      }
+    })
+    .filter((item) => item.restKm > 0)
 }

@@ -10,6 +10,9 @@ import { ReloadButton } from '@/components/ReloadButton'
 import { useFortschrittNav } from '@/components/use-fortschritt-nav'
 import { appTitle } from '@/config/app.const'
 
+/** Überblick and Personen only show data info in the sidebar, so it can be narrow. */
+const narrowSidebarWidth = 220
+
 export function FortschrittShell() {
   const { current, steps, goToView } = useFortschrittNav()
   return (
@@ -26,6 +29,7 @@ export function FortschrittShell() {
           />
         )}
         sidebar={<FortschrittSidebar view={current} />}
+        fixedSidebarWidth={current === 'karte' ? undefined : narrowSidebarWidth}
       >
         <DataGate>
           {(dataset) => {

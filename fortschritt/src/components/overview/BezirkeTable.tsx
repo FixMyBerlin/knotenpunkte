@@ -15,14 +15,17 @@ import type { Dataset } from '@/stats/model'
 export function BezirkeTable({ dataset, running }: { dataset: Dataset; running: number }) {
   const rows = bezirkRows(dataset)
   return (
-    <Table dense className="[--gutter:--spacing(1)]" data-testid="bezirke-table">
+    <Table
+      dense
+      className="[--gutter:--spacing(1)] [&_td]:px-2 [&_th]:px-2"
+      data-testid="bezirke-table"
+    >
       <TableHead>
         <TableRow>
           <TableHeader>Bezirk</TableHeader>
-          <TableHeader>Lieferung</TableHeader>
-          <TableHeader className="w-48">erledigt</TableHeader>
-          <TableHeader className="text-right">km</TableHeader>
-          <TableHeader className="text-right">Kanten</TableHeader>
+          <TableHeader>Lief.</TableHeader>
+          <TableHeader className="w-36">erledigt</TableHeader>
+          <TableHeader className="text-right">km · Kanten</TableHeader>
         </TableRow>
       </TableHead>
       <TableBody>
@@ -34,8 +37,11 @@ export function BezirkeTable({ dataset, running }: { dataset: Dataset; running: 
                 <span className="text-zinc-500 tabular-nums">{position}.</span> {row.bezirk}
               </TableCell>
               <TableCell>
-                <Badge color={row.delivery === running ? 'sky' : 'zinc'}>
-                  Lieferung {row.delivery}
+                <Badge
+                  color={row.delivery === running ? 'sky' : 'zinc'}
+                  title={`Lieferung ${row.delivery}`}
+                >
+                  L{row.delivery}
                 </Badge>
               </TableCell>
               <TableCell>
@@ -46,9 +52,9 @@ export function BezirkeTable({ dataset, running }: { dataset: Dataset; running: 
               </TableCell>
               <TableCell className="text-right tabular-nums">
                 {formatKm(row.doneKm)} / {formatKm(row.km)}
-              </TableCell>
-              <TableCell className="text-right tabular-nums">
-                {formatCount(row.edgesDone)} / {formatCount(row.edges)}
+                <span className="block text-xs text-zinc-500">
+                  {formatCount(row.edgesDone)} / {formatCount(row.edges)} Kanten
+                </span>
               </TableCell>
             </TableRow>
           )

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { accountRows, ampelFor } from '@/stats/accounts'
+import { accountRows, ampelFor, ampelLabels } from '@/stats/accounts'
 import { bezirkRows, gebietStats } from '@/stats/bezirke'
 import { accountSummaryText } from '@/stats/copy'
 import { fixtureEdges, fixtureMarks, fixtureNow } from '@/stats/fixtures.test-data'
@@ -8,7 +8,7 @@ import { filteredBezirke, mapLayerFilter, markdownLinkUrl } from '@/stats/map-fi
 import { buildDataset, sortAccounts } from '@/stats/model'
 import { bezirkName, runningDelivery } from '@/stats/plan'
 import { cumulativePoints, forecastDay, paceKmPerWeek, sollAt, weeklyBuckets } from '@/stats/series'
-import { scopes, scopeStatus } from '@/stats/status'
+import { overdueDeliveries, scopes, scopeStatus } from '@/stats/status'
 import { monthStarts, niceTicks } from '@/stats/ticks'
 import { berlinTime, dayFromIso, isoFromDay, weekStart } from '@/stats/time'
 
@@ -142,7 +142,15 @@ describe('accounts', () => {
   })
   test('nothing left is done', () => {
     expect(fmc8).toMatchObject({ restKm: 0, ampel: 'fertig', ratio: null })
-    expect(fmc11!.totalKm).toBe(0)
+  })
+  test('no edges assigned in the delivery is not "fertig"', () => {
+    expect(fmc11).toMatchObject({ totalKm: 0, restKm: 0, ampel: 'keine', ratio: null })
+    expect(ampelLabels.keine).toBe('nichts zugeteilt')
+    expect(accountSummaryText(rows, deadline2, 'x')).toContain('fmc_11: nichts zugeteilt')
+  })
+  test('nothing is overdue before the deadline', () => {
+    expect(fmc7).toMatchObject({ overdueKm: 0, overdueDeliveries: [] })
+    expect(overdueDeliveries(dataset, now)).toEqual([])
   })
   test('Ampel thresholds', () => {
     expect(ampelFor(10, 10, 10)).toBe('gruen')
@@ -156,6 +164,67 @@ describe('accounts', () => {
     expect(text).toContain('Lieferung 2: Deadline Mapping 01.03.2027')
     expect(text).toContain('fmc_7: 1,0 km von 4,0 km erledigt, Rest 3,0 km.')
     expect(text).toContain('fmc_8')
+  })
+})
+
+describe('after the deadline of Lieferung 2', () => {
+  // Tuesday 2 March 2027, 12:00 in Berlin: Lieferung 3 runs, edge 3 (3 km, fmc_7) of
+  // Lieferung 2 is still open. Without the mark of edge 4, fmc_7 has 4 km open in Lieferung 3.
+  const later = berlinTime('2027-03-02T11:00:00Z')
+  const openDataset = buildDataset(
+    fixtureEdges,
+    fixtureMarks.filter((mark) => mark.id !== '4'),
+  )
+  const weeksLeft = (deadline3 - later) / 7
+
+  test('the overdue rest of Lieferung 2 stays visible per account', () => {
+    expect(runningDelivery(openDataset.deliveries, later).nr).toBe(3)
+    const [fmc7, fmc8, fmc11] = accountRows(openDataset, later)
+    expect(fmc7).toMatchObject({
+      delivery: 3,
+      totalKm: 4,
+      doneKm: 0,
+      restKm: 4,
+      overdueKm: 3,
+      overdueDeliveries: [2],
+    })
+    expect(fmc8).toMatchObject({ overdueKm: 0, overdueDeliveries: [] })
+    expect(fmc11).toMatchObject({ overdueKm: 0 })
+  })
+  test('needed per week is (rest + overdue) / weeks to the running deadline', () => {
+    const [fmc7] = accountRows(openDataset, later)
+    expect(fmc7!.neededPerWeek).toBeCloseTo(7 / weeksLeft)
+    expect(fmc7!.ampel).toBe('rot')
+  })
+  test('overdue alone keeps the Ampel open even when nothing is assigned in Lieferung 3', () => {
+    const noLater = buildDataset(
+      fixtureEdges.filter((edge) => edge.id !== 4),
+      fixtureMarks.filter((mark) => mark.id !== '4'),
+    )
+    const [fmc7] = accountRows(noLater, later)
+    expect(fmc7).toMatchObject({ totalKm: 0, restKm: 0, overdueKm: 3 })
+    expect(fmc7!.neededPerWeek).toBeCloseTo(3 / weeksLeft)
+    expect(fmc7!.ampel).not.toBe('keine')
+    expect(fmc7!.ampel).not.toBe('fertig')
+  })
+  test('a mark after the deadline reduces the overdue rest', () => {
+    const marks = [
+      ...fixtureMarks.filter((mark) => mark.id !== '4'),
+      { id: '3', createdAt: '2027-03-01T12:00:00.000Z', createdBy: 'fmc_7' },
+    ]
+    const caughtUp = buildDataset(fixtureEdges, marks)
+    expect(accountRows(caughtUp, later)[0]).toMatchObject({ overdueKm: 0, overdueDeliveries: [] })
+    expect(overdueDeliveries(caughtUp, later)).toEqual([])
+  })
+  test('the overview lists the past delivery that is not done', () => {
+    expect(overdueDeliveries(openDataset, later)).toEqual([
+      { nr: 2, deadline: deadline2, targetKm: 6, doneKm: 3, restKm: 3 },
+    ])
+  })
+  test('accounts without edges in Lieferung 3 show "nichts zugeteilt", not "fertig"', () => {
+    const [, fmc8, fmc11] = accountRows(openDataset, later)
+    expect(fmc8).toMatchObject({ totalKm: 0, ampel: 'keine' })
+    expect(fmc11).toMatchObject({ ampel: 'keine' })
   })
 })
 

@@ -12,9 +12,16 @@ export function accountSummaryText(rows: AccountRow[], deadline: number, stampTe
   const weeksLeft = first ? first.weeksLeft : 0
   const head = `Fortschritt, Stand ${stampText}\nLieferung ${first?.delivery ?? '?'}: Deadline Mapping ${formatDayNumeric(deadline)}, noch ${formatWeeks(weeksLeft)}`
   const lines = rows.map((row) => {
+    if (row.ampel === 'keine') {
+      return `${row.account}: ${ampelLabels.keine} in Lieferung ${row.delivery}.\n  In fremden Gebieten markiert: ${formatKm(row.foreignKm)}.`
+    }
+    const overdue =
+      row.overdueKm > 0
+        ? ` Rückstand Lieferung ${row.overdueDeliveries.join(', ')}: ${formatKm(row.overdueKm)}.`
+        : ''
     const ratio = row.ratio === null ? '' : ` (${Math.round(row.ratio * 100)} % vom Soll)`
     return [
-      `${row.account}: ${formatKm(row.doneKm)} von ${formatKm(row.totalKm)} erledigt, Rest ${formatKm(row.restKm)}.`,
+      `${row.account}: ${formatKm(row.doneKm)} von ${formatKm(row.totalKm)} erledigt, Rest ${formatKm(row.restKm)}.${overdue}`,
       `  Nötig ${perWeek(row.neededPerWeek)}, Ø letzte 2 Wochen ${perWeek(row.pace)}: ${ampelLabels[row.ampel]}${ratio}.`,
       `  Spätere Lieferung schon erledigt: ${formatKm(row.laterDoneKm)}. In fremden Gebieten markiert: ${formatKm(row.foreignKm)}.`,
     ].join('\n')

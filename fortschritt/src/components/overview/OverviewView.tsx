@@ -1,3 +1,4 @@
+import { Callout } from '@shared/components/ui/callout'
 import { BurnupChart } from '@/components/charts/BurnupChart'
 import { BezirkeTable } from '@/components/overview/BezirkeTable'
 import { PlanStateText } from '@/components/overview/PlanStateText'
@@ -8,7 +9,7 @@ import { Route } from '@/routes/index'
 import { formatDay, formatKm, formatNumber, formatPercent, formatWeeks } from '@/stats/format'
 import type { Dataset } from '@/stats/model'
 import { runningDelivery } from '@/stats/plan'
-import { scopes, scopeStatus } from '@/stats/status'
+import { neededPerWeek, overdueDeliveries, scopes, scopeStatus, sumKm } from '@/stats/status'
 
 function perWeek(km: number) {
   return Number.isFinite(km) ? `${formatNumber(km)} km/Woche` : '–'
@@ -25,6 +26,13 @@ export function OverviewView({ dataset }: { dataset: Dataset }) {
   const gesamt = scopeStatus(dataset, all[0]!, now)
   const chartScope = all.find((scope) => scope.key === search.burnup) ?? runningScope
   const chartStatus = scopeStatus(dataset, chartScope, now)
+  const overdue = overdueDeliveries(dataset, now)
+  const neededNow = neededPerWeek(
+    runningStatus.targetKm -
+      runningStatus.doneKm +
+      sumKm(overdue.map((item) => ({ km: item.restKm }))),
+    runningStatus.weeksLeft,
+  )
   const unit = search.unit === 'prozent' ? 'prozent' : 'km'
 
   return (
@@ -34,6 +42,18 @@ export function OverviewView({ dataset }: { dataset: Dataset }) {
           <h2 id="tiles-heading" className="text-base font-semibold text-zinc-100">
             Lieferung {running.nr} (laufend)
           </h2>
+          {overdue.map((item) => (
+            <Callout
+              key={item.nr}
+              tone="warning"
+              title={`Rückstand Lieferung ${item.nr}`}
+              data-testid={`overdue-${item.nr}`}
+            >
+              Deadline war der {formatDay(item.deadline)}. Noch {formatKm(item.restKm)} offen von{' '}
+              {formatKm(item.targetKm)} ({formatPercent(item.restKm / item.targetKm)}). Der
+              Rückstand steckt in „nötig ab jetzt“.
+            </Callout>
+          ))}
           <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <StatTile
               label={`Lieferung ${running.nr} erledigt`}
@@ -52,7 +72,7 @@ export function OverviewView({ dataset }: { dataset: Dataset }) {
             <StatTile
               label="Tempo"
               value={perWeek(runningStatus.pace)}
-              detail={`Ø letzte 4 Wochen · nötig ab jetzt ${perWeek(runningStatus.neededPerWeek)}`}
+              detail={`Ø letzte 4 Wochen · nötig ab jetzt ${perWeek(neededNow)}`}
               testId="tile-pace"
             />
             <StatTile
