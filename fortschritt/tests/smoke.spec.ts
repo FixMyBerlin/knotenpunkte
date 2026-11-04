@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
+import { blockExternalRequests } from '../../shared/e2e/block-external-requests'
 import { fixtureEdges, fixtureMarks, fixtureNow } from '../src/stats/fixtures.test-data'
 
-/** Every request leaves the dev server only into these stubs; anything else is aborted. */
 const edgesGeojson = {
   type: 'FeatureCollection',
   features: fixtureEdges.map((edge) => ({
@@ -44,9 +44,12 @@ const cors = {
   'Access-Control-Allow-Headers': 'X-Api-Key, Authorization, Content-Type',
 }
 
+/** Only the TILDA file and the KV db are stubbed here; every other external request is blocked. */
 async function stubNetwork(page: Page, kvStatus = 200) {
+  await blockExternalRequests(page.context())
   await page.route(
-    (url) => url.hostname !== '127.0.0.1',
+    (url) =>
+      url.hostname === 'key-value-store.fixmycity.workers.dev' || url.hostname === 'tilda-geo.de',
     async (route) => {
       const request = route.request()
       const url = new URL(request.url())
@@ -74,8 +77,8 @@ async function stubNetwork(page: Page, kvStatus = 200) {
         })
         return
       }
-      // PMTiles, background map, fonts: not needed for the smoke test.
-      await route.abort()
+      // PMTiles of the map: not needed for the smoke test.
+      await route.abort('blockedbyclient')
     },
   )
 }
@@ -116,6 +119,23 @@ test.describe('Fortschritt', () => {
     await expect(page.getByText('Kopiert')).toBeVisible()
     const text = await page.evaluate(() => navigator.clipboard.readText())
     expect(text).toContain('fmc_7: 1,0 km von 4,0 km erledigt')
+  })
+
+  test('after the deadline of Lieferung 2 the rest stays visible', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2027-03-02T11:00:00Z'))
+    await stubNetwork(page)
+    await page.goto('/')
+    await expect(page.getByTestId('overdue-2')).toContainText('Rückstand Lieferung 2')
+    await expect(page.getByTestId('overdue-2')).toContainText('Noch 3,0 km offen von 6,0 km')
+
+    await page.goto('/?view=personen')
+    await expect(page.getByTestId('overdue-header')).toContainText('Rückstand L2')
+    await expect(page.getByTestId('account-fmc_7').getByTestId('overdue-cell')).toContainText(
+      '3,0 km',
+    )
+    // No edges assigned in Lieferung 3: not "fertig".
+    await expect(page.getByTestId('account-fmc_8')).toContainText('nichts zugeteilt')
+    await expect(page.getByTestId('account-fmc_8')).not.toContainText('fertig')
   })
 
   test('Karte keeps its filters in the URL', async ({ page }) => {

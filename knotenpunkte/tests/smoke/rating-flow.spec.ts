@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { blockExternalRequests } from '../../../shared/e2e/block-external-requests'
 
 async function createProjectAndStageFile(page: Page, name: string, fixturePath: string) {
   await page.getByTestId('create-project-toggle').click()
@@ -47,6 +48,8 @@ function parseKvUrl(raw: string) {
 test.describe('rating flow', () => {
   test.beforeEach(async ({ page }) => {
     const saved = new Map<string, KvEntry>()
+
+    await blockExternalRequests(page.context())
 
     await page.addInitScript(() => {
       localStorage.setItem('__osmAuth', JSON.stringify({ accessToken: 'e2e-osm-token' }))
