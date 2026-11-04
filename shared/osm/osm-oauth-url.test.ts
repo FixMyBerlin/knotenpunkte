@@ -6,8 +6,8 @@ describe('getOsmOAuthRedirectUrl', () => {
     expect(getOsmOAuthRedirectUrl('http://127.0.0.1:33479', '/')).toBe(
       'http://127.0.0.1:33479/osm-oauth-land.html',
     )
-    expect(getOsmOAuthRedirectUrl('https://fixmyberlin.github.io', '/knotenpunkte/')).toBe(
-      'https://fixmyberlin.github.io/knotenpunkte/osm-oauth-land.html',
+    expect(getOsmOAuthRedirectUrl('https://radnetz-apps.netlify.app', '/knotenpunkte/')).toBe(
+      'https://radnetz-apps.netlify.app/knotenpunkte/osm-oauth-land.html',
     )
   })
 })

@@ -4,12 +4,13 @@ export const OSM_OAUTH_LAND_FILENAME = 'osm-oauth-land.html'
 export const OSM_AUTH_RETURN_URL_KEY = '__osmAuthReturnUrl'
 
 /**
- * Non-confidential OSM OAuth 2 app of Knotenpunkte, also used by Netzanpassungen.
+ * Non-confidential OSM OAuth 2 app of Knotenpunkte, also used by Netzanpassungen. The land page
+ * (`osm-oauth-land.html`) lives under each app's base, so every app has its own redirect URI.
  * Redirect URIs that must be registered on the OSM app before login works:
- * - `http://127.0.0.1:33479/osm-oauth-land.html`
- * - `https://fixmyberlin.github.io/knotenpunkte/osm-oauth-land.html`
- * - `http://127.0.0.1:33480/osm-oauth-land.html` (Netzanpassungen)
- * - `https://fixmyberlin.github.io/knotenpunkte/netzanpassungen/osm-oauth-land.html`
+ * - `http://127.0.0.1:33479/osm-oauth-land.html` (Knotenpunkte, dev)
+ * - `http://127.0.0.1:33480/osm-oauth-land.html` (Netzanpassungen, dev)
+ * - `https://radnetz-apps.netlify.app/knotenpunkte/osm-oauth-land.html`
+ * - `https://radnetz-apps.netlify.app/netzanpassungen/osm-oauth-land.html`
  * Scope: `read_prefs`. Public client id only, never a client secret.
  */
 export const osmClientId = 'mV4q3_OPMrW4kCfnPON30BRxAoKZPX0ZLxh8EjmHP-o'

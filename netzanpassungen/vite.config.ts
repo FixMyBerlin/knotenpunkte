@@ -6,23 +6,24 @@ import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import react from '@vitejs/plugin-react'
 import browserslistToEsbuild from 'browserslist-to-esbuild'
 import { defineConfig } from 'vite'
-import { githubPagesSpaFallback, sharedPublicFiles } from '../shared/vite/plugins'
+import { sharedPublicFiles } from '../shared/vite/plugins'
 
 const appRoot = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(appRoot, '..')
 const bunLinksCache = path.join(os.homedir(), '.bun/install/cache/links')
-/** Built after the Knotenpunkte app, into a folder of its `dist`. */
+/** Every app builds into its own folder of `dist`, which is the Netlify publish directory. */
 const outDir = path.resolve(repoRoot, 'dist/netzanpassungen')
 
-const GITHUB_PAGES_BASE = '/knotenpunkte/netzanpassungen/'
+/** Path of the app on the Netlify site. Keep in sync with the redirects in `netlify.toml`. */
+const PRODUCTION_BASE = '/netzanpassungen/'
 
-/** OSM only allows http redirect URIs on 127.0.0.1. 33479 is the Knotenpunkte app. */
+/** OSM only allows http redirect URIs on 127.0.0.1. 33479 is Knotenpunkte, 33481 Fortschritt. */
 const DEV_HOST = '127.0.0.1'
 const DEV_PORT = 33480
 
 export default defineConfig(({ mode }) => ({
   root: appRoot,
-  base: mode === 'production' ? GITHUB_PAGES_BASE : '/',
+  base: mode === 'production' ? PRODUCTION_BASE : '/',
   plugins: [
     tanstackRouter({
       target: 'react',
@@ -33,7 +34,6 @@ export default defineConfig(({ mode }) => ({
     tailwindcss(),
     react({ compiler: true }),
     sharedPublicFiles(),
-    ...(mode === 'production' ? [githubPagesSpaFallback(outDir, ['data'])] : []),
   ],
   resolve: {
     alias: {

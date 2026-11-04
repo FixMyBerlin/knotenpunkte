@@ -1,0 +1,42 @@
+# One Netlify site (radnetz-apps.netlify.app) serves every app from its own folder of `dist`.
+# New app: add `build:<name>` in package.json, give its vite.config.ts `outDir: dist/<name>` and
+# `base: /<name>/` for production, and add one redirect block below.
+
+[build]
+command = "bun install --frozen-lockfile && bun run build"
+publish = "dist"
+
+[build.environment]
+# Bun is part of the Netlify build image (default `1.x`). The repo needs Bun 1.3 or newer
+# (`minimumReleaseAge` in bunfig.toml).
+BUN_VERSION = "1.x"
+
+# `/` has no app of its own.
+[[redirects]]
+from = "/"
+to = "/knotenpunkte/"
+status = 302
+
+# SPA fallback per app. A rewrite with status 200 only applies when no file matches, so assets
+# and `osm-oauth-land.html` are served as files. Do not add `force = true`.
+[[redirects]]
+from = "/knotenpunkte/*"
+to = "/knotenpunkte/index.html"
+status = 200
+
+[[redirects]]
+from = "/netzanpassungen/*"
+to = "/netzanpassungen/index.html"
+status = 200
+
+# Fortschritt is built later (`fortschritt/`). Until its folder exists, `/fortschritt/` is a 404.
+[[redirects]]
+from = "/fortschritt/*"
+to = "/fortschritt/index.html"
+status = 200
+
+# Fortschritt is for the team only: keep it out of search engines.
+[[headers]]
+for = "/fortschritt/*"
+[headers.values]
+X-Robots-Tag = "noindex"
