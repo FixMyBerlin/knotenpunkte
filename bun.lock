@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "knotenpunkte",
+      "name": "infravelo-apps",
       "dependencies": {
         "@floating-ui/react": "^0.27.20",
         "@headlessui/react": "^2.2.10",
