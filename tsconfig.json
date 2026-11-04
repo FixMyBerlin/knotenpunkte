@@ -2,6 +2,7 @@
   "files": [],
   "references": [
     { "path": "./knotenpunkte/tsconfig.json" },
-    { "path": "./netzanpassungen/tsconfig.json" }
+    { "path": "./netzanpassungen/tsconfig.json" },
+    { "path": "./fortschritt/tsconfig.json" }
   ]
 }

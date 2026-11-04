@@ -29,7 +29,6 @@ from = "/netzanpassungen/*"
 to = "/netzanpassungen/index.html"
 status = 200
 
-# Fortschritt is built later (`fortschritt/`). Until its folder exists, `/fortschritt/` is a 404.
 [[redirects]]
 from = "/fortschritt/*"
 to = "/fortschritt/index.html"

@@ -1,0 +1,4 @@
+@import '../../shared/components/layouts/global.css';
+
+/* Tailwind scans from this app's root; the shared components live outside it. */
+@source '../../shared';

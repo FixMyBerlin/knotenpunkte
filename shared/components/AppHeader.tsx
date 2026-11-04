@@ -11,6 +11,8 @@ type Props<Id extends string> = {
   onOpenSidebar?: () => void
   /** Buttons of the app, left of the login. */
   actions?: ReactNode
+  /** Off for apps that only read (Fortschritt). */
+  showLogin?: boolean
 }
 
 export function AppHeader<Id extends string>({
@@ -19,6 +21,7 @@ export function AppHeader<Id extends string>({
   onSelect,
   onOpenSidebar,
   actions,
+  showLogin = true,
 }: Props<Id>) {
   return (
     <header className="shrink-0 border-b border-white/10 bg-zinc-900">
@@ -40,7 +43,7 @@ export function AppHeader<Id extends string>({
         <StepNav title={title} steps={steps} onSelect={onSelect} />
         <div className="flex shrink-0 items-center gap-1 pr-3 pl-2">
           {actions}
-          <AuthButton />
+          {showLogin ? <AuthButton /> : null}
         </div>
       </div>
     </header>

@@ -11,6 +11,7 @@ export default defineConfig({
     'test-results/**',
     'knotenpunkte/src/routeTree.gen.ts',
     'netzanpassungen/src/routeTree.gen.ts',
+    'fortschritt/src/routeTree.gen.ts',
     'knotenpunkte/public/fixtures/**',
   ],
   rules: {
@@ -41,6 +42,8 @@ export default defineConfig({
         'shared/components/**',
         'netzanpassungen/src/components/**',
         'netzanpassungen/src/routes/**',
+        'fortschritt/src/components/**',
+        'fortschritt/src/routes/**',
       ],
       excludeFiles: ['**/*.test.ts', '**/*.test.tsx'],
       jsPlugins: [{ name: 'compat', specifier: 'eslint-plugin-compat' }],

@@ -29,6 +29,7 @@ export default defineConfig({
     'test-results/**',
     'knotenpunkte/src/routeTree.gen.ts',
     'netzanpassungen/src/routeTree.gen.ts',
+    'fortschritt/src/routeTree.gen.ts',
     'knotenpunkte/public/fixtures/**',
   ],
 })

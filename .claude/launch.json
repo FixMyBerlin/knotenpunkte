@@ -14,6 +14,13 @@
       "runtimeArgs": ["run", "dev-netz"],
       "port": 33480,
       "autoPort": false
+    },
+    {
+      "name": "dev-fortschritt",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "dev-fortschritt"],
+      "port": 33481,
+      "autoPort": false
     }
   ]
 }

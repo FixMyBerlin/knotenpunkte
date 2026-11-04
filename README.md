@@ -2,11 +2,11 @@
 
 Web apps for the Berlin Radnetz (Infravelo). One repo, one `package.json`, one Netlify site: `https://radnetz-apps.netlify.app`.
 
-| App                                             | Path                | Dev server               | What it does                                             |
-| ----------------------------------------------- | ------------------- | ------------------------ | -------------------------------------------------------- |
-| [`knotenpunkte/`](knotenpunkte/README.md)       | `/knotenpunkte/`    | `http://127.0.0.1:33479` | Rate junction nodes one after another (Zustand nach OSM) |
-| [`netzanpassungen/`](netzanpassungen/README.md) | `/netzanpassungen/` | `http://127.0.0.1:33480` | Draw new edges and virtual nodes into the Detailnetz     |
-| `fortschritt/` (not built yet)                  | `/fortschritt/`     | `http://127.0.0.1:33481` | Progress dashboard, hidden from search engines           |
+| App                                             | Path                | Dev server               | What it does                                              |
+| ----------------------------------------------- | ------------------- | ------------------------ | --------------------------------------------------------- |
+| [`knotenpunkte/`](knotenpunkte/README.md)       | `/knotenpunkte/`    | `http://127.0.0.1:33479` | Rate junction nodes one after another (Zustand nach OSM)  |
+| [`netzanpassungen/`](netzanpassungen/README.md) | `/netzanpassungen/` | `http://127.0.0.1:33480` | Draw new edges and virtual nodes into the Detailnetz      |
+| [`fortschritt/`](fortschritt/README.md)         | `/fortschritt/`     | `http://127.0.0.1:33481` | Progress dashboard, read-only, hidden from search engines |
 
 The apps do not link to each other. `/` redirects to `/knotenpunkte/`.
 
@@ -15,6 +15,7 @@ The apps do not link to each other. `/` redirects to `/knotenpunkte/`.
 ```
 knotenpunkte/       app: index.html, src/, public/, tests/, .env, vite.config.ts, tsconfig.json
 netzanpassungen/    app: index.html, src/, .env, vite.config.ts, tsconfig.json
+fortschritt/        app: index.html, src/, tests/, vite.config.ts, tsconfig.json (no .env)
 shared/             code of all apps (alias @shared)
 netlify.toml        build, redirects, headers
 dist/               build output, one folder per app (not committed)
@@ -30,13 +31,14 @@ Each app has its own `vite.config.ts` with `root` set to the app folder, the ali
 bun install
 bun run dev        # Knotenpunkte on 33479
 bun run dev-netz   # Netzanpassungen on 33480
+bun run dev-fortschritt  # Fortschritt on 33481
 ```
 
-The dev ports are fixed. OSM only accepts `http` redirect URIs on `127.0.0.1`, and these two are registered.
+The dev ports are fixed. OSM only accepts `http` redirect URIs on `127.0.0.1`, and the first two are registered. Fortschritt has no login.
 
 ```bash
 bun run check      # type-check, lint, format, tests, knip
-bun run e2e        # Playwright (Knotenpunkte), stubbed auth
+bun run e2e        # Playwright: Knotenpunkte (stubbed auth) and Fortschritt (stubbed data)
 ```
 
 `@playwright/test` is pinned exactly at `1.62.1`. Playwright ships no browsers in `node_modules`; they live in one shared cache (`~/Library/Caches/ms-playwright` on macOS) that every repo on the same version reuses.
@@ -51,15 +53,17 @@ bun run build
 
 - `dist/knotenpunkte/` (base `/knotenpunkte/`)
 - `dist/netzanpassungen/` (base `/netzanpassungen/`)
+- `dist/fortschritt/` (base `/fortschritt/`)
 
-`bun run preview` and `bun run preview-netz` serve one built app locally.
+`bun run preview`, `bun run preview-netz` and `bun run preview-fortschritt` serve one built app locally.
 
-### Adding an app (for example `fortschritt/`)
+### Adding an app
 
 1. New folder with its own `vite.config.ts`, copied from `netzanpassungen/`: `outDir: dist/<name>`, production `base: /<name>/`, a fixed dev port (`fortschritt`: 33481), `@` and `@shared` aliases, and a `tsconfig.json`.
 2. In `package.json`: a `build:<name>` script, a `dev-<name>` script, and the `type-check` and `test-run` steps.
 3. In `knip.config.mjs`, `oxlint.config.mjs`, `oxfmt.config.mjs` and the root `tsconfig.json`: the new paths.
-4. In `netlify.toml`: the SPA redirect for `/<name>/*`. `fortschritt` already has its redirect and the `X-Robots-Tag: noindex` header.
+4. In `netlify.toml`: the SPA redirect for `/<name>/*`.
+5. In `playwright.config.ts`: a project with its `testDir` and `baseURL`, and its dev server in `webServer`.
 
 ## Deploy
 
@@ -76,7 +80,7 @@ The apps share one non-confidential OSM OAuth app (client id in [`shared/config/
 
 ## Key-value database
 
-Every app stores its data in a project of the shared [key-value database](https://github.com/FixMyBerlin/key-value-db): `knotenpunkte`, `netzanpassungen` (and `infravelo-tracker`). The public project key is in the app's committed `.env`. A project only answers requests from its allowed origins.
+Every app stores its data in a project of the shared [key-value database](https://github.com/FixMyBerlin/key-value-db): `knotenpunkte`, `netzanpassungen` (and `infravelo-tracker`, read by Fortschritt). The public project key is in the app's committed `.env`; Fortschritt keeps its read key in `fortschritt/src/config/app.const.ts`. A project only answers requests from its allowed origins.
 
 ## Umzug auf Netlify (noch offen)
 

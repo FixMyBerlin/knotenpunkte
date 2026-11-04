@@ -10,6 +10,9 @@ export default {
     'knotenpunkte/tests/**/*.ts',
     'netzanpassungen/src/routes/**/*.tsx',
     'netzanpassungen/src/**/*.test.ts',
+    'fortschritt/src/routes/**/*.tsx',
+    'fortschritt/src/**/*.test.ts',
+    'fortschritt/tests/**/*.ts',
   ],
   // Vendored code keeps its full API: the UI kit (Catalyst) and the key-value client.
   ignore: [
@@ -17,6 +20,7 @@ export default {
     'shared/kv-client/**',
     'knotenpunkte/src/routeTree.gen.ts',
     'netzanpassungen/src/routeTree.gen.ts',
+    'fortschritt/src/routeTree.gen.ts',
   ],
   ignoreDependencies: ['@typescript/typescript-darwin-arm64'],
   rules: {
