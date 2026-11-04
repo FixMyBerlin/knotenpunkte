@@ -1,10 +1,11 @@
 import { create } from 'zustand'
+import { skippedKey } from '@/network/backup'
 import type { SuggestionFilter } from '@/network/suggestions'
 
-const skippedKey = 'na:skipped-suggestions'
-const noActionKey = 'na:no-action-suggestions'
-
-/** Suggestions per area that were skipped or need no action. They stay in this browser only; storage may be blocked. */
+/**
+ * Suggestions per area that were skipped: a personal "later" list that stays in this browser only;
+ * storage may be blocked. "Keine Aktion nötig" is shared and lives in the KV database.
+ */
 function loadIds(key: string): Record<string, string[]> {
   try {
     const parsed: unknown = JSON.parse(localStorage.getItem(key) ?? '{}')
@@ -27,7 +28,6 @@ interface SuggestionStore {
   visible: boolean
   filter: SuggestionFilter
   skipped: Record<string, string[]>
-  noAction: Record<string, string[]>
   /** Id of the suggestion shown in the sidebar. */
   selectedId: string | null
   actions: {
@@ -35,8 +35,9 @@ interface SuggestionStore {
     setFilter: (filter: SuggestionFilter) => void
     select: (id: string | null) => void
     skip: (gebiet: string, id: string) => void
-    markNoAction: (gebiet: string, id: string) => void
     clearSkipped: (gebiet: string) => void
+    /** After a backup was restored into localStorage. */
+    reloadSkipped: () => void
   }
 }
 
@@ -44,7 +45,6 @@ const useSuggestionStore = create<SuggestionStore>()((set) => ({
   visible: true,
   filter: 'steil',
   skipped: loadIds(skippedKey),
-  noAction: loadIds(noActionKey),
   selectedId: null,
   actions: {
     setVisible: (visible) => set({ visible }),
@@ -56,26 +56,18 @@ const useSuggestionStore = create<SuggestionStore>()((set) => ({
         saveIds(skippedKey, skipped)
         return { skipped }
       }),
-    markNoAction: (gebiet, id) =>
-      set((state) => {
-        const noAction = { ...state.noAction, [gebiet]: [...(state.noAction[gebiet] ?? []), id] }
-        saveIds(noActionKey, noAction)
-        return { noAction }
-      }),
     clearSkipped: (gebiet) =>
       set((state) => {
         const { [gebiet]: _skipped, ...skipped } = state.skipped
-        const { [gebiet]: _noAction, ...noAction } = state.noAction
         saveIds(skippedKey, skipped)
-        saveIds(noActionKey, noAction)
-        return { skipped, noAction }
+        return { skipped }
       }),
+    reloadSkipped: () => set({ skipped: loadIds(skippedKey) }),
   },
 }))
 
 export const useSuggestionsVisible = () => useSuggestionStore((state) => state.visible)
 export const useSuggestionFilter = () => useSuggestionStore((state) => state.filter)
 export const useSkippedSuggestions = () => useSuggestionStore((state) => state.skipped)
-export const useNoActionSuggestions = () => useSuggestionStore((state) => state.noAction)
 export const useSelectedSuggestionId = () => useSuggestionStore((state) => state.selectedId)
 export const useSuggestionActions = () => useSuggestionStore((state) => state.actions)

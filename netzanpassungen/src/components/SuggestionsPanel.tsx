@@ -8,12 +8,12 @@ import { useHotkeys } from '@tanstack/react-hotkeys'
 import { useDrawActions } from '@/components/draw-store'
 import {
   useSelectedSuggestionId,
-  useNoActionSuggestions,
   useSkippedSuggestions,
   useSuggestionActions,
   useSuggestionFilter,
   useSuggestionsVisible,
 } from '@/components/suggestion-store'
+import { decidersText, useKeineAktion, useMarkKeineAktion } from '@/components/use-keine-aktion'
 import { useNetwork, useSaveEntries } from '@/components/use-netz'
 import { useOpenSuggestions } from '@/components/use-suggestions'
 import { planSuggestedNode } from '@/network/edit'
@@ -40,6 +40,7 @@ function SuggestionDetails({
 }) {
   const { network } = useNetwork(gebiet)
   const save = useSaveEntries(gebiet)
+  const markKeineAktion = useMarkKeineAktion(gebiet)
   const draw = useDrawActions()
   const actions = useSuggestionActions()
   const host = network ? suggestionHost(network, suggestion) : null
@@ -66,8 +67,8 @@ function SuggestionDetails({
   }
 
   function markNoAction() {
-    if (gebiet) actions.markNoAction(gebiet, suggestion.id)
-    goTo(neighbour)
+    if (markKeineAktion.isPending) return
+    markKeineAktion.mutate(suggestion.id, { onSuccess: () => goTo(neighbour) })
   }
 
   const canTake = Boolean(host) && !save.isPending
@@ -142,7 +143,13 @@ function SuggestionDetails({
         <Button type="button" outline onClick={skip}>
           Überspringen <kbd className="ml-1 text-xs opacity-60">E</kbd>
         </Button>
-        <Button type="button" outline onClick={markNoAction} data-testid="suggestion-no-action">
+        <Button
+          type="button"
+          outline
+          disabled={markKeineAktion.isPending}
+          onClick={markNoAction}
+          data-testid="suggestion-no-action"
+        >
           Keine Aktion nötig <kbd className="ml-1 text-xs opacity-60">R</kbd>
         </Button>
       </div>
@@ -158,14 +165,14 @@ export function SuggestionsPanel() {
   const filter = useSuggestionFilter()
   const visible = useSuggestionsVisible()
   const skipped = useSkippedSuggestions()
-  const noAction = useNoActionSuggestions()
+  const { decisions, query: keineAktion } = useKeineAktion(gebiet)
   const selectedId = useSelectedSuggestionId()
   const actions = useSuggestionActions()
   const draw = useDrawActions()
   if (!network || network.base.suggestions.length === 0) return null
 
   const skippedCount = gebiet ? (skipped[gebiet]?.length ?? 0) : 0
-  const noActionCount = gebiet ? (noAction[gebiet]?.length ?? 0) : 0
+  const noActionCount = decisions.length
   const index = selected ? open.indexOf(selected) : -1
   const neighbour = open[index + 1] ?? open[index - 1]
 
@@ -201,7 +208,7 @@ export function SuggestionsPanel() {
       <Text className="text-xs" data-testid="suggestions-count">
         {open.length} offen{skippedCount > 0 ? `, ${skippedCount} übersprungen` : ''}
         {noActionCount > 0 ? `, ${noActionCount} ohne Aktion` : ''}
-        {skippedCount + noActionCount > 0 && gebiet ? (
+        {skippedCount > 0 && gebiet ? (
           <>
             {' · '}
             <button
@@ -209,11 +216,16 @@ export function SuggestionsPanel() {
               className="text-sky-400 hover:underline"
               onClick={() => actions.clearSkipped(gebiet)}
             >
-              zurücksetzen
+              Übersprungene zurücksetzen
             </button>
           </>
         ) : null}
       </Text>
+      {noActionCount > 0 ? (
+        <Text className="text-xs" data-testid="suggestions-no-action-by">
+          Keine Aktion nötig, für alle sichtbar · {decidersText(decisions)}
+        </Text>
+      ) : null}
       {selected ? (
         <SuggestionDetails
           key={selected.id}
@@ -222,7 +234,12 @@ export function SuggestionsPanel() {
           gebiet={gebiet}
         />
       ) : open.length > 0 ? (
-        <Button type="button" outline onClick={() => show(open[0])}>
+        <Button
+          type="button"
+          outline
+          disabled={keineAktion.isPending}
+          onClick={() => show(open[0])}
+        >
           {selectedId ? 'Zum ersten Vorschlag' : 'Ersten Vorschlag zeigen'}
         </Button>
       ) : null}

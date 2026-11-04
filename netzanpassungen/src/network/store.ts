@@ -4,9 +4,10 @@ import { createVersionTracker } from '@shared/kv/version-tracker'
 import { getOsmToken } from '@shared/osm/osm-auth'
 import { get, set } from 'idb-keyval'
 import { isKvConfigured, kvApiKey, kvProject } from '@/config/app.const'
+import { keineAktionTag } from './keine-aktion'
 import { entrySchema, type Entry, type Stored } from './schema'
 
-const osmLoginRequiredMessage = 'Zum Speichern mit OSM anmelden'
+export const osmLoginRequiredMessage = 'Zum Speichern mit OSM anmelden'
 
 /** Somebody else changed the entry since it was loaded; nothing was written. */
 export class NetworkConflictError extends Error {
@@ -34,7 +35,7 @@ export type NetworkStore = {
 }
 
 const kindTags = { virtual_node: 'vk', new_edge: 'kante' } as const
-const reservedTags = new Set<string>(Object.values(kindTags))
+const reservedTags = new Set<string>([...Object.values(kindTags), keineAktionTag])
 
 function kvId(gebiet: string, data: Entry, id: string) {
   return `${gebiet}:${kindTags[data.kind]}:${id}`
@@ -68,6 +69,8 @@ function createKvNetworkStore(client: KvClient<unknown>): NetworkStore {
         const page = await client.list({ tags: [gebiet], match: 'all', limit: 500, cursor })
         for (const item of page.items) {
           if (!item.id.startsWith(`${gebiet}:`)) continue
+          // "Keine Aktion nötig" shares the area tag but is read by its own store.
+          if (item.tags.includes(keineAktionTag)) continue
           versions.seen(item.id, item.version)
           const parsed = entrySchema.safeParse(item.data)
           if (parsed.success) entries.push(toStored(item, parsed.data))

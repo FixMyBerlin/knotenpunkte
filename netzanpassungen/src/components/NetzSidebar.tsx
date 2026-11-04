@@ -4,6 +4,7 @@ import { Sidebar, SidebarBody, SidebarSection } from '@shared/components/ui/side
 import { DrawPanel } from '@/components/DrawPanel'
 import { ExportPanel } from '@/components/ExportPanel'
 import { GebietPanel } from '@/components/GebietPanel'
+import { KeineAktionTakeover } from '@/components/KeineAktionTakeover'
 import { OverviewPanel } from '@/components/OverviewPanel'
 import { StorageModeCallout } from '@/components/StorageModeCallout'
 import { useNetwork, useNetzNav } from '@/components/use-netz'
@@ -30,7 +31,10 @@ export function NetzSidebar() {
     <Sidebar className="h-full bg-zinc-900">
       <SidebarBody>
         <SidebarSection>
-          <StorageModeCallout />
+          <div className="space-y-3">
+            <StorageModeCallout />
+            <KeineAktionTakeover />
+          </div>
         </SidebarSection>
         {current === 'gebiet' ? (
           <SidebarSection>

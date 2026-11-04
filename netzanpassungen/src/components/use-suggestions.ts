@@ -1,10 +1,10 @@
 import { useMemo } from 'react'
 import {
-  useNoActionSuggestions,
   useSelectedSuggestionId,
   useSkippedSuggestions,
   useSuggestionFilter,
 } from '@/components/suggestion-store'
+import { useKeineAktion } from '@/components/use-keine-aktion'
 import type { Network } from '@/network/model'
 import { openSuggestions } from '@/network/suggestion-lookup'
 
@@ -12,16 +12,19 @@ import { openSuggestions } from '@/network/suggestion-lookup'
 export function useOpenSuggestions(gebiet: string | undefined, network: Network | null) {
   const filter = useSuggestionFilter()
   const skippedByArea = useSkippedSuggestions()
-  const noActionByArea = useNoActionSuggestions()
+  const { decisions } = useKeineAktion(gebiet)
   const selectedId = useSelectedSuggestionId()
   const skipped = gebiet ? skippedByArea[gebiet] : undefined
-  const noAction = gebiet ? noActionByArea[gebiet] : undefined
   const open = useMemo(
     () =>
       network
-        ? openSuggestions(network, filter, new Set([...(skipped ?? []), ...(noAction ?? [])]))
+        ? openSuggestions(
+            network,
+            filter,
+            new Set([...(skipped ?? []), ...decisions.map((item) => item.suggestionId)]),
+          )
         : [],
-    [network, filter, skipped, noAction],
+    [network, filter, skipped, decisions],
   )
   return { open, selected: open.find((suggestion) => suggestion.id === selectedId) ?? null }
 }

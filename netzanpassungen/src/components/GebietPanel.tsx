@@ -11,6 +11,7 @@ import { kvQueryOptions } from '@shared/kv/query-options'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { BackupImport } from '@/components/BackupImport'
 import { useNetwork } from '@/components/use-netz'
 import {
   baseNetworkQueryKey,
@@ -218,6 +219,8 @@ export function GebietPanel() {
           </Callout>
         ) : null}
       </div>
+
+      <BackupImport />
     </div>
   )
 }
