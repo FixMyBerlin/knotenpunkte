@@ -1,14 +1,14 @@
 # Netzanpassungen
 
-Second app in this repo. It draws new edges into the Berlin Detailnetz where a Radfernweg has no edge, with virtual nodes where a new edge meets an existing one. It has no link to the Knotenpunkte app; both share the code in [`../shared/`](../shared/).
+App in [infravelo-apps](../README.md). It draws new edges into the Berlin Detailnetz where a Radfernweg has no edge, with virtual nodes where a new edge meets an existing one. It has no link to the Knotenpunkte app; both share the code in [`../shared/`](../shared/).
 
-Dev server: [http://127.0.0.1:33480](http://127.0.0.1:33480). Production: `https://fixmyberlin.github.io/knotenpunkte/netzanpassungen/`.
+Dev server: [http://127.0.0.1:33480](http://127.0.0.1:33480). Production: `https://radnetz-apps.netlify.app/netzanpassungen/`.
 
 ```bash
 bun run dev-netz
 ```
 
-`bun run build`, `bun run type-check` and `bun run test-run` cover both apps.
+`bun run build`, `bun run type-check` and `bun run test-run` cover all apps; the build writes this one to `dist/netzanpassungen/`.
 
 ## Input file
 
@@ -56,12 +56,12 @@ The name field is filled with the suggestion and can be changed. It checks the p
 
 KV project `netzanpassungen` on the same Worker as Knotenpunkte. Entries `{gebiet}:vk:{uuid}` (virtual node) and `{gebiet}:kante:{uuid}` (edge), tags `[gebiet, vk|kante]`. Saves send `If-Match`; on a conflict the current state is loaded again.
 
-The project exists (created 2026-10-26 with MCP `create_project`, origins `http://127.0.0.1:33480` and `https://fixmyberlin.github.io`); its public `api_key` is `VITE_KV_API_KEY` in [`.env`](.env). Without a key (empty or `REPLACE_ME`) the app runs in **Testmodus**: entries stay in this browser's IndexedDB.
+The project exists (created 2026-10-26 with MCP `create_project`, origins `http://127.0.0.1:33480` and, at the time, `https://fixmyberlin.github.io`; `https://radnetz-apps.netlify.app` still has to be added, see [Umzug auf Netlify](../README.md#umzug-auf-netlify-noch-offen)); its public `api_key` is `VITE_KV_API_KEY` in [`.env`](.env). Without a key (empty or `REPLACE_ME`) the app runs in **Testmodus**: entries stay in this browser's IndexedDB.
 
 OSM login uses the OAuth app of Knotenpunkte. These redirect URIs must be added to it:
 
 - `http://127.0.0.1:33480/osm-oauth-land.html`
-- `https://fixmyberlin.github.io/knotenpunkte/netzanpassungen/osm-oauth-land.html`
+- `https://radnetz-apps.netlify.app/netzanpassungen/osm-oauth-land.html`
 
 ## Overview and export
 
