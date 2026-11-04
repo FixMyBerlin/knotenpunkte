@@ -7,7 +7,7 @@ import { RouterProvider, createRouter } from '@tanstack/react-router'
 import '@shared/mapillary/setup'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import '@shared/components/layouts/global.css'
+import './app.css'
 import { kv } from '@/shared/kv/kv'
 import { routeTree } from './routeTree.gen'
 

@@ -1,4 +1,7 @@
 {
   "files": [],
-  "references": [{ "path": "./tsconfig.app.json" }]
+  "references": [
+    { "path": "./knotenpunkte/tsconfig.json" },
+    { "path": "./netzanpassungen/tsconfig.json" }
+  ]
 }

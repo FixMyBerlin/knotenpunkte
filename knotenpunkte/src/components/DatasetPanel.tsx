@@ -16,7 +16,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { useState } from 'react'
-import { sampleNodesGithubUrl, sampleSuggestionsGithubUrl } from '@/config/app.const'
+import { sampleNodesUrl, sampleSuggestionsUrl } from '@/config/app.const'
 import { Route } from '@/routes/index'
 import {
   listNodesDatasets,
@@ -394,13 +394,13 @@ export function DatasetPanel() {
               Unicode-Bindestrich). Point oder MultiPoint.
             </Text>
             <Text>
-              <TextLink href={sampleNodesGithubUrl} target="_blank" rel="noreferrer">
+              <TextLink href={sampleNodesUrl} target="_blank" rel="noreferrer">
                 Testdaten herunterladen (dann hochladen)
               </TextLink>
             </Text>
             <Text>
               Optionale Vorschläge:{' '}
-              <TextLink href={sampleSuggestionsGithubUrl} target="_blank" rel="noreferrer">
+              <TextLink href={sampleSuggestionsUrl} target="_blank" rel="noreferrer">
                 Beispiel-Vorschläge herunterladen
               </TextLink>
             </Text>

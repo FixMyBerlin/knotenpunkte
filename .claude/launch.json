@@ -7,6 +7,13 @@
       "runtimeArgs": ["run", "dev"],
       "port": 33479,
       "autoPort": false
+    },
+    {
+      "name": "dev-netz",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "dev-netz"],
+      "port": 33480,
+      "autoPort": false
     }
   ]
 }

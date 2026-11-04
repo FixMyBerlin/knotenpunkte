@@ -156,7 +156,7 @@ test.describe('rating flow', () => {
     await createProjectAndStageFile(
       page,
       'berlin-sample',
-      'public/fixtures/berlin-nodes-sample.geojson',
+      'knotenpunkte/public/fixtures/berlin-nodes-sample.geojson',
     )
     await page.getByTestId('import-dataset').click()
     await expect(page.getByTestId('progress-summary')).toContainText('0/10 Knoten')
@@ -180,11 +180,11 @@ test.describe('rating flow', () => {
     await createProjectAndStageFile(
       page,
       'berlin-sample',
-      'public/fixtures/berlin-nodes-sample.geojson',
+      'knotenpunkte/public/fixtures/berlin-nodes-sample.geojson',
     )
     await page
       .getByTestId('suggestions-file-input')
-      .setInputFiles('public/fixtures/berlin-suggestions-sample.json')
+      .setInputFiles('knotenpunkte/public/fixtures/berlin-suggestions-sample.json')
     await expect(page.getByTestId('import-suggestions')).toBeEnabled()
     await page.getByTestId('import-suggestions').click()
     await page.getByTestId('import-dataset').click()
@@ -210,7 +210,7 @@ test.describe('rating flow', () => {
     await createProjectAndStageFile(
       page,
       'berlin-sample',
-      'public/fixtures/berlin-nodes-sample.geojson',
+      'knotenpunkte/public/fixtures/berlin-nodes-sample.geojson',
     )
     await page.getByTestId('import-dataset').click()
     await expect(page.getByTestId('selected-node-id')).toHaveText('Knoten 40530022')

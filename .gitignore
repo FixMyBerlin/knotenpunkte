@@ -1,6 +1,5 @@
 node_modules
 dist
-.tsbuildinfo-app
 playwright-report
 test-results
 *.local
@@ -8,4 +7,4 @@ test-results
 
 # The committed `.env` holds the public KV project selector, not an admin secret.
 !.env
-.tsbuildinfo-netzanpassungen
+.tsbuildinfo-*

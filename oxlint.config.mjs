@@ -9,9 +9,9 @@ export default defineConfig({
     'dist/**',
     'playwright-report/**',
     'test-results/**',
-    'src/routeTree.gen.ts',
+    'knotenpunkte/src/routeTree.gen.ts',
     'netzanpassungen/src/routeTree.gen.ts',
-    'public/fixtures/**',
+    'knotenpunkte/public/fixtures/**',
   ],
   rules: {
     'typescript/switch-exhaustiveness-check': 'error',
@@ -36,8 +36,8 @@ export default defineConfig({
     },
     {
       files: [
-        'src/components/**',
-        'src/routes/**',
+        'knotenpunkte/src/components/**',
+        'knotenpunkte/src/routes/**',
         'shared/components/**',
         'netzanpassungen/src/components/**',
         'netzanpassungen/src/routes/**',
