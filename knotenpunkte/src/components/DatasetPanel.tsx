@@ -12,6 +12,7 @@ import { useOsmAuth } from '@shared/components/use-osm-auth'
 import { isValidDatasetName } from '@shared/datasets/dataset-name'
 import { ignorePasswordManagerProps } from '@shared/form-ignore-password-manager'
 import { kvQueryOptions } from '@shared/kv/query-options'
+import { nowIso } from '@shared/now-iso'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import clsx from 'clsx'
@@ -108,7 +109,7 @@ export function DatasetPanel() {
         throw new Error(`Gebiet „${name}“ existiert bereits.`)
       }
       await ratingStore.putProjectMeta(name, {
-        createdAt: new Date().toISOString(),
+        createdAt: nowIso(),
         createdBy: auth.displayName,
       })
       return name

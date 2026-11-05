@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from '@shared/components/ui/table'
+import { nowIso } from '@shared/now-iso'
 import { useState } from 'react'
 import { WeeklyColumns } from '@/components/charts/WeeklyColumns'
 import { accountColor } from '@/components/colors'
@@ -47,7 +48,7 @@ export function PeopleView({ dataset }: { dataset: Dataset }) {
   const [copied, setCopied] = useState<'ok' | 'fehler' | null>(null)
 
   async function copySummary() {
-    const text = accountSummaryText(rows, scope.end, formatStamp(new Date().toISOString()))
+    const text = accountSummaryText(rows, scope.end, formatStamp(nowIso()))
     try {
       await navigator.clipboard.writeText(text)
       setCopied('ok')
