@@ -16,6 +16,12 @@ export const tildaDataLayers = [
   'infravelo-ren-netz-zuteilung-gebiete',
 ] as const
 
+/**
+ * The map cannot leave Berlin: its bounding box (13.08–13.77 E, 52.33–52.68 N) plus a buffer of
+ * about 10 km on every side. That also stops zooming out too far.
+ */
+export const mapMaxBounds: [number, number, number, number] = [12.93, 52.24, 13.92, 52.77]
+
 export const tildaAttribution = 'Zuteilung REN+: FixMyCity / TILDA'
 
 /**

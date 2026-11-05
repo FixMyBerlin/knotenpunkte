@@ -37,6 +37,8 @@ type Props = {
   /** More layers on the street network source (e.g. labels), only while it is on. */
   streetsLayers?: ReactNode
   interactiveLayerIds?: string[]
+  /** Panning stops at this box (`[west, south, east, north]`), which also limits zooming out. */
+  maxBounds?: [number, number, number, number]
   onClick?: (event: MapLayerMouseEvent) => void
   onMouseMove?: (event: MapLayerMouseEvent) => void
   onMouseOut?: (event: MapLayerMouseEvent) => void
@@ -64,6 +66,7 @@ export function BaseMap({
   onStreetsChange,
   streetsLayers,
   interactiveLayerIds,
+  maxBounds,
   onClick,
   onMouseMove,
   onMouseOut,
@@ -107,6 +110,7 @@ export function BaseMap({
         style={{ width: '100%', height: '100%' }}
         attributionControl={false}
         interactiveLayerIds={interactiveLayerIds}
+        maxBounds={maxBounds}
         cursor={cursor}
         doubleClickZoom={doubleClickZoom}
         onLoad={(event: MapLibreEvent) => {

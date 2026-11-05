@@ -5,7 +5,8 @@ import { Toggle } from '@/components/Toggle'
 import { useUpdateSearch } from '@/components/use-fortschritt-nav'
 import { useNow } from '@/data/now-store'
 import { Route } from '@/routes/index'
-import { formatDayNumeric } from '@/stats/format'
+import { bezirkRows } from '@/stats/bezirke'
+import { formatDayNumeric, formatPercent } from '@/stats/format'
 import { filteredBezirke, mapFilterOf } from '@/stats/map-filter'
 import type { Dataset } from '@/stats/model'
 import { runningScope, scopeFromSearch, scopes } from '@/stats/status'
@@ -21,6 +22,7 @@ export function MapFilters({ dataset }: { dataset: Dataset }) {
     filteredBezirke(dataset, mapFilterOf(scope, {})) ??
     dataset.deliveries.flatMap((item) => item.bezirke)
   const byMapper = search.farbe === 'mapper'
+  const bezirkShare = new Map(bezirkRows(dataset).map((row) => [row.bezirk, row.share]))
 
   return (
     <section className="space-y-3" aria-label="Filter">
@@ -58,7 +60,7 @@ export function MapFilters({ dataset }: { dataset: Dataset }) {
           <option value="">Alle</option>
           {bezirkOptions.map((bezirk) => (
             <option key={bezirk} value={bezirk}>
-              {bezirk}
+              {bezirk} · {formatPercent(bezirkShare.get(bezirk) ?? 0)}
             </option>
           ))}
         </Select>

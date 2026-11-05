@@ -20,6 +20,7 @@ import { useUpdateSearch } from '@/components/use-fortschritt-nav'
 import {
   edgesPmtilesUrl,
   gebietePmtilesUrl,
+  mapMaxBounds,
   pmtilesSourceLayer,
   tildaAttribution,
 } from '@/config/app.const'
@@ -133,6 +134,7 @@ export function FortschrittMap({ dataset }: { dataset: Dataset }) {
       streetsOn={search.streets === true}
       onStreetsChange={(on) => updateSearch({ streets: on ? true : undefined })}
       interactiveLayerIds={interactiveLayerIds}
+      maxBounds={mapMaxBounds}
       cursor={cursor}
       onClick={handleClick}
       onMouseMove={(event) => setCursor(event.features?.length ? 'pointer' : 'grab')}
