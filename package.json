@@ -13,6 +13,7 @@
     "build:knotenpunkte": "FORCE_COLOR=1 bun --bun vite build --config knotenpunkte/vite.config.ts",
     "build:netzanpassungen": "FORCE_COLOR=1 bun --bun vite build --config netzanpassungen/vite.config.ts",
     "build:fortschritt": "FORCE_COLOR=1 bun --bun vite build --config fortschritt/vite.config.ts",
+    "build-pages": "DEPLOY_TARGET=pages bun run build:knotenpunkte && DEPLOY_TARGET=pages bun run build:netzanpassungen && DEPLOY_TARGET=pages bun run build:fortschritt",
     "preview": "FORCE_COLOR=1 bun --bun vite preview --config knotenpunkte/vite.config.ts",
     "preview-netz": "FORCE_COLOR=1 bun --bun vite preview --config netzanpassungen/vite.config.ts",
     "preview-fortschritt": "FORCE_COLOR=1 bun --bun vite preview --config fortschritt/vite.config.ts",

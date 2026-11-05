@@ -6,16 +6,23 @@ import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import react from '@vitejs/plugin-react'
 import browserslistToEsbuild from 'browserslist-to-esbuild'
 import { defineConfig } from 'vite'
+import {
+  appOutDir,
+  deployTarget,
+  deployTargetDefine,
+  productionBase,
+} from '../shared/vite/deploy-target'
 import { sharedPublicFiles } from '../shared/vite/plugins'
 
 const appRoot = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(appRoot, '..')
 const bunLinksCache = path.join(os.homedir(), '.bun/install/cache/links')
-/** Every app builds into its own folder of `dist`, which is the Netlify publish directory. */
-const outDir = path.resolve(repoRoot, 'dist/fortschritt')
+const target = deployTarget()
+/** `dist/<app>` for Netlify, `dist-pages` (Knotenpunkte at its root) for GitHub Pages. */
+const outDir = appOutDir(repoRoot, 'fortschritt', target)
 
-/** Path of the app on the Netlify site. Keep in sync with the redirects in `netlify.toml`. */
-const PRODUCTION_BASE = '/fortschritt/'
+/** Netlify: `/fortschritt/`, keep in sync with `netlify.toml`. GitHub Pages: below `/knotenpunkte/`. */
+const PRODUCTION_BASE = productionBase('fortschritt', target)
 
 /** Fixed dev port; the KV project allows `http://127.0.0.1:*`. 33479 Knotenpunkte, 33480 Netzanpassungen. */
 const DEV_HOST = '127.0.0.1'
@@ -27,6 +34,7 @@ export default defineConfig(({ mode }) => ({
   // must not rewrite each other's optimized deps.
   cacheDir: path.resolve(repoRoot, 'node_modules/.vite-fortschritt'),
   base: mode === 'production' ? PRODUCTION_BASE : '/',
+  define: deployTargetDefine(target),
   plugins: [
     tanstackRouter({
       target: 'react',

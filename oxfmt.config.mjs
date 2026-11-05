@@ -25,6 +25,7 @@ export default defineConfig({
     '.agents/**',
     '.cursor/**',
     'dist/**',
+    'dist-pages/**',
     'playwright-report/**',
     'test-results/**',
     'knotenpunkte/src/routeTree.gen.ts',

@@ -6,16 +6,23 @@ import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import react from '@vitejs/plugin-react'
 import browserslistToEsbuild from 'browserslist-to-esbuild'
 import { defineConfig } from 'vite'
-import { sharedPublicFiles } from '../shared/vite/plugins'
+import {
+  appOutDir,
+  deployTarget,
+  deployTargetDefine,
+  productionBase,
+} from '../shared/vite/deploy-target'
+import { githubPagesSpaFallback, sharedPublicFiles } from '../shared/vite/plugins'
 
 const appRoot = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(appRoot, '..')
 const bunLinksCache = path.join(os.homedir(), '.bun/install/cache/links')
-/** Every app builds into its own folder of `dist`, which is the Netlify publish directory. */
-const outDir = path.resolve(repoRoot, 'dist/knotenpunkte')
+const target = deployTarget()
+/** `dist/<app>` for Netlify, `dist-pages` (Knotenpunkte at its root) for GitHub Pages. */
+const outDir = appOutDir(repoRoot, 'knotenpunkte', target)
 
-/** Path of the app on the Netlify site. Keep in sync with the redirects in `netlify.toml`. */
-const PRODUCTION_BASE = '/knotenpunkte/'
+/** Netlify: `/knotenpunkte/`, keep in sync with `netlify.toml`. GitHub Pages: below `/knotenpunkte/`. */
+const PRODUCTION_BASE = productionBase('knotenpunkte', target)
 
 /** OSM only allows http redirect URIs on 127.0.0.1. 33479 is unused by sibling apps. */
 const DEV_HOST = '127.0.0.1'
@@ -24,6 +31,7 @@ const DEV_PORT = 33479
 export default defineConfig(({ mode }) => ({
   root: appRoot,
   base: mode === 'production' ? PRODUCTION_BASE : '/',
+  define: deployTargetDefine(target),
   plugins: [
     tanstackRouter({
       target: 'react',
@@ -34,6 +42,9 @@ export default defineConfig(({ mode }) => ({
     tailwindcss(),
     react({ compiler: true }),
     sharedPublicFiles(),
+    ...(target === 'pages' && mode === 'production'
+      ? [githubPagesSpaFallback(outDir, { notFound: true })]
+      : []),
   ],
   resolve: {
     alias: {
