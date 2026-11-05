@@ -98,7 +98,8 @@ test.describe('Fortschritt', () => {
     await expect(page.getByTestId('burnup')).toBeVisible()
     await expect(page.getByTestId('bezirke-table')).toContainText('Neukölln')
     await expect(page.getByTestId('orphan-marks')).toContainText('1 Markierungen ohne Kante')
-    await expect(page.getByTestId('stand')).toContainText('04.11.2026, 23:00')
+    await expect(page.getByTestId('stand')).toContainText('heute um 23:00')
+    await expect(page.getByTestId('stand')).toHaveAttribute('title', '04.11.2026, 23:00')
 
     await page.locator('#burnup').getByRole('radio', { name: 'Gesamt' }).click()
     await expect(page).toHaveURL(/umfang=gesamt/)
