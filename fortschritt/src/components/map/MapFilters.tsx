@@ -3,6 +3,7 @@ import { Select } from '@shared/components/ui/select'
 import { accountColor, edgeColors } from '@/components/colors'
 import { useUpdateSearch } from '@/components/use-fortschritt-nav'
 import { Route } from '@/routes/index'
+import { formatDayNumeric } from '@/stats/format'
 import { filteredBezirke } from '@/stats/map-filter'
 import type { Dataset } from '@/stats/model'
 
@@ -27,7 +28,8 @@ export function MapFilters({ dataset }: { dataset: Dataset }) {
           <option value="">Alle</option>
           {dataset.deliveries.map((delivery) => (
             <option key={delivery.nr} value={`${delivery.nr}`}>
-              Lieferung {delivery.nr}
+              Lieferung {delivery.nr} · Mapping bis {formatDayNumeric(delivery.deadline)} · Abgabe{' '}
+              {formatDayNumeric(delivery.abgabe)}
             </option>
           ))}
         </Select>
