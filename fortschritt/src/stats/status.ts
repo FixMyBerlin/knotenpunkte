@@ -1,9 +1,9 @@
 import { onPlanToleranceKm, paceWindowDays } from '@/config/plan.const'
+import { rampForecast } from '@/stats/forecast'
 import type { Dataset, DoneEdge, Edge } from '@/stats/model'
 import { runningDelivery } from '@/stats/plan'
 import {
   cumulativePoints,
-  forecastDay,
   kmUntil,
   paceKmPerWeek,
   sollAt,
@@ -85,8 +85,10 @@ export type ScopeStatus = {
   neededPerWeek: number
   /** Average of the last 4 weeks, see `paceKmPerWeek`. */
   pace: number
-  /** Day the target is reached at `pace`; `null` without pace. */
+  /** Day the target is reached, with the start-up phase of each mapper; see `rampForecast`. */
   forecast: number | null
+  /** Projected cumulative km from now (the dashed line of the burn-up). */
+  forecastPoints: { t: number; km: number }[]
   points: CumulativePoint[]
 }
 
@@ -104,6 +106,7 @@ export function scopeStatus(dataset: Dataset, scope: Scope, now: number): ScopeS
   const diffKm = doneKm - sollKm
   const weeksLeft = Math.max(0, (scope.end - now) / 7)
   const pace = paceKmPerWeek(done, now, paceWindowDays.forecast, dataset.start)
+  const forecast = rampForecast(dataset, scope, now)
   return {
     scope,
     targetKm,
@@ -118,7 +121,8 @@ export function scopeStatus(dataset: Dataset, scope: Scope, now: number): ScopeS
     weeksLeft,
     neededPerWeek: neededPerWeek(targetKm - doneKm, weeksLeft),
     pace,
-    forecast: forecastDay(doneKm, targetKm, pace, now),
+    forecast: forecast.day,
+    forecastPoints: forecast.points,
     points: cumulativePoints(done, dataset.start, now),
   }
 }

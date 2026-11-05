@@ -6,6 +6,7 @@ import { StatTile } from '@/components/overview/StatTile'
 import { PartHeading } from '@/components/report/PartHeading'
 import { Toggle } from '@/components/Toggle'
 import { useUpdateSearch } from '@/components/use-fortschritt-nav'
+import { rampUp } from '@/config/plan.const'
 import { useNow } from '@/data/now-store'
 import { Route } from '@/routes/index'
 import { formatDay, formatKm, formatNumber, formatPercent, formatWeeks } from '@/stats/format'
@@ -82,8 +83,8 @@ export function OverviewView({ dataset }: { dataset: Dataset }) {
               runningStatus.forecast === null
                 ? 'Noch kein Tempo in den letzten 4 Wochen'
                 : runningStatus.forecast <= running.deadline
-                  ? 'beim Tempo der letzten 4 Wochen, vor der Deadline'
-                  : 'beim Tempo der letzten 4 Wochen, nach der Deadline'
+                  ? 'Tempo der letzten 4 Wochen mit Anlauf, vor der Deadline'
+                  : 'Tempo der letzten 4 Wochen mit Anlauf, nach der Deadline'
             }
             testId="tile-forecast"
           />
@@ -135,7 +136,11 @@ export function OverviewView({ dataset }: { dataset: Dataset }) {
           {chartScope.key === 'gesamt'
             ? 'Die Soll-Linie knickt an der Deadline von Lieferung 2: bis dahin ihr Ziel, danach der Rest bis zur Deadline von Lieferung 3.'
             : 'Die Soll-Linie geht gerade vom Start der Lieferung bis zum Ziel an ihrer Deadline.'}{' '}
-          Prognose: {chartStatus.forecast === null ? 'keine' : formatDay(chartStatus.forecast)}.
+          Prognose: {chartStatus.forecast === null ? 'keine' : formatDay(chartStatus.forecast)}. Sie
+          nimmt an, dass ein Mapper in den ersten {rampUp.days} Tagen nach seiner ersten Markierung
+          mit {Math.round(rampUp.factor * 100)} % seines späteren Tempos arbeitet; sein Tempo der
+          letzten 4 Wochen wird darum hochgerechnet. Accounts ohne Markierung starten heute mit dem
+          Durchschnitt der anderen.
         </p>
       </section>
 

@@ -19,7 +19,7 @@ const monthFormat = new Intl.DateTimeFormat('de-DE', { timeZone: 'UTC', month: '
 
 /**
  * Burn-up: done km (cumulative, end of each week), the target, the straight Soll line and the
- * forecast at the pace of the last 4 weeks. y in km or in % of the target.
+ * forecast (pace of the last 4 weeks, start-up phase per mapper). y in km or in % of the target.
  */
 export function BurnupChart({ status, unit, now, start }: Props) {
   const [hover, setHover] = useState<number | null>(null)
@@ -46,10 +46,13 @@ export function BurnupChart({ status, unit, now, start }: Props) {
   const istPath = points.map((p) => `${x(p.t).toFixed(1)},${y(value(p.km)).toFixed(1)}`).join(' ')
 
   const doneKm = status.doneKm
-  const forecastEnd =
-    status.forecast !== null && doneKm < targetKm ? Math.min(status.forecast, end) : null
-  const forecastKm =
-    forecastEnd !== null ? Math.min(targetKm, doneKm + (status.pace * (forecastEnd - now)) / 7) : 0
+  const forecastPath =
+    doneKm < targetKm
+      ? status.forecastPoints
+          .filter((point) => point.t <= end)
+          .map((point) => `${x(point.t).toFixed(1)},${y(value(point.km)).toFixed(1)}`)
+          .join(' ')
+      : ''
   const last = points.at(-1)
 
   function handlePointerMove(event: PointerEvent<SVGRectElement>) {
@@ -71,7 +74,7 @@ export function BurnupChart({ status, unit, now, start }: Props) {
       <figcaption className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-300">
         <LegendItem color={chartColors.ist} text="Erledigt" />
         <LegendItem color={chartColors.soll} dashed text="Soll (gerade Linie bis zur Deadline)" />
-        <LegendItem color={chartColors.ist} dashed text="Prognose (Ø 4 Wochen)" />
+        <LegendItem color={chartColors.ist} dashed text="Prognose (Ø 4 Wochen, Anlauf 60 %)" />
         <LegendItem color={chartColors.muted} dotted text={`Ziel ${formatKm(targetKm)}`} />
       </figcaption>
       <div className="relative">
@@ -160,12 +163,10 @@ export function BurnupChart({ status, unit, now, start }: Props) {
             strokeWidth={1.5}
             strokeDasharray="6 4"
           />
-          {forecastEnd !== null && last ? (
-            <line
-              x1={x(last.t)}
-              y1={y(value(last.km))}
-              x2={x(forecastEnd)}
-              y2={y(value(forecastKm))}
+          {forecastPath ? (
+            <polyline
+              points={forecastPath}
+              fill="none"
               stroke={chartColors.ist}
               strokeWidth={2}
               strokeDasharray="4 4"

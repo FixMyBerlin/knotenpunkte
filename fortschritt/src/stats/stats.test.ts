@@ -3,6 +3,7 @@ import { accountRows, ampelFor, ampelLabels } from '@/stats/accounts'
 import { bezirkRows, finishedGebiete, gebietStats } from '@/stats/bezirke'
 import { accountSummaryText } from '@/stats/copy'
 import { fixtureEdges, fixtureMarks, fixtureNow } from '@/stats/fixtures.test-data'
+import { rampFactor, weightedDays } from '@/stats/forecast'
 import { formatKm, formatPercent } from '@/stats/format'
 import { filteredBezirke, mapLayerFilter, markdownLinkUrl } from '@/stats/map-filter'
 import { buildDataset, sortAccounts } from '@/stats/model'
@@ -121,7 +122,29 @@ describe('status of a delivery', () => {
     expect(status.weeksLeft).toBeCloseTo((126 - elapsed) / 7)
     expect(status.neededPerWeek).toBeCloseTo(3 / ((126 - elapsed) / 7))
     expect(status.pace).toBeCloseTo((3 / elapsed) * 7)
-    expect(status.forecast).toBeCloseTo(now + (3 / status.pace) * 7)
+    expect(status.forecastPoints.at(-1)?.km).toBe(6)
+  })
+  test('forecast with the start-up phase of each mapper', () => {
+    // fmc_7 starts with edge 1, fmc_8 with edge 2 (marked by fmc_7). Both are still in the
+    // start-up phase, so each pace is scaled up to full speed: km ÷ (days × 0.6), at least
+    // 7 days × 0.6.
+    const [mark1, mark2] = dataset.done
+    const pace7 = (1 / ((now - mark1!.t) * 0.6)) * 7
+    const pace8 = (2 / (7 * 0.6)) * 7
+    // Both at 60 % until fmc_7 is out of the start-up phase, then fmc_7 at full speed.
+    const rampEnd7 = mark1!.t + 14
+    const firstPart = ((rampEnd7 - now) * 0.6 * (pace7 + pace8)) / 7
+    const rest = 3 - firstPart
+    const expected = rampEnd7 + rest / ((pace7 + 0.6 * pace8) / 7)
+    expect(mark2!.t).toBeGreaterThan(now - 7 * 0.6)
+    expect(status.forecast).toBeCloseTo(expected, 1)
+    expect(status.forecast!).toBeLessThan(now + (3 / status.pace) * 7)
+  })
+  test('ramp factor and weighted days', () => {
+    expect(rampFactor(start - 1, start)).toBe(0)
+    expect(rampFactor(start + 13, start)).toBe(0.6)
+    expect(rampFactor(start + 14, start)).toBe(1)
+    expect(weightedDays(start, start + 20, start)).toBeCloseTo(14 * 0.6 + 6)
   })
 })
 

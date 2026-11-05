@@ -53,5 +53,11 @@ export const ampelThresholds = { green: 1, yellow: 0.8 } as const
 /** Within this many km of the Soll line counts as "im Plan". */
 export const onPlanToleranceKm = 0.5
 
+/**
+ * Start-up phase of a mapper, used for the forecast only: in the first `days` days after their
+ * first mark a mapper works at `factor` of their later speed.
+ */
+export const rampUp = { days: 14, factor: 0.6 } as const
+
 /** Rolling windows of the averages, in days. */
 export const paceWindowDays = { forecast: 28, account: 14 } as const
