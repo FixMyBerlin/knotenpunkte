@@ -9,6 +9,13 @@ export const gebietePmtilesUrl =
   'https://tilda-geo.de/api/uploads/infravelo-ren-netz-zuteilung-gebiete.pmtiles'
 /** Both PMTiles have one source layer, read from their metadata. */
 export const pmtilesSourceLayer = 'default'
+/** TILDA region map with the two assignment layers switched on. */
+export const tildaRegionUrl = 'https://tilda-geo.de/regionen/infravelo'
+export const tildaDataLayers = [
+  'infravelo-ren-netz-zuteilung-netz',
+  'infravelo-ren-netz-zuteilung-gebiete',
+] as const
+
 export const tildaAttribution = 'Zuteilung REN+: FixMyCity / TILDA'
 
 /**

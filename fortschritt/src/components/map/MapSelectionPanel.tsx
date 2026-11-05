@@ -1,12 +1,17 @@
 import { XMarkIcon } from '@heroicons/react/20/solid'
+import { serializeMapParam } from '@shared/map/map-param'
 import { useMapSelection, useMapSelectionActions } from '@/components/map-selection-store'
 import { ProgressBar } from '@/components/overview/ProgressBar'
+import { tildaDataLayers, tildaRegionUrl } from '@/config/app.const'
+import { Route } from '@/routes/index'
+import { searchMapParam } from '@/routing/search-schema'
 import { gebietStats } from '@/stats/bezirke'
 import { formatCount, formatDay, formatKm } from '@/stats/format'
 import type { Dataset } from '@/stats/model'
 
 export function MapSelectionPanel({ dataset }: { dataset: Dataset }) {
   const selection = useMapSelection()
+  const search = Route.useSearch()
   const { clear } = useMapSelectionActions()
   if (!selection) {
     return (
@@ -16,13 +21,11 @@ export function MapSelectionPanel({ dataset }: { dataset: Dataset }) {
     )
   }
 
+  const tildaUrl = `${tildaRegionUrl}?map=${serializeMapParam(searchMapParam(search))}&data=${tildaDataLayers.join(',')}`
+  const linkClass = 'block text-sky-400 underline hover:text-sky-300'
+
   const editorLink = selection.editorUrl ? (
-    <a
-      href={selection.editorUrl}
-      target="_blank"
-      rel="noreferrer"
-      className="text-sky-400 underline hover:text-sky-300"
-    >
+    <a href={selection.editorUrl} target="_blank" rel="noreferrer" className={linkClass}>
       Im Editor öffnen
     </a>
   ) : null
@@ -48,6 +51,9 @@ export function MapSelectionPanel({ dataset }: { dataset: Dataset }) {
       <p className="text-xs text-zinc-400">
         {selection.bezirk} · {selection.account}
       </p>
+      <a href={tildaUrl} target="_blank" rel="noreferrer" className={linkClass}>
+        In TILDA öffnen
+      </a>
       {editorLink}
     </section>
   )
