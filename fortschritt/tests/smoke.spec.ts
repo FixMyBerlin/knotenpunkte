@@ -145,7 +145,7 @@ test.describe('Fortschritt', () => {
     await expect(page).toHaveURL(/umfang=3/)
     await page.getByRole('radio', { name: 'Mapper' }).click()
     await expect(page).toHaveURL(/farbe=mapper/)
-    await page.getByTestId('filter-account').selectOption('fmc_7')
+    await page.getByTestId('filter-account').getByRole('button', { name: 'fmc_7' }).click()
     await expect(page).toHaveURL(/account=fmc_7/)
     await expect(page.getByTestId('filter-bezirk')).toContainText('Mitte')
     await expect(page.locator('.maplibregl-canvas')).toBeVisible()

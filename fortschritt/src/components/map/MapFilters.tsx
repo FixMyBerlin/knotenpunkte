@@ -1,3 +1,4 @@
+import { cn } from '@shared/cn'
 import { Field, Label } from '@shared/components/ui/fieldset'
 import { Select } from '@shared/components/ui/select'
 import { accountColor, edgeColors } from '@/components/colors'
@@ -65,38 +66,50 @@ export function MapFilters({ dataset }: { dataset: Dataset }) {
           ))}
         </Select>
       </Field>
-      <Field>
-        <Label>Account</Label>
-        <Select
-          value={search.account ?? ''}
-          onChange={(event) => updateSearch({ account: event.target.value || undefined })}
-          data-testid="filter-account"
-        >
-          <option value="">Alle</option>
-          {dataset.accounts.map((account) => (
-            <option key={account} value={account}>
-              {account}
-            </option>
-          ))}
-        </Select>
-      </Field>
+      <fieldset className="space-y-1" data-testid="filter-account">
+        <legend className="mb-1 text-sm/6 font-medium text-white">Account</legend>
+        <p className="text-xs text-zinc-400">
+          {byMapper ? 'Farbe der Kanten und Gebiete. ' : ''}Klick filtert, noch ein Klick zeigt
+          wieder alle.
+        </p>
+        <ul className="space-y-0.5 text-sm">
+          {dataset.accounts.map((account) => {
+            const active = search.account === account
+            const dimmed = search.account !== undefined && !active
+            return (
+              <li key={account}>
+                <button
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => updateSearch({ account: active ? undefined : account })}
+                  className={cn(
+                    'flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-left',
+                    active ? 'bg-white/10 text-white' : 'text-zinc-300 hover:bg-white/5',
+                    dimmed && 'opacity-50',
+                  )}
+                >
+                  <span
+                    className="h-1 w-5 shrink-0 rounded"
+                    style={{
+                      backgroundColor: byMapper
+                        ? accountColor(dataset.accounts, account)
+                        : '#a1a1aa',
+                    }}
+                    aria-hidden="true"
+                  />
+                  {account}
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      </fieldset>
 
       <ul className="space-y-1 text-xs text-zinc-300" aria-label="Legende">
         {byMapper ? (
-          <>
-            {dataset.accounts.map((account) => (
-              <li key={account} className="flex items-center gap-2">
-                <span
-                  className="h-1 w-5 rounded"
-                  style={{ backgroundColor: accountColor(dataset.accounts, account) }}
-                />
-                {account}
-              </li>
-            ))}
-            <li className="pt-1 text-zinc-400">
-              Kräftig: erledigt, blass und dünn: offen. Farbe ist der zugeteilte Account.
-            </li>
-          </>
+          <li className="text-zinc-400">
+            Kräftig: erledigt, blass und dünn: offen. Farbe ist der zugeteilte Account.
+          </li>
         ) : (
           <>
             <li className="flex items-center gap-2">
