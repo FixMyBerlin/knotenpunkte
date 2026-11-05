@@ -11,6 +11,8 @@ export const OSM_AUTH_RETURN_URL_KEY = '__osmAuthReturnUrl'
  * - `http://127.0.0.1:33480/osm-oauth-land.html` (Netzanpassungen, dev)
  * - `https://radnetz-apps.netlify.app/knotenpunkte/osm-oauth-land.html`
  * - `https://radnetz-apps.netlify.app/netzanpassungen/osm-oauth-land.html`
+ * - `https://fixmyberlin.github.io/knotenpunkte/osm-oauth-land.html` (old Pages build, until it is removed)
+ * - `https://fixmyberlin.github.io/knotenpunkte/netzanpassungen/osm-oauth-land.html` (old Pages build, until it is removed)
  * Scope: `read_prefs`. Public client id only, never a client secret.
  */
 export const osmClientId = 'mV4q3_OPMrW4kCfnPON30BRxAoKZPX0ZLxh8EjmHP-o'

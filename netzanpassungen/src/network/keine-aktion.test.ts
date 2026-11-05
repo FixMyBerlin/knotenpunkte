@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
+  hiddenKeineAktionIds,
   keineAktionEntryId,
   localKeineAktionKey,
   mergeIdRecords,
   parseIdRecord,
   takeOverLocalKeineAktion,
   transferKeineAktion,
+  withoutIds,
   type KeineAktionData,
   type KeineAktionSink,
   type StorageLike,
@@ -64,6 +66,34 @@ describe('parseIdRecord / mergeIdRecords', () => {
     expect(mergeIdRecords({ a: ['1', '2'] }, { a: ['2', '3'], b: ['9'] })).toEqual({
       a: ['1', '2', '3'],
       b: ['9'],
+    })
+  })
+})
+
+describe('hiddenKeineAktionIds', () => {
+  it('is the union of the shared decisions and the waiting local markings of the area', () => {
+    const waiting = { berlin: ['a@1', 'b@1'], potsdam: ['p@1'] }
+    expect(hiddenKeineAktionIds(['b@1', 'c@1'], waiting, 'berlin')).toEqual(
+      new Set(['b@1', 'c@1', 'a@1']),
+    )
+  })
+
+  it('leaves out the markings of other areas', () => {
+    expect(hiddenKeineAktionIds([], { potsdam: ['p@1'] }, 'berlin')).toEqual(new Set())
+    expect(hiddenKeineAktionIds(['x@1'], {}, 'berlin')).toEqual(new Set(['x@1']))
+  })
+})
+
+describe('withoutIds', () => {
+  it('removes the given ids and drops areas that end up empty', () => {
+    expect(
+      withoutIds({ berlin: ['a@1', 'b@1'], potsdam: ['p@1'] }, { berlin: ['a@1', 'b@1'] }),
+    ).toEqual({ potsdam: ['p@1'] })
+  })
+
+  it('keeps ids that the other record does not have', () => {
+    expect(withoutIds({ berlin: ['a@1', 'c@1'] }, { berlin: ['a@1'], potsdam: ['p@1'] })).toEqual({
+      berlin: ['c@1'],
     })
   })
 })
@@ -138,6 +168,46 @@ describe('takeOverLocalKeineAktion', () => {
     await expect(takeOverLocalKeineAktion(sink, storage)).rejects.toThrow('Netzwerkfehler')
     expect(batches).toHaveLength(1)
     expect(items.has(localKeineAktionKey)).toBe(true)
+  })
+
+  it('keeps the ids a backup adds while the transfer runs, and removes only the transferred ones', async () => {
+    const { storage, items } = fakeStorage({
+      [localKeineAktionKey]: JSON.stringify({ berlin: ['a@1', 'b@1'] }),
+    })
+    const { sink, batches } = fakeSink()
+    sink.putBatch = async (batch) => {
+      batches.push(batch)
+      // A backup merged its markings into the local list during the transfer.
+      items.set(
+        localKeineAktionKey,
+        JSON.stringify({ berlin: ['a@1', 'b@1', 'c@1'], potsdam: ['p@1'] }),
+      )
+    }
+    const result = await takeOverLocalKeineAktion(sink, storage)
+    expect(result?.written).toBe(2)
+    expect(JSON.parse(items.get(localKeineAktionKey)!)).toEqual({
+      berlin: ['c@1'],
+      potsdam: ['p@1'],
+    })
+  })
+
+  it('removes the key once everything was transferred', async () => {
+    const { storage, items } = fakeStorage({
+      [localKeineAktionKey]: JSON.stringify({ berlin: ['a@1'] }),
+    })
+    const { sink } = fakeSink({ berlin: ['a@1'] })
+    await takeOverLocalKeineAktion(sink, storage)
+    expect(items.has(localKeineAktionKey)).toBe(false)
+  })
+
+  it('removes ids that cannot be stored, so the key does not stay for them', async () => {
+    const { storage, items } = fakeStorage({
+      [localKeineAktionKey]: JSON.stringify({ 'Kein Gebiet': ['a@1'] }),
+    })
+    const { sink } = fakeSink()
+    const result = await takeOverLocalKeineAktion(sink, storage)
+    expect(result).toEqual({ written: 0, alreadyThere: 0, ignored: 1 })
+    expect(items.has(localKeineAktionKey)).toBe(false)
   })
 
   it('does nothing without local markings', async () => {

@@ -12,6 +12,7 @@
     "moduleDetection": "force",
     "verbatimModuleSyntax": false,
     "noEmit": true,
+    "allowImportingTsExtensions": true,
 
     "strict": true,
     "noImplicitOverride": true,

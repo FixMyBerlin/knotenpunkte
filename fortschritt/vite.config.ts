@@ -11,8 +11,8 @@ import {
   deployTarget,
   deployTargetDefine,
   productionBase,
-} from '../shared/vite/deploy-target'
-import { sharedPublicFiles } from '../shared/vite/plugins'
+} from '../shared/vite/deploy-target.ts'
+import { sharedPublicFiles } from '../shared/vite/plugins.ts'
 
 const appRoot = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(appRoot, '..')

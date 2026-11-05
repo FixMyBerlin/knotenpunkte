@@ -1,13 +1,24 @@
 import { kvQueryOptions } from '@shared/kv/query-options'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useIsFetching, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMemo } from 'react'
 import { useDrawActions } from '@/components/draw-store'
-import type { KeineAktion } from '@/network/keine-aktion'
-import { keineAktionQueryKey, keineAktionStore } from '@/network/keine-aktion-store'
+import {
+  browserStorage,
+  hiddenKeineAktionIds,
+  localKeineAktionText,
+  parseIdRecord,
+  type KeineAktion,
+} from '@/network/keine-aktion'
+import {
+  keineAktionQueryKey,
+  keineAktionQueryRoot,
+  keineAktionStore,
+} from '@/network/keine-aktion-store'
 
 const noDecisions: KeineAktion[] = []
 
 /** The shared "Keine Aktion nötig" decisions of the area. */
-export function useKeineAktion(gebiet: string | undefined) {
+function useKeineAktion(gebiet: string | undefined) {
   const query = useQuery({
     queryKey: keineAktionQueryKey(gebiet ?? ''),
     queryFn: () => keineAktionStore.list(gebiet!),
@@ -15,6 +26,28 @@ export function useKeineAktion(gebiet: string | undefined) {
     ...kvQueryOptions,
   })
   return { decisions: query.data ?? noDecisions, query }
+}
+
+/**
+ * The suggestion ids of the area marked "Keine Aktion nötig": the shared decisions, plus this
+ * browser's markings that still wait for the transfer (`localOnly` counts those).
+ */
+export function useNoActionIds(gebiet: string | undefined) {
+  const { decisions, query } = useKeineAktion(gebiet)
+  // The transfer clears the local list and then refetches these queries: this re-renders at that point.
+  useIsFetching({ queryKey: keineAktionQueryRoot })
+  // The text, not the parsed record: an unchanged text keeps the memoized ids.
+  const waitingText = localKeineAktionText(browserStorage())
+  const ids = useMemo(() => {
+    const decided = decisions.map((item) => item.suggestionId)
+    return hiddenKeineAktionIds(decided, parseIdRecord(waitingText) ?? {}, gebiet ?? '')
+  }, [decisions, waitingText, gebiet])
+  const sharedIds = useMemo(() => new Set(decisions.map((item) => item.suggestionId)), [decisions])
+  const localOnly = useMemo(
+    () => [...ids].filter((id) => !sharedIds.has(id)).length,
+    [ids, sharedIds],
+  )
+  return { ids, localOnly, decisions, query }
 }
 
 /** "Keine Aktion nötig" for one suggestion. Needs the OSM login, like every other write. */

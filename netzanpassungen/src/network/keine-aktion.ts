@@ -133,13 +133,18 @@ export function browserStorage(): StorageLike {
   }
 }
 
+/** The raw local list; the same text means the same markings, so it can be compared between renders. */
+export function localKeineAktionText(storage: StorageLike): string | null {
+  try {
+    return storage.getItem(localKeineAktionKey)
+  } catch {
+    return null
+  }
+}
+
 /** The old per-browser decisions waiting for the transfer. */
 export function readLocalKeineAktion(storage: StorageLike): IdRecord {
-  try {
-    return parseIdRecord(storage.getItem(localKeineAktionKey)) ?? {}
-  } catch {
-    return {}
-  }
+  return parseIdRecord(localKeineAktionText(storage)) ?? {}
 }
 
 export function countLocalKeineAktion(storage: StorageLike) {
@@ -147,17 +152,44 @@ export function countLocalKeineAktion(storage: StorageLike) {
 }
 
 /**
- * Moves the old per-browser decisions into the database. The local key goes only after every batch
- * succeeded; on an error it stays, so the next start tries again. Null when there is nothing.
+ * The suggestion ids of an area that are marked "Keine Aktion nötig": the shared decisions of the
+ * database plus this browser's markings that still wait for the transfer.
+ */
+export function hiddenKeineAktionIds(
+  decided: Iterable<string>,
+  waiting: IdRecord,
+  gebiet: string,
+): Set<string> {
+  return new Set([...decided, ...(waiting[gebiet] ?? [])])
+}
+
+/** The record without the ids of `remove`; areas that end up empty are dropped. */
+export function withoutIds(record: IdRecord, remove: IdRecord): IdRecord {
+  const left: IdRecord = {}
+  for (const [gebiet, ids] of Object.entries(record)) {
+    const gone = new Set(remove[gebiet] ?? [])
+    const rest = ids.filter((id) => !gone.has(id))
+    if (rest.length > 0) left[gebiet] = rest
+  }
+  return left
+}
+
+/**
+ * Moves the old per-browser decisions into the database. After every batch succeeded, the local key
+ * loses the ids it had before the transfer (transferred, already there, or unusable); ids added
+ * meanwhile, e.g. by a backup, stay, and the key goes once nothing is left. On an error nothing is
+ * removed, so the next start tries again. Null when there is nothing.
  */
 export async function takeOverLocalKeineAktion(
   sink: KeineAktionSink,
   storage: StorageLike,
   onProgress?: TransferProgress,
 ): Promise<TransferResult | null> {
-  const local = readLocalKeineAktion(storage)
-  if (countIds(local) === 0) return null
-  const result = await transferKeineAktion(sink, local, onProgress)
-  storage.removeItem(localKeineAktionKey)
+  const snapshot = readLocalKeineAktion(storage)
+  if (countIds(snapshot) === 0) return null
+  const result = await transferKeineAktion(sink, snapshot, onProgress)
+  const left = withoutIds(readLocalKeineAktion(storage), snapshot)
+  if (countIds(left) === 0) storage.removeItem(localKeineAktionKey)
+  else storage.setItem(localKeineAktionKey, JSON.stringify(left))
   return result
 }

@@ -13,7 +13,7 @@ import {
   useSuggestionFilter,
   useSuggestionsVisible,
 } from '@/components/suggestion-store'
-import { decidersText, useKeineAktion, useMarkKeineAktion } from '@/components/use-keine-aktion'
+import { decidersText, useMarkKeineAktion, useNoActionIds } from '@/components/use-keine-aktion'
 import { useNetwork, useSaveEntries } from '@/components/use-netz'
 import { useOpenSuggestions } from '@/components/use-suggestions'
 import { planSuggestedNode } from '@/network/edit'
@@ -165,14 +165,14 @@ export function SuggestionsPanel() {
   const filter = useSuggestionFilter()
   const visible = useSuggestionsVisible()
   const skipped = useSkippedSuggestions()
-  const { decisions, query: keineAktion } = useKeineAktion(gebiet)
+  const { ids: noAction, localOnly, decisions, query: keineAktion } = useNoActionIds(gebiet)
   const selectedId = useSelectedSuggestionId()
   const actions = useSuggestionActions()
   const draw = useDrawActions()
   if (!network || network.base.suggestions.length === 0) return null
 
   const skippedCount = gebiet ? (skipped[gebiet]?.length ?? 0) : 0
-  const noActionCount = decisions.length
+  const noActionCount = noAction.size
   const index = selected ? open.indexOf(selected) : -1
   const neighbour = open[index + 1] ?? open[index - 1]
 
@@ -221,9 +221,14 @@ export function SuggestionsPanel() {
           </>
         ) : null}
       </Text>
-      {noActionCount > 0 ? (
+      {decisions.length > 0 ? (
         <Text className="text-xs" data-testid="suggestions-no-action-by">
           Keine Aktion nötig, für alle sichtbar · {decidersText(decisions)}
+        </Text>
+      ) : null}
+      {localOnly > 0 ? (
+        <Text className="text-xs" data-testid="suggestions-no-action-local">
+          {localOnly} nur in diesem Browser, werden nach der Anmeldung übertragen
         </Text>
       ) : null}
       {selected ? (
