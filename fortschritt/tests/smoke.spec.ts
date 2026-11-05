@@ -141,8 +141,10 @@ test.describe('Fortschritt', () => {
   test('Karte keeps its filters in the URL', async ({ page }) => {
     await stubNetwork(page)
     await page.goto('/?view=karte')
-    await page.getByTestId('filter-lieferung').selectOption('3')
-    await expect(page).toHaveURL(/lieferung=3/)
+    await page.getByRole('radio', { name: 'Lieferung 3' }).click()
+    await expect(page).toHaveURL(/umfang=3/)
+    await page.getByRole('radio', { name: 'Mapper' }).click()
+    await expect(page).toHaveURL(/farbe=mapper/)
     await page.getByTestId('filter-account').selectOption('fmc_7')
     await expect(page).toHaveURL(/account=fmc_7/)
     await expect(page.getByTestId('filter-bezirk')).toContainText('Mitte')

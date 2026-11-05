@@ -290,7 +290,7 @@ describe('map filter', () => {
       ['in', ['get', 'bezirk'], ['literal', ['08 - Neukölln']]],
       ['==', ['get', 'account'], 'fmc_7'],
     ])
-    expect(filteredBezirke(dataset, { lieferung: '3' })).toHaveLength(6)
+    expect(filteredBezirke(dataset, { deliveries: [3] })).toHaveLength(6)
   })
   test('editor link from markdown', () => {
     expect(

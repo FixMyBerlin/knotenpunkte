@@ -50,7 +50,8 @@ export const indexSearchSchema = z.object({
     .optional()
     .transform((value) => (value === undefined ? undefined : true))
     .catch(undefined),
-  lieferung: optionalString,
+  /** Colours of the map: absent is erledigt/offen, `mapper` is the assigned account. */
+  farbe: oneOf(['mapper'] as const),
   bezirk: optionalString,
   account: optionalString,
 })

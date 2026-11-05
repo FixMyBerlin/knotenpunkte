@@ -50,6 +50,11 @@ export function runningScope(dataset: Dataset, now: number): Scope {
   return all.find((scope) => scope.key === `${running.nr}`) ?? all[0]!
 }
 
+/** The scope named by the `umfang` search param, else the running delivery. */
+export function scopeFromSearch(dataset: Dataset, umfang: string | undefined, now: number) {
+  return scopes(dataset).find((scope) => scope.key === umfang) ?? runningScope(dataset, now)
+}
+
 export function sumKm(items: { km: number }[]) {
   let km = 0
   for (const item of items) km += item.km

@@ -1,13 +1,21 @@
 import type { Dataset } from '@/stats/model'
+import type { Scope } from '@/stats/status'
 
-export type MapFilter = { lieferung?: string; bezirk?: string; account?: string }
+/** `deliveries` absent is every delivery (Gesamt). */
+export type MapFilter = { deliveries?: number[]; bezirk?: string; account?: string }
+
+/** Map filter for a scope; Gesamt filters no delivery. */
+export function mapFilterOf(scope: Scope, rest: Omit<MapFilter, 'deliveries'>): MapFilter {
+  return scope.key === 'gesamt' ? rest : { ...rest, deliveries: scope.deliveries }
+}
 
 /** Bezirke (names) left by the filter, `null` when all are shown. */
 export function filteredBezirke(dataset: Dataset, filter: MapFilter) {
   if (filter.bezirk) return [filter.bezirk]
-  if (filter.lieferung) {
-    const delivery = dataset.deliveries.find((item) => `${item.nr}` === filter.lieferung)
-    return delivery ? [...delivery.bezirke] : []
+  if (filter.deliveries) {
+    return dataset.deliveries
+      .filter((item) => filter.deliveries?.includes(item.nr))
+      .flatMap((item) => item.bezirke)
   }
   return null
 }

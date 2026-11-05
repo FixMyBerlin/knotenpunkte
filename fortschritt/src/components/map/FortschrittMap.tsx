@@ -22,11 +22,13 @@ import {
   pmtilesSourceLayer,
   tildaAttribution,
 } from '@/config/app.const'
+import { useNow } from '@/data/now-store'
 import { Route } from '@/routes/index'
 import { searchMapParam } from '@/routing/search-schema'
-import { mapLayerFilter, markdownLinkUrl } from '@/stats/map-filter'
+import { mapFilterOf, mapLayerFilter, markdownLinkUrl } from '@/stats/map-filter'
 import type { Dataset } from '@/stats/model'
 import { bezirkName } from '@/stats/plan'
+import { scopeFromSearch } from '@/stats/status'
 
 const interactiveLayerIds = [EDGES_LAYER_ID, GEBIETE_FILL_LAYER_ID]
 
@@ -51,8 +53,27 @@ export function FortschrittMap({ dataset }: { dataset: Dataset }) {
   const doneIds = [...dataset.doneById.keys()]
   useDoneFeatureState(doneIds)
 
-  const filter = mapLayerFilter(dataset, search) as Filter
+  const now = useNow()
+  const scope = scopeFromSearch(dataset, search.umfang, now)
+  const filter = mapLayerFilter(
+    dataset,
+    mapFilterOf(scope, { bezirk: search.bezirk, account: search.account }),
+  ) as Filter
   const colorByAccount = accountColorExpression(dataset.accounts)
+  const byMapper = search.farbe === 'mapper'
+  const isDone = ['boolean', ['feature-state', 'done'], false] as unknown as ExpressionSpecification
+  const gebietColor = byMapper ? colorByAccount : '#a1a1aa'
+  const edgeWidth = ['interpolate', ['linear'], ['zoom'], 9, 1, 13, 2.5, 16, 5]
+  // A zoom curve must be the outermost expression, so the done/open choice sits in its stops.
+  const mapperEdgeWidth = [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    ...[9, 13, 16].flatMap((zoom, index) => [
+      zoom,
+      ['case', isDone, [1, 2.5, 5][index], [0.6, 1.2, 2.5][index]],
+    ]),
+  ]
   const rawSelected =
     selection?.kind === 'gebiet' ? (dataset.rawBezirke.get(selection.bezirk) ?? []) : []
   const selectedGebietFilter = (
@@ -128,7 +149,7 @@ export function FortschrittMap({ dataset }: { dataset: Dataset }) {
         source={GEBIETE_SOURCE_ID}
         source-layer={pmtilesSourceLayer}
         filter={filter}
-        paint={{ 'fill-color': colorByAccount, 'fill-opacity': 0.12 }}
+        paint={{ 'fill-color': gebietColor, 'fill-opacity': byMapper ? 0.12 : 0.04 }}
       />
       <Layer
         id={GEBIETE_LINE_LAYER_ID}
@@ -136,7 +157,11 @@ export function FortschrittMap({ dataset }: { dataset: Dataset }) {
         source={GEBIETE_SOURCE_ID}
         source-layer={pmtilesSourceLayer}
         filter={filter}
-        paint={{ 'line-color': colorByAccount, 'line-width': 1.5, 'line-opacity': 0.9 }}
+        paint={{
+          'line-color': gebietColor,
+          'line-width': 1.5,
+          'line-opacity': byMapper ? 0.9 : 0.5,
+        }}
       />
       <Layer
         id={GEBIETE_SELECTED_LAYER_ID}
@@ -162,15 +187,18 @@ export function FortschrittMap({ dataset }: { dataset: Dataset }) {
         source-layer={pmtilesSourceLayer}
         filter={filter}
         layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-        paint={{
-          'line-color': [
-            'case',
-            ['boolean', ['feature-state', 'done'], false],
-            edgeColors.done,
-            edgeColors.open,
-          ],
-          'line-width': ['interpolate', ['linear'], ['zoom'], 9, 1, 13, 2.5, 16, 5],
-        }}
+        paint={
+          byMapper
+            ? ({
+                'line-color': colorByAccount,
+                'line-opacity': ['case', isDone, 1, 0.35],
+                'line-width': mapperEdgeWidth,
+              } as never)
+            : ({
+                'line-color': ['case', isDone, edgeColors.done, edgeColors.open],
+                'line-width': edgeWidth,
+              } as never)
+        }
       />
     </BaseMap>
   )
