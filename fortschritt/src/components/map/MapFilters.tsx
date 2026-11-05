@@ -12,6 +12,22 @@ import { filteredBezirke, mapFilterOf } from '@/stats/map-filter'
 import type { Dataset } from '@/stats/model'
 import { runningScope, scopeFromSearch, scopes } from '@/stats/status'
 
+/** Share of km done per account, within the deliveries and (optionally) one Bezirk. */
+function accountShares(dataset: Dataset, deliveries: number[], bezirk: string | undefined) {
+  const totals = new Map<string, { km: number; doneKm: number }>()
+  for (const edge of dataset.edges) {
+    if (edge.delivery === null || !deliveries.includes(edge.delivery)) continue
+    if (bezirk && edge.bezirk !== bezirk) continue
+    const total = totals.get(edge.account) ?? { km: 0, doneKm: 0 }
+    total.km += edge.km
+    if (dataset.doneById.has(edge.id)) total.doneKm += edge.km
+    totals.set(edge.account, total)
+  }
+  return new Map(
+    [...totals].map(([account, total]) => [account, total.km > 0 ? total.doneKm / total.km : 0]),
+  )
+}
+
 export function MapFilters({ dataset }: { dataset: Dataset }) {
   const search = Route.useSearch()
   const updateSearch = useUpdateSearch()
@@ -24,6 +40,7 @@ export function MapFilters({ dataset }: { dataset: Dataset }) {
     dataset.deliveries.flatMap((item) => item.bezirke)
   const byMapper = search.farbe === 'mapper'
   const bezirkShare = new Map(bezirkRows(dataset).map((row) => [row.bezirk, row.share]))
+  const accountShare = accountShares(dataset, scope.deliveries, search.bezirk)
 
   return (
     <section className="space-y-3" aria-label="Filter">
@@ -69,8 +86,8 @@ export function MapFilters({ dataset }: { dataset: Dataset }) {
       <fieldset className="space-y-1" data-testid="filter-account">
         <legend className="mb-1 text-sm/6 font-medium text-white">Account</legend>
         <p className="text-xs text-zinc-400">
-          {byMapper ? 'Farbe der Kanten und Gebiete. ' : ''}Klick filtert, noch ein Klick zeigt
-          wieder alle.
+          {byMapper ? 'Farbe der Kanten und Gebiete. ' : ''}% erledigt im gewählten Umfang. Klick
+          filtert, noch ein Klick zeigt wieder alle.
         </p>
         <ul className="space-y-0.5 text-sm">
           {dataset.accounts.map((account) => {
@@ -98,6 +115,9 @@ export function MapFilters({ dataset }: { dataset: Dataset }) {
                     aria-hidden="true"
                   />
                   {account}
+                  <span className="ml-auto text-xs text-zinc-400 tabular-nums">
+                    {formatPercent(accountShare.get(account) ?? 0)}
+                  </span>
                 </button>
               </li>
             )
