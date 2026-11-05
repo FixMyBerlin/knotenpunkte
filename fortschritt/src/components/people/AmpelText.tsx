@@ -1,8 +1,8 @@
 import {
+  ArrowUpCircleIcon,
   CheckCircleIcon,
-  ExclamationTriangleIcon,
+  ClockIcon,
   MinusCircleIcon,
-  XCircleIcon,
 } from '@heroicons/react/20/solid'
 import { ampelLabels, type Ampel } from '@/stats/accounts'
 
@@ -10,8 +10,8 @@ const icons = {
   keine: { Icon: MinusCircleIcon, className: 'text-zinc-500' },
   fertig: { Icon: CheckCircleIcon, className: 'text-green-500' },
   gruen: { Icon: CheckCircleIcon, className: 'text-green-500' },
-  gelb: { Icon: ExclamationTriangleIcon, className: 'text-amber-400' },
-  rot: { Icon: XCircleIcon, className: 'text-red-500' },
+  gelb: { Icon: ClockIcon, className: 'text-amber-300' },
+  rot: { Icon: ArrowUpCircleIcon, className: 'text-orange-400' },
 } as const
 
 export function AmpelText({ ampel, ratio }: { ampel: Ampel; ratio: number | null }) {
@@ -24,7 +24,7 @@ export function AmpelText({ ampel, ratio }: { ampel: Ampel; ratio: number | null
       </span>
       {ratio !== null ? (
         <span className="block pl-5.5 text-xs text-zinc-400 tabular-nums">
-          {Math.round(ratio * 100)} % vom Nötigen
+          {Math.round(ratio * 100)} % des nötigen Tempos
         </span>
       ) : null}
     </span>

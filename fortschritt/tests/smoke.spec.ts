@@ -112,7 +112,7 @@ test.describe('Fortschritt', () => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write'])
     await stubNetwork(page)
     await page.goto('/?view=personen')
-    await expect(page.getByTestId('account-fmc_7')).toContainText('schnell genug')
+    await expect(page.getByTestId('account-fmc_7')).toContainText('im Plan')
     await expect(page.getByTestId('account-fmc_7')).toContainText('2,0 km')
     await expect(page.getByTestId('account-fmc_8')).toContainText('fertig')
     await page.getByTestId('copy-summary').click()

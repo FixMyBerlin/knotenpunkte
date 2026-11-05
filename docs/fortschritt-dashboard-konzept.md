@@ -269,9 +269,9 @@ Aufbau wie die Knotenpunkt-App: `AppHeader`, links eine Sidebar (`SidebarLayout`
 
 Je Account eine Zeile:
 
-| Account | Rest in Lieferung 2 | nötig je Woche | Ø letzte 2 Wochen | Stand            |
-| ------- | ------------------- | -------------- | ----------------- | ---------------- |
-| fmc_9   | 210 km              | 12,4 km        | 18,0 km           | 🟢 schnell genug |
+| Account | Rest in Lieferung 2 | nötig je Woche | Ø letzte 2 Wochen | Stand      |
+| ------- | ------------------- | -------------- | ----------------- | ---------- |
+| fmc_9   | 210 km              | 12,4 km        | 18,0 km           | 🟢 im Plan |
 
 (Beispielzahlen.)
 

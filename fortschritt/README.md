@@ -35,7 +35,7 @@ All in `src/stats/` (pure, tested with Vitest, fixed fixtures and a fixed "now")
 - **Pace** (Tempo, forecast: 28 days; Personen "Ø letzte 2 Wochen": 14 days) = km done in a rolling window up to now, per 7 days. The window never starts before the project start and is at least 7 days long. Being rolling, the running week does not distort it.
 - **Needed per week** = rest ÷ weeks from now to the deadline of the running delivery (recomputed every time, so a backlog spreads over the remaining weeks).
 - **Forecast** = now + rest ÷ pace (28 days); none without pace.
-- **Ampel** = pace (14 days) ÷ needed: green from 100 %, yellow from 80 %, red below; "fertig" with nothing left. Shown with icon and text.
+- **Ampel** = pace (14 days) ÷ needed: "im Plan" from 100 %, "fast im Plan" from 80 %, "braucht mehr Tempo" below; "fertig" with nothing left. Shown with icon and text.
 - **Accounts** count edges by their assigned `account`, only in the running delivery. Done km in later deliveries are a separate column; "in fremden Gebieten" are km a `created_by` name marked in areas of another account.
 - **Running delivery** = the first whose deadline is still ahead.
 

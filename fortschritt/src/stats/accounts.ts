@@ -9,9 +9,9 @@ export type Ampel = 'keine' | 'fertig' | 'gruen' | 'gelb' | 'rot'
 export const ampelLabels: Record<Ampel, string> = {
   keine: 'nichts zugeteilt',
   fertig: 'fertig',
-  gruen: 'schnell genug',
-  gelb: 'knapp',
-  rot: 'zu langsam',
+  gruen: 'im Plan',
+  gelb: 'fast im Plan',
+  rot: 'braucht mehr Tempo',
 }
 
 /** Ampel from the pace and what is needed (both km/week). */

@@ -19,7 +19,7 @@ export function accountSummaryText(rows: AccountRow[], deadline: number, stampTe
       row.overdueKm > 0
         ? ` Rückstand Lieferung ${row.overdueDeliveries.join(', ')}: ${formatKm(row.overdueKm)}.`
         : ''
-    const ratio = row.ratio === null ? '' : ` (${Math.round(row.ratio * 100)} % vom Soll)`
+    const ratio = row.ratio === null ? '' : ` (${Math.round(row.ratio * 100)} % des nötigen Tempos)`
     return [
       `${row.account}: ${formatKm(row.doneKm)} von ${formatKm(row.totalKm)} erledigt, Rest ${formatKm(row.restKm)}.${overdue}`,
       `  Nötig ${perWeek(row.neededPerWeek)}, Ø letzte 2 Wochen ${perWeek(row.pace)}: ${ampelLabels[row.ampel]}${ratio}.`,
