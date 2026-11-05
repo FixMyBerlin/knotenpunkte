@@ -38,7 +38,7 @@ The dev ports are fixed. OSM only accepts `http` redirect URIs on `127.0.0.1`, a
 
 ```bash
 bun run check      # type-check, lint, format, tests, knip
-bun run e2e        # Playwright: Knotenpunkte (stubbed auth) and Fortschritt (stubbed data)
+bun run e2e        # Playwright: Knotenpunkte (stubbed auth), its Pages build (move dialog) and Fortschritt (stubbed data)
 ```
 
 `@playwright/test` is pinned exactly at `1.62.1`. Playwright ships no browsers in `node_modules`; they live in one shared cache (`~/Library/Caches/ms-playwright` on macOS) that every repo on the same version reuses.
@@ -57,6 +57,24 @@ bun run build
 
 `bun run preview`, `bun run preview-netz` and `bun run preview-fortschritt` serve one built app locally.
 
+### Deploy target
+
+`DEPLOY_TARGET=netlify` (default) or `pages` picks base and output folder in the three `vite.config.ts` (helpers in [`shared/vite/deploy-target.ts`](shared/vite/deploy-target.ts)) and sets the build-time constant `isPagesDeploy` ([`shared/config/deploy-target.ts`](shared/config/deploy-target.ts)).
+
+```bash
+bun run build-pages
+```
+
+writes the old GitHub Pages layout to `dist-pages/` (not committed), built one after the other because Knotenpunkte sits at the root:
+
+- `dist-pages/` Knotenpunkte (base `/knotenpunkte/`), `404.html` is its `index.html`
+- `dist-pages/netzanpassungen/` (base `/knotenpunkte/netzanpassungen/`), plus `data/index.html`
+- `dist-pages/fortschritt/` (base `/knotenpunkte/fortschritt/`)
+
+GitHub Pages answers unknown paths with the root `404.html`, so deep links of Knotenpunkte (`/knotenpunkte/data`) work through it. The other apps get a copy of their `index.html` for each route besides `/` (Netzanpassungen: `data`; Fortschritt has only `/`). A new route in one of them needs its folder added in that app's `vite.config.ts` (`githubPagesSpaFallback`). Other unknown paths below `/knotenpunkte/netzanpassungen/` show the Knotenpunkte "not found" page.
+
+Only on the Pages build the apps show the settings backup of the move dialog (see "Umzug"). The e2e run starts a second Knotenpunkte dev server with `DEPLOY_TARGET=pages DEV_PORT=33482 bun run dev`.
+
 ### Adding an app
 
 1. New folder with its own `vite.config.ts`, copied from `netzanpassungen/`: `outDir: dist/<name>`, production `base: /<name>/`, a fixed dev port (`fortschritt`: 33481), `@` and `@shared` aliases, and a `tsconfig.json`.
@@ -67,7 +85,9 @@ bun run build
 
 ## Deploy
 
-Netlify builds from `netlify.toml`: `bun install --frozen-lockfile && bun run build`, publishes `dist`. Each app has a rewrite `/<app>/* -> /<app>/index.html` with status 200, which only applies when no file matches, so assets and `osm-oauth-land.html` are served as files. The old GitHub Pages workflow is gone.
+Netlify builds from `netlify.toml`: `bun install --frozen-lockfile && bun run build`, publishes `dist`. Each app has a rewrite `/<app>/* -> /<app>/index.html` with status 200, which only applies when no file matches, so assets and `osm-oauth-land.html` are served as files.
+
+Until the move is finished, `.github/workflows/deploy-pages.yml` also deploys the `pages` target on every push to `main` (`check-ci`, `bun run build-pages`, upload `dist-pages`). It is deleted with the move.
 
 ## OSM login
 
@@ -78,18 +98,20 @@ The apps share one non-confidential OSM OAuth app (client id in [`shared/config/
 - `https://radnetz-apps.netlify.app/knotenpunkte/osm-oauth-land.html`
 - `https://radnetz-apps.netlify.app/netzanpassungen/osm-oauth-land.html`
 
+The old Pages build (until the move is finished) uses `https://fixmyberlin.github.io/knotenpunkte/osm-oauth-land.html` and `https://fixmyberlin.github.io/knotenpunkte/netzanpassungen/osm-oauth-land.html`, which are registered already.
+
 ## Key-value database
 
 Every app stores its data in a project of the shared [key-value database](https://github.com/FixMyBerlin/key-value-db): `knotenpunkte`, `netzanpassungen` (and `infravelo-tracker`, read by Fortschritt). The public project key is in the app's committed `.env`; Fortschritt keeps its read key in `fortschritt/src/config/app.const.ts`. A project only answers requests from its allowed origins.
 
 ## Umzug auf Netlify (noch offen)
 
-Done by a human, in this order:
+The users' localStorage (private backgrounds, favourites, skipped suggestions, the old "Keine Aktion nötig" list) lives on `https://fixmyberlin.github.io`, and the KV projects allow that origin. So the code goes there first, and the users take their data along before the origin goes away. Done by a human, in this order:
 
-1. Disable the "Deploy GitHub Pages" workflow in GitHub Actions before pushing this branch to `main`. (The workflow file is deleted here, but the old runs and the Pages setting stay until step 7.)
-2. Create the Netlify site `radnetz-apps` from this repo (build settings come from `netlify.toml`).
-3. In the KV projects `knotenpunkte`, `netzanpassungen` and `infravelo-tracker`, allow the origin `https://radnetz-apps.netlify.app`. Until then the database answers 403.
-4. Add the two production redirect URIs from "OSM login" to the OSM OAuth app.
-5. Open `https://radnetz-apps.netlify.app/knotenpunkte/` and `/netzanpassungen/`: log in, rate or draw one thing, reload a deep link such as `/netzanpassungen/data`.
-6. Rename the repo to `infravelo-apps` and make it private.
-7. Remove GitHub Pages (Settings > Pages) and the OSM redirect URIs and KV origins of `fixmyberlin.github.io`.
+1. Push this branch to the repo under its old name `knotenpunkte`. `deploy-pages.yml` publishes `https://fixmyberlin.github.io/knotenpunkte/` (Knotenpunkte), `.../netzanpassungen/` and `.../fortschritt/`. Check the three apps and a deep link such as `.../netzanpassungen/data`.
+2. Every user opens Knotenpunkte and Netzanpassungen there, **logged in**. A dialog opens:
+   - Netzanpassungen: the "Keine Aktion nötig" markings of this browser go into the KV database (needs the OSM login; the dialog has the login button, shows the progress and the result, and comes back at every start while markings wait).
+   - Both apps: "Einstellungen herunterladen" saves `knotenpunkte-einstellungen.json` (private background URLs with keys, so it stays on that computer). "Später erinnern" closes the dialog until the next start, "Erledigt" hides it for good (`apps:umzug-gesichert`, shared by the apps of the origin).
+3. Check the transferred entries in the KV project `netzanpassungen`: tag `keine-aktion`, and `created_by` says who moved which markings.
+4. Create the Netlify site `radnetz-apps` from this repo (settings from `netlify.toml`), allow the origin `https://radnetz-apps.netlify.app` in the KV projects `knotenpunkte`, `netzanpassungen` and `infravelo-tracker` (until then the database answers 403), and add the two production redirect URIs from "OSM login" to the OSM OAuth app. Open both apps there, log in, reload a deep link such as `/netzanpassungen/data`. Every user restores the file in Netzanpassungen, step **Gebiet**, **Sicherung einspielen**.
+5. Rename the repo to `infravelo-apps`, make it private, remove GitHub Pages (Settings > Pages), delete `.github/workflows/deploy-pages.yml`, `build-pages`, the `pages` target (`shared/vite/deploy-target.ts`, `shared/config/deploy-target.ts`, `shared/umzug/`, `githubPagesSpaFallback`, the `pages` Playwright project) and the OSM redirect URIs and KV origins of `fixmyberlin.github.io`.
