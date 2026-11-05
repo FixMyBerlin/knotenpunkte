@@ -42,7 +42,7 @@ bun run check      # type-check, lint, format, tests, knip
 bun run e2e        # Playwright: Knotenpunkte (stubbed auth), its Pages build (move dialog) and Fortschritt (stubbed data)
 ```
 
-`@playwright/test` is pinned exactly at `1.62.1`. Playwright ships no browsers in `node_modules`; they live in one shared cache (`~/Library/Caches/ms-playwright` on macOS) that every repo on the same version reuses.
+`@playwright/test` is pinned exactly at `1.64.1`. Playwright ships no browsers in `node_modules`; they live in one shared cache (`~/Library/Caches/ms-playwright` on macOS) that every repo on the same version reuses.
 
 ## Build
 
