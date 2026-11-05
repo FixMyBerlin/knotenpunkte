@@ -4,7 +4,6 @@ import { MapProvider } from 'react-map-gl/maplibre'
 import { DataGate } from '@/components/DataGate'
 import { FortschrittSidebar } from '@/components/FortschrittSidebar'
 import { FortschrittMap } from '@/components/map/FortschrittMap'
-import { ReloadButton } from '@/components/ReloadButton'
 import { ReportView } from '@/components/report/ReportView'
 import { useFortschrittNav } from '@/components/use-fortschritt-nav'
 import { appTitle } from '@/config/app.const'
@@ -23,7 +22,6 @@ export function FortschrittShell() {
             steps={[]}
             onSelect={() => undefined}
             onOpenSidebar={onOpenSidebar}
-            actions={<ReloadButton />}
             showLogin={false}
           />
         )}

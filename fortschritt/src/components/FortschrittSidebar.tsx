@@ -1,6 +1,7 @@
 import { Callout } from '@shared/components/ui/callout'
 import { MapFilters } from '@/components/map/MapFilters'
 import { MapSelectionPanel } from '@/components/map/MapSelectionPanel'
+import { ReloadButton } from '@/components/ReloadButton'
 import { ReportNav } from '@/components/report/ReportNav'
 import { useDataset, useReload } from '@/data/use-data'
 import type { AppView } from '@/routing/search-schema'
@@ -63,7 +64,7 @@ export function FortschrittSidebar({ view }: { view: AppView }) {
         {progress.data ? (
           <p>
             Markierungen: {formatCount(progress.data.marks.length)}, geladen{' '}
-            <span title={formatStamp(progress.data.loadedAt)}>
+            <span title={formatStamp(progress.data.loadedAt)} data-testid="stand">
               {formatStampRelative(progress.data.loadedAt)}
             </span>
           </p>
@@ -72,6 +73,9 @@ export function FortschrittSidebar({ view }: { view: AppView }) {
           Beides liegt in diesem Browser und wird höchstens einmal am Tag neu geladen, das Netz
           auch, wenn sich die Datei bei TILDA geändert hat.
         </p>
+        <div className="pt-2">
+          <ReloadButton />
+        </div>
       </section>
 
       <section className="space-y-1 border-t border-zinc-800 pt-4 text-xs text-zinc-400">

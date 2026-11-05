@@ -1,33 +1,19 @@
 import { ArrowPathIcon } from '@heroicons/react/20/solid'
 import { Button } from '@shared/components/ui/button'
-import { useDataset, useReload } from '@/data/use-data'
-import { formatStamp, formatStampRelative } from '@/stats/format'
+import { useReload } from '@/data/use-data'
 
-/** "Stand: …" of the done marks and the button to load everything again. */
+/** Loads the network and the done marks again (the "Daten" part of the sidebar shows when). */
 export function ReloadButton() {
-  const { progress } = useDataset()
   const reload = useReload()
-  const loadedAt = progress.data?.loadedAt
   return (
-    <div className="flex items-center gap-2">
-      {loadedAt ? (
-        <span
-          className="hidden text-xs text-zinc-400 sm:inline"
-          data-testid="stand"
-          title={formatStamp(loadedAt)}
-        >
-          Stand: {formatStampRelative(loadedAt)}
-        </span>
-      ) : null}
-      <Button
-        outline
-        onClick={() => reload.mutate()}
-        disabled={reload.isPending}
-        data-testid="reload"
-      >
-        <ArrowPathIcon data-slot="icon" className={reload.isPending ? 'animate-spin' : undefined} />
-        Neu laden
-      </Button>
-    </div>
+    <Button
+      outline
+      onClick={() => reload.mutate()}
+      disabled={reload.isPending}
+      data-testid="reload"
+    >
+      <ArrowPathIcon data-slot="icon" className={reload.isPending ? 'animate-spin' : undefined} />
+      Neu laden
+    </Button>
   )
 }

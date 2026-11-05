@@ -59,27 +59,18 @@ export function PeopleView({ dataset }: { dataset: Dataset }) {
   return (
     <div className="space-y-6">
       <PartHeading id="personen">Personen</PartHeading>
-      <section id="tempo" aria-label="Tempo je Account" className="scroll-mt-4 space-y-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h3 className="text-base font-semibold text-zinc-100">
-              {scope.label}: Tempo je Account
-            </h3>
-            <p className="text-sm text-zinc-400">
-              Deadline Mapping {formatDay(scope.end)}, noch{' '}
-              {formatWeeks(Math.max(0, (scope.end - now) / 7))}.
-              {scope.key !== running.key ? ` Gerade läuft ${running.label}.` : ''}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Toggle
-              label="Umfang"
-              options={all.map((item) => ({ value: item.key, label: item.label }))}
-              value={scope.key}
-              onChange={(value) =>
-                updateSearch({ umfang: value === running.key ? undefined : value })
-              }
-            />
+      <section id="tempo" aria-label="Tempo je Account" className="scroll-mt-4 space-y-4">
+        {/* Controls first, so they stay in place whatever the heading below says. */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Toggle
+            label="Umfang"
+            options={all.map((item) => ({ value: item.key, label: item.label }))}
+            value={scope.key}
+            onChange={(value) =>
+              updateSearch({ umfang: value === running.key ? undefined : value })
+            }
+          />
+          <div className="flex items-center gap-2">
             {copied ? (
               <span className="text-xs text-zinc-400" role="status">
                 {copied === 'ok' ? 'Kopiert' : 'Kopieren nicht erlaubt'}
@@ -90,6 +81,14 @@ export function PeopleView({ dataset }: { dataset: Dataset }) {
               Für Gespräch kopieren
             </Button>
           </div>
+        </div>
+        <div>
+          <h3 className="text-base font-semibold text-zinc-100">{scope.label}: Tempo je Account</h3>
+          <p className="text-sm text-zinc-400">
+            Deadline Mapping {formatDay(scope.end)}, noch{' '}
+            {formatWeeks(Math.max(0, (scope.end - now) / 7))}.
+            {scope.key !== running.key ? ` Gerade läuft ${running.label}.` : ''}
+          </p>
         </div>
 
         <Table

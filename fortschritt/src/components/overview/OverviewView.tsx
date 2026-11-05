@@ -111,32 +111,31 @@ export function OverviewView({ dataset }: { dataset: Dataset }) {
       </section>
 
       <section id="burnup" aria-labelledby="burnup-heading" className="scroll-mt-4 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 id="burnup-heading" className="text-base font-semibold text-zinc-100">
-            Burn-up {chartScope.label}
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            <Toggle
-              label="Umfang"
-              options={all.map((scope) => ({ value: scope.key, label: scope.label }))}
-              value={chartScope.key}
-              onChange={(value) =>
-                updateSearch({ umfang: value === runningScope.key ? undefined : value })
-              }
-            />
-            <Toggle
-              label="Achse"
-              options={[
-                { value: 'km', label: 'km' },
-                { value: 'prozent', label: '%' },
-              ]}
-              value={unit}
-              onChange={(value) =>
-                updateSearch({ unit: value === 'prozent' ? 'prozent' : undefined })
-              }
-            />
-          </div>
+        {/* Controls first, so they stay in place whatever the heading below says. */}
+        <div className="flex flex-wrap gap-2">
+          <Toggle
+            label="Umfang"
+            options={all.map((scope) => ({ value: scope.key, label: scope.label }))}
+            value={chartScope.key}
+            onChange={(value) =>
+              updateSearch({ umfang: value === runningScope.key ? undefined : value })
+            }
+          />
+          <Toggle
+            label="Achse"
+            options={[
+              { value: 'km', label: 'km' },
+              { value: 'prozent', label: '%' },
+            ]}
+            value={unit}
+            onChange={(value) =>
+              updateSearch({ unit: value === 'prozent' ? 'prozent' : undefined })
+            }
+          />
         </div>
+        <h3 id="burnup-heading" className="text-base font-semibold text-zinc-100">
+          Burn-up {chartScope.label}
+        </h3>
         <BurnupChart status={chartStatus} unit={unit} now={now} start={dataset.start} />
         <p className="text-xs text-zinc-400">
           Start ist der Montag der ersten Markierung ({formatDay(dataset.start)}).{' '}
