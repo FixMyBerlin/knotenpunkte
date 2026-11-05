@@ -35,6 +35,19 @@ export function mapLayerFilter(dataset: Dataset, filter: MapFilter) {
   return ['all', ...conditions]
 }
 
+/** MapLibre filter that matches the given Gebiete (Bezirk names are mapped to the raw values). */
+export function gebieteFilter(dataset: Dataset, gebiete: { bezirk: string; account: string }[]) {
+  if (gebiete.length === 0) return ['literal', false]
+  return [
+    'any',
+    ...gebiete.map((gebiet) => [
+      'all',
+      ['in', ['get', 'bezirk'], ['literal', dataset.rawBezirke.get(gebiet.bezirk) ?? []]],
+      ['==', ['get', 'account'], gebiet.account],
+    ]),
+  ]
+}
+
 /** `"[Im Editor öffnen](https://…)"` → the URL. */
 export function markdownLinkUrl(markdown: unknown) {
   if (typeof markdown !== 'string') return null

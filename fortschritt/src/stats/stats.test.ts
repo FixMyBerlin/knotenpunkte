@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { accountRows, ampelFor, ampelLabels } from '@/stats/accounts'
-import { bezirkRows, gebietStats } from '@/stats/bezirke'
+import { bezirkRows, finishedGebiete, gebietStats } from '@/stats/bezirke'
 import { accountSummaryText } from '@/stats/copy'
 import { fixtureEdges, fixtureMarks, fixtureNow } from '@/stats/fixtures.test-data'
 import { formatKm, formatPercent } from '@/stats/format'
@@ -279,6 +279,18 @@ describe('ticks', () => {
       '2027-02-01',
       '2027-03-01',
     ])
+  })
+})
+
+describe('finished Gebiete', () => {
+  test('only Gebiete with every edge done', () => {
+    for (const gebiet of finishedGebiete(dataset)) {
+      const edges = dataset.edges.filter(
+        (edge) => edge.bezirk === gebiet.bezirk && edge.account === gebiet.account,
+      )
+      expect(edges.every((edge) => dataset.doneById.has(edge.id))).toBe(true)
+    }
+    expect(finishedGebiete(dataset).length).toBeGreaterThan(0)
   })
 })
 

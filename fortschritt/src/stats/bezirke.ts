@@ -42,3 +42,15 @@ export function bezirkRows(dataset: Dataset, plan: readonly Delivery[] = planDel
 export function gebietStats(dataset: Dataset, bezirk: string, account: string) {
   return areaStats(dataset, (edge) => edge.bezirk === bezirk && edge.account === account)
 }
+
+/** Gebiete (Bezirk name + account) whose edges are all done. */
+export function finishedGebiete(dataset: Dataset) {
+  const open = new Set<string>()
+  const all = new Map<string, { bezirk: string; account: string }>()
+  for (const edge of dataset.edges) {
+    const key = `${edge.bezirk}\u0000${edge.account}`
+    all.set(key, { bezirk: edge.bezirk, account: edge.account })
+    if (!dataset.doneById.has(edge.id)) open.add(key)
+  }
+  return [...all].filter(([key]) => !open.has(key)).map(([, gebiet]) => gebiet)
+}

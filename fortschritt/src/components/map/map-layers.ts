@@ -1,6 +1,7 @@
 export const GEBIETE_SOURCE_ID = 'fp-gebiete'
 export const GEBIETE_FILL_LAYER_ID = 'fp-gebiete-fill'
 export const GEBIETE_LINE_LAYER_ID = 'fp-gebiete-line'
+export const GEBIETE_DONE_LAYER_ID = 'fp-gebiete-done'
 export const GEBIETE_SELECTED_LAYER_ID = 'fp-gebiete-selected'
 export const EDGES_SOURCE_ID = 'fp-netz'
 export const EDGES_LAYER_ID = 'fp-netz-line'

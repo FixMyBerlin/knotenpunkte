@@ -9,6 +9,7 @@ import {
   EDGES_LAYER_ID,
   EDGES_SELECTED_LAYER_ID,
   EDGES_SOURCE_ID,
+  GEBIETE_DONE_LAYER_ID,
   GEBIETE_FILL_LAYER_ID,
   GEBIETE_LINE_LAYER_ID,
   GEBIETE_SELECTED_LAYER_ID,
@@ -25,7 +26,8 @@ import {
 import { useNow } from '@/data/now-store'
 import { Route } from '@/routes/index'
 import { searchMapParam } from '@/routing/search-schema'
-import { mapFilterOf, mapLayerFilter, markdownLinkUrl } from '@/stats/map-filter'
+import { finishedGebiete } from '@/stats/bezirke'
+import { gebieteFilter, mapFilterOf, mapLayerFilter, markdownLinkUrl } from '@/stats/map-filter'
 import type { Dataset } from '@/stats/model'
 import { bezirkName } from '@/stats/plan'
 import { scopeFromSearch } from '@/stats/status'
@@ -62,6 +64,11 @@ export function FortschrittMap({ dataset }: { dataset: Dataset }) {
   const colorByAccount = accountColorExpression(dataset.accounts)
   const byMapper = search.farbe === 'mapper'
   const isDone = ['boolean', ['feature-state', 'done'], false] as unknown as ExpressionSpecification
+  const doneGebieteFilter = [
+    'all',
+    filter,
+    gebieteFilter(dataset, finishedGebiete(dataset)),
+  ] as unknown as Filter
   const gebietColor = byMapper ? colorByAccount : '#a1a1aa'
   const edgeWidth = ['interpolate', ['linear'], ['zoom'], 9, 1, 13, 2.5, 16, 5]
   // A zoom curve must be the outermost expression, so the done/open choice sits in its stops.
@@ -163,6 +170,16 @@ export function FortschrittMap({ dataset }: { dataset: Dataset }) {
           'line-opacity': byMapper ? 0.9 : 0.5,
         }}
       />
+      {byMapper ? null : (
+        <Layer
+          id={GEBIETE_DONE_LAYER_ID}
+          type="fill"
+          source={GEBIETE_SOURCE_ID}
+          source-layer={pmtilesSourceLayer}
+          filter={doneGebieteFilter}
+          paint={{ 'fill-color': edgeColors.done, 'fill-opacity': 0.3 }}
+        />
+      )}
       <Layer
         id={GEBIETE_SELECTED_LAYER_ID}
         type="line"

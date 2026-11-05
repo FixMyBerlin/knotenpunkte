@@ -109,6 +109,13 @@ export function MapFilters({ dataset }: { dataset: Dataset }) {
               <span className="size-3 rounded-sm border-2 border-zinc-400" />
               Gebiet eines Accounts
             </li>
+            <li className="flex items-center gap-2">
+              <span
+                className="size-3 rounded-sm"
+                style={{ backgroundColor: edgeColors.done, opacity: 0.6 }}
+              />
+              Gebiet fertig (alle Kanten erledigt)
+            </li>
           </>
         )}
       </ul>
