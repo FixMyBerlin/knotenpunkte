@@ -9,7 +9,14 @@ import { useUpdateSearch } from '@/components/use-fortschritt-nav'
 import { rampUp } from '@/config/plan.const'
 import { useNow } from '@/data/now-store'
 import { Route } from '@/routes/index'
-import { formatDay, formatKm, formatNumber, formatPercent, formatWeeks } from '@/stats/format'
+import {
+  formatDay,
+  formatDayDistance,
+  formatKm,
+  formatNumber,
+  formatPercent,
+  formatWeeks,
+} from '@/stats/format'
 import type { Dataset } from '@/stats/model'
 import { runningDelivery } from '@/stats/plan'
 import { neededPerWeek, overdueDeliveries, scopes, scopeStatus, sumKm } from '@/stats/status'
@@ -52,9 +59,9 @@ export function OverviewView({ dataset }: { dataset: Dataset }) {
             title={`Rückstand Lieferung ${item.nr}`}
             data-testid={`overdue-${item.nr}`}
           >
-            Deadline war der {formatDay(item.deadline)}. Noch {formatKm(item.restKm)} offen von{' '}
-            {formatKm(item.targetKm)} ({formatPercent(item.restKm / item.targetKm)}). Der Rückstand
-            steckt in „nötig ab jetzt“.
+            Deadline war der {formatDay(item.deadline)} ({formatDayDistance(item.deadline, now)}).
+            Noch {formatKm(item.restKm)} offen von {formatKm(item.targetKm)} (
+            {formatPercent(item.restKm / item.targetKm)}). Der Rückstand steckt in „nötig ab jetzt“.
           </Callout>
         ))}
         <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -82,9 +89,9 @@ export function OverviewView({ dataset }: { dataset: Dataset }) {
             detail={
               runningStatus.forecast === null
                 ? 'Noch kein Tempo in den letzten 4 Wochen'
-                : runningStatus.forecast <= running.deadline
-                  ? 'Tempo der letzten 4 Wochen mit Anlauf, vor der Deadline'
-                  : 'Tempo der letzten 4 Wochen mit Anlauf, nach der Deadline'
+                : `${formatDayDistance(runningStatus.forecast, now)}, ${
+                    runningStatus.forecast <= running.deadline ? 'vor' : 'nach'
+                  } der Deadline · Tempo der letzten 4 Wochen mit Anlauf`
             }
             testId="tile-forecast"
           />

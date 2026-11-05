@@ -32,6 +32,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@date-fns/tz": "^1.5.0",
     "@floating-ui/react": "^0.27.20",
     "@headlessui/react": "^2.2.10",
     "@heroicons/react": "^2.2.0",
@@ -43,6 +44,7 @@
     "@tanstack/react-query": "^5.104.1",
     "@tanstack/react-router": "^1.170.41",
     "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
     "idb-keyval": "^6.3.0",
     "mapillary-js": "^4.1.2",
     "maplibre-gl": "^6.13.0",

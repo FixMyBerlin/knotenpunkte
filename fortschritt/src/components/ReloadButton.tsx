@@ -1,7 +1,7 @@
 import { ArrowPathIcon } from '@heroicons/react/20/solid'
 import { Button } from '@shared/components/ui/button'
 import { useDataset, useReload } from '@/data/use-data'
-import { formatStamp } from '@/stats/format'
+import { formatStamp, formatStampRelative } from '@/stats/format'
 
 /** "Stand: …" of the done marks and the button to load everything again. */
 export function ReloadButton() {
@@ -11,8 +11,12 @@ export function ReloadButton() {
   return (
     <div className="flex items-center gap-2">
       {loadedAt ? (
-        <span className="hidden text-xs text-zinc-400 sm:inline" data-testid="stand">
-          Stand: {formatStamp(loadedAt)}
+        <span
+          className="hidden text-xs text-zinc-400 sm:inline"
+          data-testid="stand"
+          title={formatStamp(loadedAt)}
+        >
+          Stand: {formatStampRelative(loadedAt)}
         </span>
       ) : null}
       <Button

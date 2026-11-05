@@ -3,10 +3,11 @@ import { serializeMapParam } from '@shared/map/map-param'
 import { useMapSelection, useMapSelectionActions } from '@/components/map-selection-store'
 import { ProgressBar } from '@/components/overview/ProgressBar'
 import { tildaDataLayers, tildaRegionUrl } from '@/config/app.const'
+import { useNow } from '@/data/now-store'
 import { Route } from '@/routes/index'
 import { searchMapParam } from '@/routing/search-schema'
 import { gebietStats } from '@/stats/bezirke'
-import { formatCount, formatDay, formatKm } from '@/stats/format'
+import { formatCount, formatDay, formatDayDistance, formatKm } from '@/stats/format'
 import type { Dataset } from '@/stats/model'
 
 export function MapSelectionPanel({ dataset }: { dataset: Dataset }) {
@@ -92,6 +93,7 @@ function EdgeDetails({
   id: number
   strasse: string | null
 }) {
+  const now = useNow()
   const edge = dataset.edges.find((item) => item.id === id)
   const done = dataset.doneById.get(id)
   return (
@@ -101,7 +103,11 @@ function EdgeDetails({
         lfd_nr {id}
         {edge ? ` · ${formatKm(edge.km)}` : ''}
       </p>
-      <p>{done ? `erledigt am ${formatDay(done.t)} von ${done.by}` : 'offen'}</p>
+      <p>
+        {done
+          ? `erledigt ${formatDayDistance(done.t, now)} (${formatDay(done.t)}) von ${done.by}`
+          : 'offen'}
+      </p>
     </>
   )
 }

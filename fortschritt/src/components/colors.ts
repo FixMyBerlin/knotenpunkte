@@ -28,5 +28,12 @@ export const chartColors = {
   inkSecondary: '#c3c2b7',
 } as const
 
-/** Edges on the map, as in the editor. Status colours, always with the legend text. */
-export const edgeColors = { done: '#0ca30c', open: '#d03b3b' } as const
+/**
+ * Edges on the map, always with the legend text. Blue and vermillion of the Okabe-Ito palette
+ * instead of the editor's green and red, so people with red-green colour blindness can tell
+ * done from open.
+ */
+export const edgeColors = { done: '#0072b2', open: '#d55e00' } as const
+
+/** Outline of the Gebiete while the edges show done/open: dark, so it stands out on the light basemap. */
+export const gebietOutline = '#27272a'

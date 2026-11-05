@@ -1,3 +1,6 @@
+import { tz } from '@date-fns/tz'
+import { formatDistance, formatRelative } from 'date-fns'
+import { de } from 'date-fns/locale'
 import { dateOfDay } from '@/stats/time'
 
 const oneDecimal = new Intl.NumberFormat('de-DE', {
@@ -71,4 +74,20 @@ export function formatStamp(iso: string) {
 
 export function formatWeeks(weeks: number) {
   return `${oneDecimal.format(weeks)} Wochen`
+}
+
+const berlin = tz('Europe/Berlin')
+
+/** An instant relative to now on the Berlin clock: `heute um 14:40`, `gestern um 9:05`, … */
+export function formatStampRelative(iso: string, now: Date = new Date()) {
+  return formatRelative(new Date(iso), now, { locale: de, in: berlin })
+}
+
+/** A day relative to another (both Berlin days): `vor 3 Tagen`, `in etwa 2 Monaten`. */
+export function formatDayDistance(day: number, now: number) {
+  if (Math.floor(day) === Math.floor(now)) return 'heute'
+  return formatDistance(dateOfDay(Math.floor(day)), dateOfDay(Math.floor(now)), {
+    addSuffix: true,
+    locale: de,
+  })
 }

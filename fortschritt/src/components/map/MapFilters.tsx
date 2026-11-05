@@ -1,7 +1,7 @@
 import { cn } from '@shared/cn'
 import { Field, Label } from '@shared/components/ui/fieldset'
 import { Select } from '@shared/components/ui/select'
-import { accountColor, edgeColors } from '@/components/colors'
+import { accountColor, edgeColors, gebietOutline } from '@/components/colors'
 import { Toggle } from '@/components/Toggle'
 import { useUpdateSearch } from '@/components/use-fortschritt-nav'
 import { useNow } from '@/data/now-store'
@@ -141,7 +141,10 @@ export function MapFilters({ dataset }: { dataset: Dataset }) {
               Kante offen
             </li>
             <li className="flex items-center gap-2">
-              <span className="size-3 rounded-sm border-2 border-zinc-400" />
+              <span
+                className="size-3 rounded-sm border-2 bg-zinc-200"
+                style={{ borderColor: gebietOutline }}
+              />
               Gebiet eines Accounts
             </li>
             <li className="flex items-center gap-2">

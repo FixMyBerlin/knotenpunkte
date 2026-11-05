@@ -11,7 +11,7 @@ The left sidebar lists the parts and sections of the report and highlights the o
 - **Report** (default, one scrolling page):
   - **Überblick**: tiles for the running delivery (% done, km, against the Soll line, pace, forecast, weeks left) and the whole project; a burn-up (km or %); the Bezirke in plan order.
   - **Personen**: per account the rest in the chosen Umfang, needed km/week, the average of the last 2 weeks and the pace status ("im Plan", "fast im Plan", "braucht mehr Tempo"); km already done in later deliveries; km marked in other accounts' areas; km per week as small column charts; "Für Gespräch kopieren" puts a text summary on the clipboard. `view=personen` (older links) opens the report at Personen.
-- **Karte** (`view=karte`): edges red/green (done via `feature-state`) with finished Gebiete filled green, or `farbe=mapper` with the account colours; filters Umfang / Bezirk / Account in the URL; a click on a Gebiet or an edge shows its numbers, a TILDA link with the assignment layers and the editor link.
+- **Karte** (`view=karte`): edges vermillion (open) / blue (done, via `feature-state`; colour-blind safe) with finished Gebiete filled blue, or `farbe=mapper` with the account colours; filters Umfang / Bezirk / Account in the URL; a click on a Gebiet or an edge shows its numbers, a TILDA link with the assignment layers and the editor link.
 
 ## Data
 

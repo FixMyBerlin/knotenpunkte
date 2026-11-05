@@ -3,7 +3,7 @@ import { serializeMapParam } from '@shared/map/map-param'
 import type { ExpressionSpecification, FilterSpecification, MapLayerMouseEvent } from 'maplibre-gl'
 import { useState } from 'react'
 import { Layer, Source } from 'react-map-gl/maplibre'
-import { accountColor, edgeColors } from '@/components/colors'
+import { accountColor, edgeColors, gebietOutline } from '@/components/colors'
 import { useMapSelection, useMapSelectionActions } from '@/components/map-selection-store'
 import {
   EDGES_LAYER_ID,
@@ -70,7 +70,7 @@ export function FortschrittMap({ dataset }: { dataset: Dataset }) {
     filter,
     gebieteFilter(dataset, finishedGebiete(dataset)),
   ] as unknown as Filter
-  const gebietColor = byMapper ? colorByAccount : '#a1a1aa'
+  const gebietColor = byMapper ? colorByAccount : gebietOutline
   const edgeWidth = ['interpolate', ['linear'], ['zoom'], 9, 1, 13, 2.5, 16, 5]
   // A zoom curve must be the outermost expression, so the done/open choice sits in its stops.
   const mapperEdgeWidth = [
@@ -169,7 +169,7 @@ export function FortschrittMap({ dataset }: { dataset: Dataset }) {
         paint={{
           'line-color': gebietColor,
           'line-width': 1.5,
-          'line-opacity': byMapper ? 0.9 : 0.5,
+          'line-opacity': byMapper ? 0.9 : 0.8,
         }}
       />
       {byMapper ? null : (

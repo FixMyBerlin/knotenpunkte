@@ -4,7 +4,7 @@ import { MapSelectionPanel } from '@/components/map/MapSelectionPanel'
 import { ReportNav } from '@/components/report/ReportNav'
 import { useDataset, useReload } from '@/data/use-data'
 import type { AppView } from '@/routing/search-schema'
-import { formatCount, formatStamp } from '@/stats/format'
+import { formatCount, formatStamp, formatStampRelative } from '@/stats/format'
 
 function errorText(error: unknown) {
   return error instanceof Error ? error.message : String(error)
@@ -55,13 +55,17 @@ export function FortschrittSidebar({ view }: { view: AppView }) {
         {edges.data ? (
           <p>
             Netz: {formatCount(edges.data.edges.length)} Kanten, geladen{' '}
-            {formatStamp(edges.data.loadedAt)}
+            <span title={formatStamp(edges.data.loadedAt)}>
+              {formatStampRelative(edges.data.loadedAt)}
+            </span>
           </p>
         ) : null}
         {progress.data ? (
           <p>
             Markierungen: {formatCount(progress.data.marks.length)}, geladen{' '}
-            {formatStamp(progress.data.loadedAt)}
+            <span title={formatStamp(progress.data.loadedAt)}>
+              {formatStampRelative(progress.data.loadedAt)}
+            </span>
           </p>
         ) : null}
         <p>
