@@ -26,10 +26,14 @@ const PRODUCTION_BASE = productionBase('knotenpunkte', target)
 
 /** OSM only allows http redirect URIs on 127.0.0.1. 33479 is unused by sibling apps. */
 const DEV_HOST = '127.0.0.1'
-const DEV_PORT = 33479
+/** `DEV_PORT` lets e2e run a second dev server with `DEPLOY_TARGET=pages` next to the default one. */
+const DEV_PORT = Number(process.env.DEV_PORT ?? 33479)
 
 export default defineConfig(({ mode }) => ({
   root: appRoot,
+  // Own dep cache for the Pages dev server: two dev servers at once (e2e) must not rewrite each
+  // other's optimized deps.
+  cacheDir: target === 'pages' ? path.resolve(repoRoot, 'node_modules/.vite-pages') : undefined,
   base: mode === 'production' ? PRODUCTION_BASE : '/',
   define: deployTargetDefine(target),
   plugins: [

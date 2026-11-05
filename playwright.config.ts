@@ -2,6 +2,8 @@ import { defineConfig, devices } from '@playwright/test'
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:33479'
 const fortschrittURL = 'http://127.0.0.1:33481'
+/** Knotenpunkte built for the old GitHub Pages origin (`DEPLOY_TARGET=pages`), on its own port. */
+const pagesURL = 'http://127.0.0.1:33482'
 
 export default defineConfig({
   fullyParallel: true,
@@ -21,6 +23,12 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
+      command: 'DEPLOY_TARGET=pages DEV_PORT=33482 bun run dev',
+      url: pagesURL,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    },
+    {
       command: 'bun run dev-fortschritt',
       url: fortschrittURL,
       reuseExistingServer: !process.env.CI,
@@ -31,7 +39,13 @@ export default defineConfig({
     {
       name: 'chromium',
       testDir: './knotenpunkte/tests',
+      testIgnore: '**/pages/**',
       use: { ...devices['Desktop Chrome'], baseURL },
+    },
+    {
+      name: 'pages',
+      testDir: './knotenpunkte/tests/pages',
+      use: { ...devices['Desktop Chrome'], baseURL: pagesURL },
     },
     {
       name: 'fortschritt',
