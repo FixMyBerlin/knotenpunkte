@@ -129,7 +129,13 @@ describe('accounts', () => {
   const rows = accountRows(dataset, now)
   const [fmc7, fmc8, fmc11] = rows
   test('rest, needed and pace in the running delivery', () => {
-    expect(fmc7).toMatchObject({ account: 'fmc_7', delivery: 2, totalKm: 4, doneKm: 1, restKm: 3 })
+    expect(fmc7).toMatchObject({
+      account: 'fmc_7',
+      scopeLabel: 'Lieferung 2',
+      totalKm: 4,
+      doneKm: 1,
+      restKm: 3,
+    })
     expect(fmc7!.neededPerWeek).toBeCloseTo(3 / ((126 - (now - start)) / 7))
     expect(fmc7!.pace).toBeCloseTo((1 / (now - start)) * 7)
     expect(fmc7!.ampel).toBe('gruen')
@@ -139,6 +145,15 @@ describe('accounts', () => {
     expect(fmc7!.foreignKm).toBe(2)
     expect(fmc7!.foreignEdges).toBe(1)
     expect(fmc8!.foreignKm).toBe(0)
+  })
+  test('Gesamt and a later delivery are their own Umfang', () => {
+    const [gesamt, , l3] = scopes(dataset)
+    const [all7] = accountRows(dataset, now, gesamt)
+    const [l3fmc7] = accountRows(dataset, now, l3)
+    expect(all7).toMatchObject({ scopeLabel: 'Gesamt', doneKm: 5, laterDoneKm: 0, overdueKm: 0 })
+    expect(all7!.totalKm).toBe(fmc7!.totalKm + l3fmc7!.totalKm)
+    expect(l3fmc7).toMatchObject({ scopeLabel: 'Lieferung 3', doneKm: 4, overdueKm: 0 })
+    expect(l3fmc7!.weeksLeft).toBeGreaterThan(fmc7!.weeksLeft)
   })
   test('nothing left is done', () => {
     expect(fmc8).toMatchObject({ restKm: 0, ampel: 'fertig', ratio: null })
@@ -181,7 +196,7 @@ describe('after the deadline of Lieferung 2', () => {
     expect(runningDelivery(openDataset.deliveries, later).nr).toBe(3)
     const [fmc7, fmc8, fmc11] = accountRows(openDataset, later)
     expect(fmc7).toMatchObject({
-      delivery: 3,
+      scopeLabel: 'Lieferung 3',
       totalKm: 4,
       doneKm: 0,
       restKm: 4,

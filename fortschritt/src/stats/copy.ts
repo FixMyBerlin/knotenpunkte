@@ -10,10 +10,10 @@ function perWeek(km: number) {
 export function accountSummaryText(rows: AccountRow[], deadline: number, stampText: string) {
   const first = rows[0]
   const weeksLeft = first ? first.weeksLeft : 0
-  const head = `Fortschritt, Stand ${stampText}\nLieferung ${first?.delivery ?? '?'}: Deadline Mapping ${formatDayNumeric(deadline)}, noch ${formatWeeks(weeksLeft)}`
+  const head = `Fortschritt, Stand ${stampText}\n${first?.scopeLabel ?? '?'}: Deadline Mapping ${formatDayNumeric(deadline)}, noch ${formatWeeks(weeksLeft)}`
   const lines = rows.map((row) => {
     if (row.ampel === 'keine') {
-      return `${row.account}: ${ampelLabels.keine} in Lieferung ${row.delivery}.\n  In fremden Gebieten markiert: ${formatKm(row.foreignKm)}.`
+      return `${row.account}: ${ampelLabels.keine} in ${row.scopeLabel}.\n  In fremden Gebieten markiert: ${formatKm(row.foreignKm)}.`
     }
     const overdue =
       row.overdueKm > 0

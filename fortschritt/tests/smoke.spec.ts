@@ -101,7 +101,7 @@ test.describe('Fortschritt', () => {
     await expect(page.getByTestId('stand')).toContainText('04.11.2026, 23:00')
 
     await page.getByRole('radio', { name: 'Gesamt' }).click()
-    await expect(page).toHaveURL(/burnup=gesamt/)
+    await expect(page).toHaveURL(/umfang=gesamt/)
     await expect(page.getByRole('heading', { name: 'Burn-up Gesamt' })).toBeVisible()
   })
 

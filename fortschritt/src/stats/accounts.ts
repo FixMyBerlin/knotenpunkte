@@ -1,8 +1,7 @@
 import { ampelThresholds, paceWindowDays } from '@/config/plan.const'
 import type { Dataset } from '@/stats/model'
-import { runningDelivery } from '@/stats/plan'
 import { paceKmPerWeek, weeklyBuckets, type WeekBucket } from '@/stats/series'
-import { neededPerWeek, sumKm } from '@/stats/status'
+import { neededPerWeek, runningScope, sumKm, type Scope } from '@/stats/status'
 
 export type Ampel = 'keine' | 'fertig' | 'gruen' | 'gelb' | 'rot'
 
@@ -26,57 +25,60 @@ export function ampelFor(restKm: number, pace: number, needed: number): Ampel {
 
 export type AccountRow = {
   account: string
-  /** Number of the running delivery. */
-  delivery: number
+  /** Label of the scope the row is about, e.g. `Lieferung 2` or `Gesamt`. */
+  scopeLabel: string
   totalKm: number
   doneKm: number
   restKm: number
   /**
-   * km still open in earlier deliveries whose deadline is over (the Rückstand), e.g. Lieferung 2
-   * while Lieferung 3 runs. They count into `neededPerWeek`.
+   * km still open in earlier deliveries outside the scope whose deadline is over (the
+   * Rückstand), e.g. Lieferung 2 while Lieferung 3 runs. They count into `neededPerWeek`.
    */
   overdueKm: number
   /** Numbers of the earlier deliveries with `overdueKm` > 0. */
   overdueDeliveries: number[]
   weeksLeft: number
-  /** (rest + overdue) ÷ weeks to the deadline of the running delivery. */
+  /** (rest + overdue) ÷ weeks to the deadline of the scope. */
   neededPerWeek: number
-  /** km/week in the running delivery over the last 14 days, see `paceKmPerWeek`. */
+  /** km/week in the scope over the last 14 days, see `paceKmPerWeek`. */
   pace: number
   /** pace ÷ needed; `null` when nothing is needed or the deadline is over. */
   ratio: number | null
   ampel: Ampel
-  /** Done in later deliveries (counts for them once they run). */
+  /** Done in deliveries after the scope (counts for them once they run). */
   laterDoneKm: number
   /** Marked by this account in areas of other accounts. */
   foreignKm: number
   foreignEdges: number
-  /** km per week in the running delivery, from the project start. */
+  /** km per week in the scope, from the project start. */
   weeks: WeekBucket[]
 }
 
 /**
- * One row per account. Edges count for the account they are assigned to (`account`), not for
- * who marked them; `foreignKm` shows the other view.
+ * One row per account for a scope (one delivery or Gesamt; default the running delivery).
+ * Edges count for the account they are assigned to (`account`), not for who marked them;
+ * `foreignKm` shows the other view.
  */
-export function accountRows(dataset: Dataset, now: number): AccountRow[] {
-  const running = runningDelivery(dataset.deliveries, now)
-  const later = dataset.deliveries
-    .filter((delivery) => delivery.deadline > running.deadline)
+export function accountRows(
+  dataset: Dataset,
+  now: number,
+  scope: Scope = runningScope(dataset, now),
+): AccountRow[] {
+  const outside = dataset.deliveries.filter((delivery) => !scope.deliveries.includes(delivery.nr))
+  const later = outside
+    .filter((delivery) => delivery.deadline > scope.end)
     .map((delivery) => delivery.nr)
-  const earlier = dataset.deliveries.filter(
-    (delivery) => delivery.deadline <= now && delivery.deadline < running.deadline,
+  const earlier = outside.filter(
+    (delivery) => delivery.deadline <= now && delivery.deadline < scope.end,
   )
-  const weeksLeft = Math.max(0, (running.deadline - now) / 7)
+  const inScope = (delivery: number | null) =>
+    delivery !== null && scope.deliveries.includes(delivery)
+  const weeksLeft = Math.max(0, (scope.end - now) / 7)
   const doneNow = dataset.done.filter((item) => item.t <= now)
 
   return dataset.accounts.map((account) => {
-    const own = dataset.edges.filter(
-      (edge) => edge.account === account && edge.delivery === running.nr,
-    )
-    const ownDone = doneNow.filter(
-      (item) => item.account === account && item.delivery === running.nr,
-    )
+    const own = dataset.edges.filter((edge) => edge.account === account && inScope(edge.delivery))
+    const ownDone = doneNow.filter((item) => item.account === account && inScope(item.delivery))
     const totalKm = sumKm(own)
     const doneKm = sumKm(ownDone)
     const restKm = Math.max(0, totalKm - doneKm)
@@ -103,7 +105,7 @@ export function accountRows(dataset: Dataset, now: number): AccountRow[] {
     const foreign = doneNow.filter((item) => item.by === account && item.account !== account)
     return {
       account,
-      delivery: running.nr,
+      scopeLabel: scope.label,
       totalKm,
       doneKm,
       restKm,

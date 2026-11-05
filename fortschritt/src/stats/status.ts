@@ -43,6 +43,13 @@ export function scopes(dataset: Dataset): Scope[] {
   return [gesamt, ...perDelivery]
 }
 
+/** Scope of the running delivery. */
+export function runningScope(dataset: Dataset, now: number): Scope {
+  const running = runningDelivery(dataset.deliveries, now)
+  const all = scopes(dataset)
+  return all.find((scope) => scope.key === `${running.nr}`) ?? all[0]!
+}
+
 export function sumKm(items: { km: number }[]) {
   let km = 0
   for (const item of items) km += item.km

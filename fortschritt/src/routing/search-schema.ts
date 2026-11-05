@@ -31,8 +31,11 @@ const fortschrittMapFallback = { ...berlinMapFallback, zoom: 10.2, lat: 52.505, 
 export const indexSearchSchema = z.object({
   /** Absent is the Überblick. */
   view: oneOf(['personen', 'karte'] as const),
-  /** Burn-up: `gesamt` or a delivery number; absent is the running delivery. */
-  burnup: optionalString,
+  /**
+   * Umfang of the burn-up and of Personen: `gesamt` or a delivery number; absent is the
+   * running delivery.
+   */
+  umfang: optionalString,
   /** y axis of the burn-up; absent is km. */
   unit: oneOf(['prozent'] as const),
   /** Camera of the map; absent is all of Berlin. */

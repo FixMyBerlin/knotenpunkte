@@ -3,6 +3,7 @@ import { BurnupChart } from '@/components/charts/BurnupChart'
 import { BezirkeTable } from '@/components/overview/BezirkeTable'
 import { PlanStateText } from '@/components/overview/PlanStateText'
 import { StatTile } from '@/components/overview/StatTile'
+import { Toggle } from '@/components/Toggle'
 import { useUpdateSearch } from '@/components/use-fortschritt-nav'
 import { useNow } from '@/data/now-store'
 import { Route } from '@/routes/index'
@@ -24,7 +25,7 @@ export function OverviewView({ dataset }: { dataset: Dataset }) {
   const runningScope = all.find((scope) => scope.key === `${running.nr}`) ?? all[0]!
   const runningStatus = scopeStatus(dataset, runningScope, now)
   const gesamt = scopeStatus(dataset, all[0]!, now)
-  const chartScope = all.find((scope) => scope.key === search.burnup) ?? runningScope
+  const chartScope = all.find((scope) => scope.key === search.umfang) ?? runningScope
   const chartStatus = scopeStatus(dataset, chartScope, now)
   const overdue = overdueDeliveries(dataset, now)
   const neededNow = neededPerWeek(
@@ -113,7 +114,7 @@ export function OverviewView({ dataset }: { dataset: Dataset }) {
                 options={all.map((scope) => ({ value: scope.key, label: scope.label }))}
                 value={chartScope.key}
                 onChange={(value) =>
-                  updateSearch({ burnup: value === runningScope.key ? undefined : value })
+                  updateSearch({ umfang: value === runningScope.key ? undefined : value })
                 }
               />
               <Toggle
@@ -146,39 +147,6 @@ export function OverviewView({ dataset }: { dataset: Dataset }) {
           <BezirkeTable dataset={dataset} running={running.nr} />
         </section>
       </div>
-    </div>
-  )
-}
-
-function Toggle<V extends string>({
-  label,
-  options,
-  value,
-  onChange,
-}: {
-  label: string
-  options: { value: V; label: string }[]
-  value: V
-  onChange: (value: V) => void
-}) {
-  return (
-    <div role="radiogroup" aria-label={label} className="flex rounded-lg bg-zinc-800 p-0.5">
-      {options.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          role="radio"
-          aria-checked={option.value === value}
-          onClick={() => onChange(option.value)}
-          className={
-            option.value === value
-              ? 'rounded-md bg-sky-500/25 px-2.5 py-1 text-xs font-medium text-white'
-              : 'rounded-md px-2.5 py-1 text-xs text-zinc-400 hover:text-zinc-200'
-          }
-        >
-          {option.label}
-        </button>
-      ))}
     </div>
   )
 }
