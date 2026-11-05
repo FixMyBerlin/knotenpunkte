@@ -1,5 +1,6 @@
 import { AppHeader } from '@shared/components/AppHeader'
 import { SidebarLayout } from '@shared/components/SidebarLayout'
+import { UmzugHost } from '@shared/umzug/UmzugHost'
 import { MapProvider } from 'react-map-gl/maplibre'
 import { DataPageLink } from '@/components/DataPageLink'
 import { RatingMap } from '@/components/RatingMap'
@@ -25,6 +26,7 @@ export function AppShell() {
       >
         <RatingMap />
       </SidebarLayout>
+      <UmzugHost />
     </MapProvider>
   )
 }
