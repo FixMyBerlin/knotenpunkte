@@ -19,7 +19,7 @@ const monthFormat = new Intl.DateTimeFormat('de-DE', { timeZone: 'UTC', month: '
 
 /**
  * Burn-up: done km (cumulative, end of each week), the target, the straight Soll line and the
- * forecast (pace of the last 4 weeks, start-up phase per mapper). y in km or in % of the target.
+ * forecast (pace of the last 4 weeks in work time). y in km or in % of the target.
  */
 export function BurnupChart({ status, unit, now, start }: Props) {
   const [hover, setHover] = useState<number | null>(null)
@@ -74,7 +74,7 @@ export function BurnupChart({ status, unit, now, start }: Props) {
       <figcaption className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-300">
         <LegendItem color={chartColors.ist} text="Erledigt" />
         <LegendItem color={chartColors.soll} dashed text="Soll (gerade Linie bis zur Deadline)" />
-        <LegendItem color={chartColors.ist} dashed text="Prognose (Ø 4 Wochen, Anlauf 60 %)" />
+        <LegendItem color={chartColors.ist} dashed text="Prognose (Ø 4 Wochen, Arbeitszeit)" />
         <LegendItem color={chartColors.muted} dotted text={`Ziel ${formatKm(targetKm)}`} />
       </figcaption>
       <div className="relative">

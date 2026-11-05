@@ -1,11 +1,13 @@
 import { onPlanToleranceKm, paceWindowDays } from '@/config/plan.const'
-import { rampForecast } from '@/stats/forecast'
 import type { Dataset, DoneEdge, Edge } from '@/stats/model'
 import { runningDelivery } from '@/stats/plan'
 import {
   cumulativePoints,
   kmUntil,
+  forecastDay,
+  forecastPoints,
   paceKmPerWeek,
+  workWeeksBetween,
   sollAt,
   type CumulativePoint,
   type SollSegment,
@@ -79,22 +81,25 @@ export type ScopeStatus = {
   /** done − Soll; negative is behind. */
   diffKm: number
   planState: PlanState
-  /** Weeks from now to the deadline (0 when it is over). */
+  /** Calendar weeks from now to the deadline (0 when it is over), for display. */
   weeksLeft: number
-  /** Rest ÷ weeks left; `Infinity` after the deadline with work left. */
+  /** Work weeks from now to the deadline, see `workDaysBetween`. */
+  workWeeksLeft: number
+  /** Rest ÷ work weeks left; `Infinity` after the deadline with work left. */
   neededPerWeek: number
-  /** Average of the last 4 weeks, see `paceKmPerWeek`. */
+  /** km per work week over the last 4 weeks, see `paceKmPerWeek`. */
   pace: number
-  /** Day the target is reached, with the start-up phase of each mapper; see `rampForecast`. */
+  /** Time the target is reached at `pace`, in work time. */
   forecast: number | null
   /** Projected cumulative km from now (the dashed line of the burn-up). */
   forecastPoints: { t: number; km: number }[]
   points: CumulativePoint[]
 }
 
-export function neededPerWeek(restKm: number, weeksLeft: number) {
+/** km per work week to finish `restKm` in `workWeeksLeft`. */
+export function neededPerWeek(restKm: number, workWeeksLeft: number) {
   if (restKm <= 0) return 0
-  return weeksLeft > 0 ? restKm / weeksLeft : Infinity
+  return workWeeksLeft > 0 ? restKm / workWeeksLeft : Infinity
 }
 
 export function scopeStatus(dataset: Dataset, scope: Scope, now: number): ScopeStatus {
@@ -105,8 +110,9 @@ export function scopeStatus(dataset: Dataset, scope: Scope, now: number): ScopeS
   const sollKm = sollAt(scope.segments, now)
   const diffKm = doneKm - sollKm
   const weeksLeft = Math.max(0, (scope.end - now) / 7)
+  const workWeeksLeft = workWeeksBetween(now, scope.end)
   const pace = paceKmPerWeek(done, now, paceWindowDays.forecast, dataset.start)
-  const forecast = rampForecast(dataset, scope, now)
+  const forecast = forecastDay(doneKm, targetKm, pace, now)
   return {
     scope,
     targetKm,
@@ -119,10 +125,11 @@ export function scopeStatus(dataset: Dataset, scope: Scope, now: number): ScopeS
     planState:
       Math.abs(diffKm) < onPlanToleranceKm ? 'im-plan' : diffKm > 0 ? 'voraus' : 'hinterher',
     weeksLeft,
-    neededPerWeek: neededPerWeek(targetKm - doneKm, weeksLeft),
+    workWeeksLeft,
+    neededPerWeek: neededPerWeek(targetKm - doneKm, workWeeksLeft),
     pace,
-    forecast: forecast.day,
-    forecastPoints: forecast.points,
+    forecast,
+    forecastPoints: forecastPoints(doneKm, pace, now, forecast),
     points: cumulativePoints(done, dataset.start, now),
   }
 }

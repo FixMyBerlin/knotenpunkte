@@ -35,10 +35,11 @@ All in `src/stats/` (pure, tested with Vitest, fixed fixtures and a fixed "now")
 - **Target** of a delivery = sum of `laenge_m` of its edges. The target grows when the network grows.
 - **Soll** of Lieferung 2 rises straight from the start to its target on 1 Mar 2027; Lieferung 3 from 1 Mar to 1 Aug 2027. Gesamt is the sum of both, so it kinks on 1 Mar.
 - **Im Plan / voraus / hinterher** = done − Soll today, within ±0.5 km is "im Plan".
-- **Pace** (Tempo, forecast: 28 days; Personen "Ø letzte 2 Wochen": 14 days) = km done in a rolling window up to now, per 7 days. The window never starts before the project start and is at least 7 days long. Being rolling, the running week does not distort it.
-- **Needed per week** = rest ÷ weeks from now to the deadline of the running delivery (recomputed every time, so a backlog spreads over the remaining weeks).
-- **Forecast** = now + rest ÷ pace (28 days); none without pace.
-- **Ampel** = pace (14 days) ÷ needed: "im Plan" from 100 %, "fast im Plan" from 80 %, "braucht mehr Tempo" below; "fertig" with nothing left. Shown with icon and text.
+- **Work time**: pace, needed and forecast count only Monday to Friday, 9–16 h Berlin (`workTime` in `plan.const.ts`); a week is 5 work days, no public holidays. Nights and weekends change nothing.
+- **Pace** (Tempo, forecast: 28 days; Personen "Ø letzte 2 Wochen": 14 days) = km done in a rolling window up to now, per work week. The window never starts before the project start and counts at least 5 work days.
+- **Needed per week** = rest ÷ work weeks from now to the deadline (recomputed every time, so a backlog spreads over the remaining weeks).
+- **Forecast** = now + rest ÷ pace (28 days), in work time; none without pace. No start-up phase.
+- **Ampel** = pace (14 days) ÷ needed: "im Plan" from 100 %, "fast im Plan" from 80 %, "braucht mehr Tempo" below; "fertig" with nothing left. Shown with icon and text. **Anlernphase**: in the first 14 days after an account's first mark, 60 % of the needed pace counts as 100 % (`rampUp`); Personen says so under the status.
 - **Accounts** count edges by their assigned `account`, only in the running delivery. Done km in later deliveries are a separate column; "in fremden Gebieten" are km a `created_by` name marked in areas of another account.
 - **Running delivery** = the first whose deadline is still ahead.
 

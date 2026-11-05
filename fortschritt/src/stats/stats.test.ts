@@ -3,7 +3,6 @@ import { accountRows, ampelFor, ampelLabels } from '@/stats/accounts'
 import { bezirkRows, finishedGebiete, gebietStats } from '@/stats/bezirke'
 import { accountSummaryText } from '@/stats/copy'
 import { fixtureEdges, fixtureMarks, fixtureNow } from '@/stats/fixtures.test-data'
-import { rampFactor, weightedDays } from '@/stats/forecast'
 import { formatKm, formatPercent } from '@/stats/format'
 import { filteredBezirke, mapLayerFilter, markdownLinkUrl } from '@/stats/map-filter'
 import { buildDataset, sortAccounts } from '@/stats/model'
@@ -11,7 +10,14 @@ import { bezirkName, runningDelivery } from '@/stats/plan'
 import { cumulativePoints, forecastDay, paceKmPerWeek, sollAt, weeklyBuckets } from '@/stats/series'
 import { overdueDeliveries, scopes, scopeStatus } from '@/stats/status'
 import { monthStarts, niceTicks } from '@/stats/ticks'
-import { berlinTime, dayFromIso, isoFromDay, weekStart } from '@/stats/time'
+import {
+  addWorkDays,
+  berlinTime,
+  dayFromIso,
+  isoFromDay,
+  weekStart,
+  workDaysBetween,
+} from '@/stats/time'
 
 const now = berlinTime(fixtureNow)
 const start = dayFromIso('2026-10-26')
@@ -94,16 +100,30 @@ describe('series', () => {
       { t: now, km: 3 },
     ])
   })
-  test('pace is a rolling window, never before the start and at least 7 days', () => {
+  test('pace counts work days, at least 5, in a rolling window from the start', () => {
     const items = [{ t: start + 0.5, km: 7 }]
-    expect(paceKmPerWeek(items, start + 1, 14, start)).toBeCloseTo(7)
+    // Monday noon: only half a work day so far, but at least 5 count.
+    expect(paceKmPerWeek(items, start + 0.5, 14, start)).toBeCloseTo(7)
+    // Two whole work weeks: 7 km in 10 work days.
     expect(paceKmPerWeek(items, start + 14, 14, start)).toBeCloseTo(3.5)
+    // The weekend after does not lower the pace.
+    expect(paceKmPerWeek(items, start + 6, 14, start)).toBeCloseTo(
+      paceKmPerWeek(items, start + 5, 14, start),
+    )
     expect(paceKmPerWeek(items, start + 21, 14, start)).toBe(0)
   })
-  test('forecast', () => {
-    expect(forecastDay(3, 6, 3, now)).toBeCloseTo(now + 7)
+  test('forecast in work time', () => {
+    // 3 km at 3 km per work week: 5 work days from Wednesday night is next Wednesday 16:00.
+    expect(forecastDay(3, 6, 3, now)).toBeCloseTo(Math.floor(now) + 7 + 16 / 24)
     expect(forecastDay(6, 6, 0, now)).toBe(now)
     expect(forecastDay(3, 6, 0, now)).toBeNull()
+  })
+  test('work days: Monday to Friday, 9 to 16 h', () => {
+    expect(workDaysBetween(start, start + 7)).toBeCloseTo(5)
+    expect(workDaysBetween(start + 9 / 24, start + 12.5 / 24)).toBeCloseTo(0.5)
+    expect(workDaysBetween(start + 5, start + 7)).toBe(0)
+    // Friday 16:00 plus half a work day is Monday 12:30.
+    expect(addWorkDays(start + 4 + 16 / 24, 0.5)).toBeCloseTo(start + 7 + 12.5 / 24)
   })
 })
 
@@ -120,31 +140,12 @@ describe('status of a delivery', () => {
   })
   test('needed per week, pace of 4 weeks and forecast', () => {
     expect(status.weeksLeft).toBeCloseTo((126 - elapsed) / 7)
-    expect(status.neededPerWeek).toBeCloseTo(3 / ((126 - elapsed) / 7))
-    expect(status.pace).toBeCloseTo((3 / elapsed) * 7)
-    expect(status.forecastPoints.at(-1)?.km).toBe(6)
-  })
-  test('forecast with the start-up phase of each mapper', () => {
-    // fmc_7 starts with edge 1, fmc_8 with edge 2 (marked by fmc_7). Both are still in the
-    // start-up phase, so each pace is scaled up to full speed: km ÷ (days × 0.6), at least
-    // 7 days × 0.6.
-    const [mark1, mark2] = dataset.done
-    const pace7 = (1 / ((now - mark1!.t) * 0.6)) * 7
-    const pace8 = (2 / (7 * 0.6)) * 7
-    // Both at 60 % until fmc_7 is out of the start-up phase, then fmc_7 at full speed.
-    const rampEnd7 = mark1!.t + 14
-    const firstPart = ((rampEnd7 - now) * 0.6 * (pace7 + pace8)) / 7
-    const rest = 3 - firstPart
-    const expected = rampEnd7 + rest / ((pace7 + 0.6 * pace8) / 7)
-    expect(mark2!.t).toBeGreaterThan(now - 7 * 0.6)
-    expect(status.forecast).toBeCloseTo(expected, 1)
-    expect(status.forecast!).toBeLessThan(now + (3 / status.pace) * 7)
-  })
-  test('ramp factor and weighted days', () => {
-    expect(rampFactor(start - 1, start)).toBe(0)
-    expect(rampFactor(start + 13, start)).toBe(0.6)
-    expect(rampFactor(start + 14, start)).toBe(1)
-    expect(weightedDays(start, start + 20, start)).toBeCloseTo(14 * 0.6 + 6)
+    expect(status.workWeeksLeft).toBeCloseTo(workDaysBetween(now, deadline2) / 5)
+    expect(status.neededPerWeek).toBeCloseTo(3 / status.workWeeksLeft)
+    // 26 Oct to Wednesday 4 Nov, 23:00: 8 whole work days.
+    expect(status.pace).toBeCloseTo((3 / 8) * 5)
+    expect(status.forecast).toBeCloseTo(addWorkDays(now, (3 / status.pace) * 5))
+    expect(status.forecastPoints.at(-1)?.km).toBeCloseTo(6)
   })
 })
 
@@ -159,9 +160,16 @@ describe('accounts', () => {
       doneKm: 1,
       restKm: 3,
     })
-    expect(fmc7!.neededPerWeek).toBeCloseTo(3 / ((126 - (now - start)) / 7))
-    expect(fmc7!.pace).toBeCloseTo((1 / (now - start)) * 7)
+    expect(fmc7!.neededPerWeek).toBeCloseTo(3 / (workDaysBetween(now, deadline2) / 5))
+    expect(fmc7!.pace).toBeCloseTo((1 / 8) * 5)
     expect(fmc7!.ampel).toBe('gruen')
+  })
+  test('Anlernphase: 14 days after the first mark, 60 % of the needed pace is on track', () => {
+    const firstMark = dataset.done[0]!.t
+    expect(fmc7!.anlernBis).toBeCloseTo(firstMark + 14)
+    expect(fmc7!.ratio).toBeCloseTo(fmc7!.pace / (fmc7!.neededPerWeek * 0.6))
+    const [after] = accountRows(dataset, firstMark + 15)
+    expect(after!.anlernBis).toBeNull()
   })
   test('later delivery and foreign areas are their own numbers', () => {
     expect(fmc7!.laterDoneKm).toBe(4)
@@ -213,7 +221,7 @@ describe('after the deadline of Lieferung 2', () => {
     fixtureEdges,
     fixtureMarks.filter((mark) => mark.id !== '4'),
   )
-  const weeksLeft = (deadline3 - later) / 7
+  const weeksLeft = workDaysBetween(later, deadline3) / 5
 
   test('the overdue rest of Lieferung 2 stays visible per account', () => {
     expect(runningDelivery(openDataset.deliveries, later).nr).toBe(3)

@@ -3,6 +3,8 @@
  * 1970-01-02 12:00 there. Every calendar day is exactly 1 long, also on DST days, so weeks and
  * deadlines are plain arithmetic.
  */
+import { workTime } from '@/config/plan.const'
+
 const DAY_MS = 86_400_000
 
 const berlinFormat = new Intl.DateTimeFormat('en-CA', {
@@ -55,4 +57,45 @@ export function weekStart(day: number) {
 /** A day as a `Date` for formatting with `timeZone: 'UTC'`. */
 export function dateOfDay(day: number) {
   return new Date(day * DAY_MS)
+}
+
+/** Monday to Friday. */
+function isWorkday(day: number) {
+  const weekday = new Date(Math.floor(day) * DAY_MS).getUTCDay()
+  return weekday >= 1 && weekday <= 5
+}
+
+const windowStart = workTime.startHour / 24
+const windowEnd = workTime.endHour / 24
+const windowLength = windowEnd - windowStart
+
+/**
+ * Work days between two times: each Monday to Friday counts with the share of its working
+ * window (`workTime`) inside `[from, to]`, so 1 is one whole working window.
+ */
+export function workDaysBetween(from: number, to: number) {
+  if (to <= from) return 0
+  let total = 0
+  for (let day = Math.floor(from); day < to; day += 1) {
+    if (!isWorkday(day)) continue
+    const start = Math.max(from, day + windowStart)
+    const end = Math.min(to, day + windowEnd)
+    if (end > start) total += (end - start) / windowLength
+  }
+  return total
+}
+
+/** The time `workDays` work days after `from` (inside a working window, or `from` for 0). */
+export function addWorkDays(from: number, workDays: number) {
+  let left = workDays
+  if (left <= 0) return from
+  for (let day = Math.floor(from); ; day += 1) {
+    if (!isWorkday(day)) continue
+    const start = Math.max(from, day + windowStart)
+    const end = day + windowEnd
+    if (end <= start) continue
+    const available = (end - start) / windowLength
+    if (left <= available) return start + left * windowLength
+    left -= available
+  }
 }

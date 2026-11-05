@@ -1,6 +1,6 @@
-import { ampelThresholds, paceWindowDays } from '@/config/plan.const'
+import { ampelThresholds, paceWindowDays, rampUp } from '@/config/plan.const'
 import type { Dataset } from '@/stats/model'
-import { paceKmPerWeek, weeklyBuckets, type WeekBucket } from '@/stats/series'
+import { paceKmPerWeek, weeklyBuckets, workWeeksBetween, type WeekBucket } from '@/stats/series'
 import { neededPerWeek, runningScope, sumKm, type Scope } from '@/stats/status'
 
 export type Ampel = 'keine' | 'fertig' | 'gruen' | 'gelb' | 'rot'
@@ -37,12 +37,18 @@ export type AccountRow = {
   overdueKm: number
   /** Numbers of the earlier deliveries with `overdueKm` > 0. */
   overdueDeliveries: number[]
+  /** Calendar weeks to the deadline of the scope, for display. */
   weeksLeft: number
-  /** (rest + overdue) ÷ weeks to the deadline of the scope. */
+  /** (rest + overdue) ÷ work weeks to the deadline of the scope. */
   neededPerWeek: number
-  /** km/week in the scope over the last 14 days, see `paceKmPerWeek`. */
+  /** km per work week in the scope over the last 14 days, see `paceKmPerWeek`. */
   pace: number
-  /** pace ÷ needed; `null` when nothing is needed or the deadline is over. */
+  /**
+   * End of the Anlernphase (`rampUp.days` after the first mark of the account) while it runs,
+   * else `null`. During it `rampUp.factor` of `neededPerWeek` counts as on track.
+   */
+  anlernBis: number | null
+  /** pace ÷ what counts as on track; `null` when nothing is needed or the deadline is over. */
   ratio: number | null
   ampel: Ampel
   /** Done in deliveries after the scope (counts for them once they run). */
@@ -74,6 +80,7 @@ export function accountRows(
   const inScope = (delivery: number | null) =>
     delivery !== null && scope.deliveries.includes(delivery)
   const weeksLeft = Math.max(0, (scope.end - now) / 7)
+  const workWeeksLeft = workWeeksBetween(now, scope.end)
   const doneNow = dataset.done.filter((item) => item.t <= now)
 
   return dataset.accounts.map((account) => {
@@ -100,8 +107,13 @@ export function accountRows(
       .filter((item) => item.restKm > 0)
     const overdueKm = sumKm(overdue.map((item) => ({ km: item.restKm })))
     const openKm = restKm + overdueKm
-    const needed = neededPerWeek(openKm, weeksLeft)
+    const needed = neededPerWeek(openKm, workWeeksLeft)
     const pace = paceKmPerWeek(ownDone, now, paceWindowDays.account, dataset.start)
+    const marks = doneNow.filter((item) => item.account === account || item.by === account)
+    const firstMark = marks.length > 0 ? Math.min(...marks.map((item) => item.t)) : null
+    const anlernBis =
+      firstMark !== null && now < firstMark + rampUp.days ? firstMark + rampUp.days : null
+    const onTrack = anlernBis === null ? needed : needed * rampUp.factor
     const foreign = doneNow.filter((item) => item.by === account && item.account !== account)
     return {
       account,
@@ -114,8 +126,9 @@ export function accountRows(
       weeksLeft,
       neededPerWeek: needed,
       pace,
-      ratio: needed > 0 && Number.isFinite(needed) ? pace / needed : null,
-      ampel: totalKm === 0 && overdueKm === 0 ? 'keine' : ampelFor(openKm, pace, needed),
+      anlernBis,
+      ratio: onTrack > 0 && Number.isFinite(onTrack) ? pace / onTrack : null,
+      ampel: totalKm === 0 && overdueKm === 0 ? 'keine' : ampelFor(openKm, pace, onTrack),
       laterDoneKm: sumKm(
         doneNow.filter(
           (item) =>

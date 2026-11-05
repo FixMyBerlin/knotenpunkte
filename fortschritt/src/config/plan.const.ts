@@ -54,10 +54,20 @@ export const ampelThresholds = { green: 1, yellow: 0.8 } as const
 export const onPlanToleranceKm = 0.5
 
 /**
- * Start-up phase of a mapper, used for the forecast only: in the first `days` days after their
- * first mark a mapper works at `factor` of their later speed.
+ * Anlernphase of a mapper, for Personen only: in the first `days` days after their first mark,
+ * `factor` of the needed pace already counts as "im Plan". The burn-up does not use it.
  */
 export const rampUp = { days: 14, factor: 0.6 } as const
+
+/**
+ * Working time in Berlin: Monday to Friday, `startHour` to `endHour`. Pace, needed km/week and
+ * the forecast count only these hours, so nights and weekends move nothing. A work week is
+ * 5 work days. No public holidays.
+ */
+export const workTime = { startHour: 9, endHour: 16 } as const
+
+/** A pace is taken over at least this many work days, so one good first day is not a week. */
+export const minPaceWorkDays = 5
 
 /** Rolling windows of the averages, in days. */
 export const paceWindowDays = { forecast: 28, account: 14 } as const

@@ -1,4 +1,5 @@
-import { weekStart } from '@/stats/time'
+import { minPaceWorkDays } from '@/config/plan.const'
+import { addWorkDays, weekStart, workDaysBetween } from '@/stats/time'
 
 type Timed = { t: number; km: number }
 
@@ -26,23 +27,40 @@ export function kmUntil(done: Timed[], t: number) {
 }
 
 /**
- * Average km per week over the last `windowDays` days up to `now`. The window never starts
- * before the project start, and it is at least 7 days long, so the first days of the project
- * do not look like a huge pace. A rolling window has no partial week to distort it.
+ * km per work week (5 work days) over the last `windowDays` days up to `now`, counted in work
+ * time (see `workDaysBetween`), so nights and weekends do not lower it. The window never starts
+ * before the project start and counts at least `minPaceWorkDays`, so the first day of the
+ * project does not look like a huge pace.
  */
 export function paceKmPerWeek(done: Timed[], now: number, windowDays: number, start: number) {
   const from = Math.max(now - windowDays, start)
-  const span = Math.max(now - from, Math.min(windowDays, 7))
+  const workDays = Math.max(workDaysBetween(from, now), minPaceWorkDays)
   let km = 0
-  for (const item of done) if (item.t > from && item.t <= now) km += item.km
-  return (km / span) * 7
+  for (const item of done) if (item.t >= from && item.t <= now) km += item.km
+  return (km / workDays) * 5
 }
 
-/** Day the target is reached at `pace` km/week from `now`; `null` without any pace. */
+/** Work weeks from `now` to `end` (0 when it is over). */
+export function workWeeksBetween(now: number, end: number) {
+  return workDaysBetween(now, end) / 5
+}
+
+/** Time the target is reached at `pace` km/work week from `now`; `null` without any pace. */
 export function forecastDay(doneKm: number, targetKm: number, pace: number, now: number) {
   if (doneKm >= targetKm) return now
   if (pace <= 0) return null
-  return now + ((targetKm - doneKm) / pace) * 7
+  return addWorkDays(now, ((targetKm - doneKm) / pace) * 5)
+}
+
+/** The forecast line: cumulative km from `now`, at the end of every day until `forecast`. */
+export function forecastPoints(doneKm: number, pace: number, now: number, forecast: number | null) {
+  if (forecast === null || forecast <= now) return []
+  const points = [{ t: now, km: doneKm }]
+  for (let t = Math.floor(now) + 1; t < forecast; t += 1) {
+    points.push({ t, km: doneKm + (pace / 5) * workDaysBetween(now, t) })
+  }
+  points.push({ t: forecast, km: doneKm + (pace / 5) * workDaysBetween(now, forecast) })
+  return points
 }
 
 export type WeekBucket = {

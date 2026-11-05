@@ -16,7 +16,7 @@ import { AmpelText } from '@/components/people/AmpelText'
 import { PartHeading } from '@/components/report/PartHeading'
 import { Toggle } from '@/components/Toggle'
 import { useUpdateSearch } from '@/components/use-fortschritt-nav'
-import { paceWindowDays } from '@/config/plan.const'
+import { minPaceWorkDays, paceWindowDays, rampUp, workTime } from '@/config/plan.const'
 import { useNow } from '@/data/now-store'
 import { Route } from '@/routes/index'
 import { accountRows } from '@/stats/accounts'
@@ -157,7 +157,7 @@ export function PeopleView({ dataset }: { dataset: Dataset }) {
                 </TableCell>
                 <TableCell className="text-right tabular-nums">{perWeek(row.pace)}</TableCell>
                 <TableCell>
-                  <AmpelText ampel={row.ampel} ratio={row.ratio} />
+                  <AmpelText ampel={row.ampel} ratio={row.ratio} anlernBis={row.anlernBis} />
                 </TableCell>
                 {later.length > 0 ? (
                   <TableCell className="text-right tabular-nums">
@@ -178,16 +178,18 @@ export function PeopleView({ dataset }: { dataset: Dataset }) {
         <div className="space-y-1 text-xs text-zinc-400">
           <p>
             Gezählt wird nach dem zugeteilten Account der Kante, im gewählten Umfang ({scope.label}
-            ). Nötig je Woche = (Rest + Rückstand) ÷ Wochen bis zur Deadline, jede Woche neu
-            gerechnet. Stand: „im Plan“ ab 100 % des nötigen Tempos, „fast im Plan“ ab 80 %, sonst
-            „braucht mehr Tempo“; „nichts zugeteilt“, wenn der Account im gewählten Umfang keine
-            Kanten hat.
+            ). Nötig je Woche = (Rest + Rückstand) ÷ Arbeitswochen bis zur Deadline. Stand: „im
+            Plan“ ab 100 % des nötigen Tempos, „fast im Plan“ ab 80 %, sonst „braucht mehr Tempo“;
+            „nichts zugeteilt“, wenn der Account im gewählten Umfang keine Kanten hat. In der
+            Anlernphase, den ersten {rampUp.days} Tagen nach der ersten Markierung eines Accounts,
+            reichen {Math.round(rampUp.factor * 100)} % des Nötigen für „im Plan“.
           </p>
           <p>
-            ¹ Ø letzte 2 Wochen = km, die in den letzten {paceWindowDays.account} Tagen bis jetzt
-            erledigt wurden, je 7 Tage (also ÷ 2). Das Fenster rollt mit, darum verzerrt die
-            laufende Woche nichts. Liegt der Projektstart weniger als {paceWindowDays.account} Tage
-            zurück, zählt nur die Zeit seit dem Start (mindestens 7 Tage).
+            ¹ Ø letzte 2 Wochen = km der letzten {paceWindowDays.account} Tage je Arbeitswoche.
+            Gezählt wird nur Arbeitszeit, Mo–Fr {workTime.startHour}–{workTime.endHour} Uhr, und
+            eine Woche sind 5 Arbeitstage; Nächte und Wochenenden senken das Tempo also nicht. Es
+            zählen mindestens {minPaceWorkDays} Arbeitstage, damit ein guter erster Tag nicht als
+            Wochentempo gilt.
           </p>
           <p>
             ² km, die dieser Account in Gebieten anderer Accounts als erledigt markiert hat (nach

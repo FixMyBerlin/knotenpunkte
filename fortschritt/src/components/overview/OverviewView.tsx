@@ -6,7 +6,7 @@ import { StatTile } from '@/components/overview/StatTile'
 import { PartHeading } from '@/components/report/PartHeading'
 import { Toggle } from '@/components/Toggle'
 import { useUpdateSearch } from '@/components/use-fortschritt-nav'
-import { rampUp } from '@/config/plan.const'
+import { workTime } from '@/config/plan.const'
 import { useNow } from '@/data/now-store'
 import { Route } from '@/routes/index'
 import {
@@ -41,7 +41,7 @@ export function OverviewView({ dataset }: { dataset: Dataset }) {
     runningStatus.targetKm -
       runningStatus.doneKm +
       sumKm(overdue.map((item) => ({ km: item.restKm }))),
-    runningStatus.weeksLeft,
+    runningStatus.workWeeksLeft,
   )
   const unit = search.unit === 'prozent' ? 'prozent' : 'km'
 
@@ -91,7 +91,7 @@ export function OverviewView({ dataset }: { dataset: Dataset }) {
                 ? 'Noch kein Tempo in den letzten 4 Wochen'
                 : `${formatDayDistance(runningStatus.forecast, now)}, ${
                     runningStatus.forecast <= running.deadline ? 'vor' : 'nach'
-                  } der Deadline · Tempo der letzten 4 Wochen mit Anlauf`
+                  } der Deadline · Tempo der letzten 4 Wochen`
             }
             testId="tile-forecast"
           />
@@ -142,11 +142,10 @@ export function OverviewView({ dataset }: { dataset: Dataset }) {
           {chartScope.key === 'gesamt'
             ? 'Die Soll-Linie knickt an der Deadline von Lieferung 2: bis dahin ihr Ziel, danach der Rest bis zur Deadline von Lieferung 3.'
             : 'Die Soll-Linie geht gerade vom Start der Lieferung bis zum Ziel an ihrer Deadline.'}{' '}
-          Prognose: {chartStatus.forecast === null ? 'keine' : formatDay(chartStatus.forecast)}. Sie
-          nimmt an, dass ein Mapper in den ersten {rampUp.days} Tagen nach seiner ersten Markierung
-          mit {Math.round(rampUp.factor * 100)} % seines späteren Tempos arbeitet; sein Tempo der
-          letzten 4 Wochen wird darum hochgerechnet. Accounts ohne Markierung starten heute mit dem
-          Durchschnitt der anderen.
+          Prognose: {chartStatus.forecast === null ? 'keine' : formatDay(chartStatus.forecast)}.
+          Tempo, Nötiges und Prognose zählen nur Arbeitszeit: Mo–Fr {workTime.startHour}–
+          {workTime.endHour} Uhr. Nächte und Wochenenden ändern darum nichts, und eine Woche sind 5
+          Arbeitstage.
         </p>
       </section>
 
