@@ -135,6 +135,7 @@ export function FortschrittMap({ dataset }: { dataset: Dataset }) {
       onStreetsChange={(on) => updateSearch({ streets: on ? true : undefined })}
       interactiveLayerIds={interactiveLayerIds}
       maxBounds={mapMaxBounds}
+      hideBasemapLabels
       cursor={cursor}
       onClick={handleClick}
       onMouseMove={(event) => setCursor(event.features?.length ? 'pointer' : 'grab')}

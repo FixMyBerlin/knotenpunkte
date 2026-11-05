@@ -22,7 +22,7 @@ import {
   resolveBackgroundChoice,
 } from '@shared/map/private-raster'
 import { usePmtilesProtocol } from '@shared/map/use-pmtiles-protocol'
-import type { MapLayerMouseEvent, MapLibreEvent } from 'maplibre-gl'
+import type { Map as MapInstance, MapLayerMouseEvent, MapLibreEvent } from 'maplibre-gl'
 import { useEffect, type ReactNode } from 'react'
 import { AttributionControl, Map, type ViewStateChangeEvent } from 'react-map-gl/maplibre'
 
@@ -39,6 +39,8 @@ type Props = {
   interactiveLayerIds?: string[]
   /** Panning stops at this box (`[west, south, east, north]`), which also limits zooming out. */
   maxBounds?: [number, number, number, number]
+  /** Hide the place and street names of the Positron basemap (its symbol layers). */
+  hideBasemapLabels?: boolean
   onClick?: (event: MapLayerMouseEvent) => void
   onMouseMove?: (event: MapLayerMouseEvent) => void
   onMouseOut?: (event: MapLayerMouseEvent) => void
@@ -54,6 +56,20 @@ type Props = {
   overlay?: ReactNode
 }
 
+/** Source of the Positron basemap; its symbol layers are the labels. */
+const POSITRON_SOURCE = 'openmaptiles'
+
+function hideBasemapSymbols(map: MapInstance) {
+  for (const layer of map.getStyle()?.layers ?? []) {
+    if (layer.type !== 'symbol' || !('source' in layer) || layer.source !== POSITRON_SOURCE)
+      continue
+    // Setting the property fires `styledata` again; skip layers that are already hidden.
+    if (map.getLayoutProperty(layer.id, 'visibility') !== 'none') {
+      map.setLayoutProperty(layer.id, 'visibility', 'none')
+    }
+  }
+}
+
 /**
  * The map of both apps: Positron, Editor Layer Index and private backgrounds with favourites,
  * the street network with its legend, compass reset, and the camera in the URL.
@@ -67,6 +83,7 @@ export function BaseMap({
   streetsLayers,
   interactiveLayerIds,
   maxBounds,
+  hideBasemapLabels,
   onClick,
   onMouseMove,
   onMouseOut,
@@ -113,6 +130,9 @@ export function BaseMap({
         maxBounds={maxBounds}
         cursor={cursor}
         doubleClickZoom={doubleClickZoom}
+        onStyleData={(event) => {
+          if (hideBasemapLabels) hideBasemapSymbols(event.target)
+        }}
         onLoad={(event: MapLibreEvent) => {
           exposeMainMapForDebugging(event.target)
           setMapBearing(event.target.getBearing())
