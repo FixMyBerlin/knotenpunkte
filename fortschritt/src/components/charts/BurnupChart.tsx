@@ -10,6 +10,10 @@ type Props = {
   unit: 'km' | 'prozent'
   now: number
   start: number
+  /** End of the x axis: the last deadline, the same for every Umfang so the charts line up. */
+  axisEnd: number
+  /** Deadlines drawn as thin vertical lines. */
+  deadlines: { nr: number; t: number }[]
 }
 
 const W = 760
@@ -21,10 +25,10 @@ const monthFormat = new Intl.DateTimeFormat('de-DE', { timeZone: 'UTC', month: '
  * Burn-up: done km (cumulative, end of each week), the target, the straight Soll line and the
  * forecast (pace of the last 4 weeks in work time). y in km or in % of the target.
  */
-export function BurnupChart({ status, unit, now, start }: Props) {
+export function BurnupChart({ status, unit, now, start, axisEnd, deadlines }: Props) {
   const [hover, setHover] = useState<number | null>(null)
   const { scope, targetKm, points } = status
-  const end = scope.end
+  const end = axisEnd
   const target = targetKm > 0 ? targetKm : 1
   const value = (km: number) => (unit === 'prozent' ? (km / target) * 100 : km)
   const label = (km: number) => (unit === 'prozent' ? formatPercent(km / target) : formatKm(km))
@@ -36,9 +40,14 @@ export function BurnupChart({ status, unit, now, start }: Props) {
   const y = (v: number) => H - M.bottom - (v / yMax) * (H - M.top - M.bottom)
 
   const sollTimes = [
-    ...new Set([start, end, ...scope.segments.flatMap((segment) => [segment.from, segment.to])]),
+    ...new Set([
+      start,
+      scope.end,
+      ...scope.segments.flatMap((segment) => [segment.from, segment.to]),
+    ]),
   ]
-    .filter((t) => t >= start && t <= end)
+    // The Soll line of one delivery ends at its deadline.
+    .filter((t) => t >= start && t <= scope.end)
     .sort((a, b) => a - b)
   const sollPath = sollTimes
     .map((t) => `${x(t).toFixed(1)},${y(value(sollAt(scope.segments, t))).toFixed(1)}`)
@@ -139,6 +148,31 @@ export function BurnupChart({ status, unit, now, start }: Props) {
           >
             Ziel {label(targetKm)}
           </text>
+
+          {deadlines
+            .filter((deadline) => deadline.t > start && deadline.t < end)
+            .map((deadline) => (
+              <g key={deadline.nr}>
+                <line
+                  x1={x(deadline.t)}
+                  x2={x(deadline.t)}
+                  y1={M.top}
+                  y2={H - M.bottom}
+                  stroke={chartColors.baseline}
+                  strokeWidth={1}
+                  strokeDasharray="2 3"
+                />
+                <text
+                  x={x(deadline.t) - 4}
+                  y={M.top + 10}
+                  fontSize={11}
+                  fill={chartColors.muted}
+                  textAnchor="end"
+                >
+                  Deadline L{deadline.nr}
+                </text>
+              </g>
+            ))}
 
           {now >= start && now <= end ? (
             <g>

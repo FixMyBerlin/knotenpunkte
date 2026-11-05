@@ -136,7 +136,17 @@ export function OverviewView({ dataset }: { dataset: Dataset }) {
         <h3 id="burnup-heading" className="text-base font-semibold text-zinc-100">
           Burn-up {chartScope.label}
         </h3>
-        <BurnupChart status={chartStatus} unit={unit} now={now} start={dataset.start} />
+        <BurnupChart
+          status={chartStatus}
+          unit={unit}
+          now={now}
+          start={dataset.start}
+          axisEnd={gesamt.scope.end}
+          deadlines={dataset.deliveries.map((delivery) => ({
+            nr: delivery.nr,
+            t: delivery.deadline,
+          }))}
+        />
         <p className="text-xs text-zinc-400">
           Start ist der Montag der ersten Markierung ({formatDay(dataset.start)}).{' '}
           {chartScope.key === 'gesamt'
