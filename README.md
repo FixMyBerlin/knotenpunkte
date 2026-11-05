@@ -8,7 +8,7 @@ Web apps for the Berlin Radnetz (Infravelo). One repo, one `package.json`, one N
 | [`netzanpassungen/`](netzanpassungen/README.md) | `/netzanpassungen/` | `http://127.0.0.1:33480` | Draw new edges and virtual nodes into the Detailnetz      |
 | [`fortschritt/`](fortschritt/README.md)         | `/fortschritt/`     | `http://127.0.0.1:33481` | Progress dashboard, read-only, hidden from search engines |
 
-The apps do not link to each other. `/` redirects to `/knotenpunkte/`.
+The apps do not link to each other. `/` is an overview page with a link to each app (`home/index.html`, `noindex`).
 
 ## Layout
 
@@ -17,6 +17,7 @@ knotenpunkte/       app: index.html, src/, public/, tests/, .env, vite.config.ts
 netzanpassungen/    app: index.html, src/, .env, vite.config.ts, tsconfig.json
 fortschritt/        app: index.html, src/, tests/, vite.config.ts, tsconfig.json (no .env)
 shared/             code of all apps (alias @shared)
+home/               overview page at `/` (static HTML, copied to `dist/` by `build:home`)
 netlify.toml        build, redirects, headers
 dist/               build output, one folder per app (not committed)
 ```
@@ -80,7 +81,7 @@ Only on the Pages build the apps show the settings backup of the move dialog (se
 1. New folder with its own `vite.config.ts`, copied from `netzanpassungen/`: `outDir: dist/<name>`, production `base: /<name>/`, a fixed dev port (`fortschritt`: 33481), `@` and `@shared` aliases, and a `tsconfig.json`.
 2. In `package.json`: a `build:<name>` script, a `dev-<name>` script, and the `type-check` and `test-run` steps.
 3. In `knip.config.mjs`, `oxlint.config.mjs`, `oxfmt.config.mjs` and the root `tsconfig.json`: the new paths.
-4. In `netlify.toml`: the SPA redirect for `/<name>/*`.
+4. In `netlify.toml`: the SPA redirect for `/<name>/*`. In `home/index.html`: a link to the app.
 5. In `playwright.config.ts`: a project with its `testDir` and `baseURL`, and its dev server in `webServer`.
 
 ## Deploy
