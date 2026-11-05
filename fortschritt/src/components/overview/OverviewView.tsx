@@ -3,6 +3,7 @@ import { BurnupChart } from '@/components/charts/BurnupChart'
 import { BezirkeTable } from '@/components/overview/BezirkeTable'
 import { PlanStateText } from '@/components/overview/PlanStateText'
 import { StatTile } from '@/components/overview/StatTile'
+import { PartHeading } from '@/components/report/PartHeading'
 import { Toggle } from '@/components/Toggle'
 import { useUpdateSearch } from '@/components/use-fortschritt-nav'
 import { useNow } from '@/data/now-store'
@@ -37,116 +38,113 @@ export function OverviewView({ dataset }: { dataset: Dataset }) {
   const unit = search.unit === 'prozent' ? 'prozent' : 'km'
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="mx-auto max-w-5xl space-y-8 p-4 sm:p-6">
-        <section aria-labelledby="tiles-heading" className="space-y-3">
-          <h2 id="tiles-heading" className="text-base font-semibold text-zinc-100">
-            Lieferung {running.nr} (laufend)
-          </h2>
-          {overdue.map((item) => (
-            <Callout
-              key={item.nr}
-              tone="warning"
-              title={`Rückstand Lieferung ${item.nr}`}
-              data-testid={`overdue-${item.nr}`}
-            >
-              Deadline war der {formatDay(item.deadline)}. Noch {formatKm(item.restKm)} offen von{' '}
-              {formatKm(item.targetKm)} ({formatPercent(item.restKm / item.targetKm)}). Der
-              Rückstand steckt in „nötig ab jetzt“.
-            </Callout>
-          ))}
-          <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <StatTile
-              label={`Lieferung ${running.nr} erledigt`}
-              value={formatPercent(runningStatus.share)}
-              detail={`${formatKm(runningStatus.doneKm)} von ${formatKm(runningStatus.targetKm)} · ${runningStatus.edgesDone.toLocaleString('de-DE')} von ${runningStatus.edges.toLocaleString('de-DE')} Kanten`}
-              testId="tile-running"
-            />
-            <StatTile
-              label="Gegenüber der Soll-Linie"
-              value={
-                <PlanStateText state={runningStatus.planState} diffKm={runningStatus.diffKm} />
-              }
-              detail={`Soll heute ${formatKm(runningStatus.sollKm)}`}
-              testId="tile-plan"
-            />
-            <StatTile
-              label="Tempo"
-              value={perWeek(runningStatus.pace)}
-              detail={`Ø letzte 4 Wochen · nötig ab jetzt ${perWeek(neededNow)}`}
-              testId="tile-pace"
-            />
-            <StatTile
-              label="Prognose fertig"
-              value={runningStatus.forecast === null ? 'keine' : formatDay(runningStatus.forecast)}
-              detail={
-                runningStatus.forecast === null
-                  ? 'Noch kein Tempo in den letzten 4 Wochen'
-                  : runningStatus.forecast <= running.deadline
-                    ? 'beim Tempo der letzten 4 Wochen, vor der Deadline'
-                    : 'beim Tempo der letzten 4 Wochen, nach der Deadline'
-              }
-              testId="tile-forecast"
-            />
-            <StatTile
-              label="Bis zur Deadline Mapping"
-              value={formatWeeks(runningStatus.weeksLeft)}
-              detail={`${formatDay(running.deadline)} · Abgabe ${formatDay(running.abgabe)}`}
-              testId="tile-weeks"
-            />
-            <StatTile
-              label="Gesamt erledigt"
-              value={formatPercent(gesamt.share)}
-              detail={`${formatKm(gesamt.doneKm)} von ${formatKm(gesamt.targetKm)} · ${gesamt.edgesDone.toLocaleString('de-DE')} von ${gesamt.edges.toLocaleString('de-DE')} Kanten`}
-              testId="tile-gesamt"
-            />
-          </dl>
-        </section>
+    <div className="space-y-8">
+      <PartHeading id="ueberblick">Überblick</PartHeading>
+      <section id="stand" aria-labelledby="tiles-heading" className="scroll-mt-4 space-y-3">
+        <h3 id="tiles-heading" className="text-base font-semibold text-zinc-100">
+          Lieferung {running.nr} (laufend)
+        </h3>
+        {overdue.map((item) => (
+          <Callout
+            key={item.nr}
+            tone="warning"
+            title={`Rückstand Lieferung ${item.nr}`}
+            data-testid={`overdue-${item.nr}`}
+          >
+            Deadline war der {formatDay(item.deadline)}. Noch {formatKm(item.restKm)} offen von{' '}
+            {formatKm(item.targetKm)} ({formatPercent(item.restKm / item.targetKm)}). Der Rückstand
+            steckt in „nötig ab jetzt“.
+          </Callout>
+        ))}
+        <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <StatTile
+            label={`Lieferung ${running.nr} erledigt`}
+            value={formatPercent(runningStatus.share)}
+            detail={`${formatKm(runningStatus.doneKm)} von ${formatKm(runningStatus.targetKm)} · ${runningStatus.edgesDone.toLocaleString('de-DE')} von ${runningStatus.edges.toLocaleString('de-DE')} Kanten`}
+            testId="tile-running"
+          />
+          <StatTile
+            label="Gegenüber der Soll-Linie"
+            value={<PlanStateText state={runningStatus.planState} diffKm={runningStatus.diffKm} />}
+            detail={`Soll heute ${formatKm(runningStatus.sollKm)}`}
+            testId="tile-plan"
+          />
+          <StatTile
+            label="Tempo"
+            value={perWeek(runningStatus.pace)}
+            detail={`Ø letzte 4 Wochen · nötig ab jetzt ${perWeek(neededNow)}`}
+            testId="tile-pace"
+          />
+          <StatTile
+            label="Prognose fertig"
+            value={runningStatus.forecast === null ? 'keine' : formatDay(runningStatus.forecast)}
+            detail={
+              runningStatus.forecast === null
+                ? 'Noch kein Tempo in den letzten 4 Wochen'
+                : runningStatus.forecast <= running.deadline
+                  ? 'beim Tempo der letzten 4 Wochen, vor der Deadline'
+                  : 'beim Tempo der letzten 4 Wochen, nach der Deadline'
+            }
+            testId="tile-forecast"
+          />
+          <StatTile
+            label="Bis zur Deadline Mapping"
+            value={formatWeeks(runningStatus.weeksLeft)}
+            detail={`${formatDay(running.deadline)} · Abgabe ${formatDay(running.abgabe)}`}
+            testId="tile-weeks"
+          />
+          <StatTile
+            label="Gesamt erledigt"
+            value={formatPercent(gesamt.share)}
+            detail={`${formatKm(gesamt.doneKm)} von ${formatKm(gesamt.targetKm)} · ${gesamt.edgesDone.toLocaleString('de-DE')} von ${gesamt.edges.toLocaleString('de-DE')} Kanten`}
+            testId="tile-gesamt"
+          />
+        </dl>
+      </section>
 
-        <section aria-labelledby="burnup-heading" className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 id="burnup-heading" className="text-base font-semibold text-zinc-100">
-              Burn-up {chartScope.label}
-            </h2>
-            <div className="flex flex-wrap gap-2">
-              <Toggle
-                label="Umfang"
-                options={all.map((scope) => ({ value: scope.key, label: scope.label }))}
-                value={chartScope.key}
-                onChange={(value) =>
-                  updateSearch({ umfang: value === runningScope.key ? undefined : value })
-                }
-              />
-              <Toggle
-                label="Achse"
-                options={[
-                  { value: 'km', label: 'km' },
-                  { value: 'prozent', label: '%' },
-                ]}
-                value={unit}
-                onChange={(value) =>
-                  updateSearch({ unit: value === 'prozent' ? 'prozent' : undefined })
-                }
-              />
-            </div>
+      <section id="burnup" aria-labelledby="burnup-heading" className="scroll-mt-4 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 id="burnup-heading" className="text-base font-semibold text-zinc-100">
+            Burn-up {chartScope.label}
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            <Toggle
+              label="Umfang"
+              options={all.map((scope) => ({ value: scope.key, label: scope.label }))}
+              value={chartScope.key}
+              onChange={(value) =>
+                updateSearch({ umfang: value === runningScope.key ? undefined : value })
+              }
+            />
+            <Toggle
+              label="Achse"
+              options={[
+                { value: 'km', label: 'km' },
+                { value: 'prozent', label: '%' },
+              ]}
+              value={unit}
+              onChange={(value) =>
+                updateSearch({ unit: value === 'prozent' ? 'prozent' : undefined })
+              }
+            />
           </div>
-          <BurnupChart status={chartStatus} unit={unit} now={now} start={dataset.start} />
-          <p className="text-xs text-zinc-400">
-            Start ist der Montag der ersten Markierung ({formatDay(dataset.start)}).{' '}
-            {chartScope.key === 'gesamt'
-              ? 'Die Soll-Linie knickt an der Deadline von Lieferung 2: bis dahin ihr Ziel, danach der Rest bis zur Deadline von Lieferung 3.'
-              : 'Die Soll-Linie geht gerade vom Start der Lieferung bis zum Ziel an ihrer Deadline.'}{' '}
-            Prognose: {chartStatus.forecast === null ? 'keine' : formatDay(chartStatus.forecast)}.
-          </p>
-        </section>
+        </div>
+        <BurnupChart status={chartStatus} unit={unit} now={now} start={dataset.start} />
+        <p className="text-xs text-zinc-400">
+          Start ist der Montag der ersten Markierung ({formatDay(dataset.start)}).{' '}
+          {chartScope.key === 'gesamt'
+            ? 'Die Soll-Linie knickt an der Deadline von Lieferung 2: bis dahin ihr Ziel, danach der Rest bis zur Deadline von Lieferung 3.'
+            : 'Die Soll-Linie geht gerade vom Start der Lieferung bis zum Ziel an ihrer Deadline.'}{' '}
+          Prognose: {chartStatus.forecast === null ? 'keine' : formatDay(chartStatus.forecast)}.
+        </p>
+      </section>
 
-        <section aria-labelledby="bezirke-heading" className="space-y-3">
-          <h2 id="bezirke-heading" className="text-base font-semibold text-zinc-100">
-            Bezirke
-          </h2>
-          <BezirkeTable dataset={dataset} running={running.nr} />
-        </section>
-      </div>
+      <section id="bezirke" aria-labelledby="bezirke-heading" className="scroll-mt-4 space-y-3">
+        <h3 id="bezirke-heading" className="text-base font-semibold text-zinc-100">
+          Bezirke
+        </h3>
+        <BezirkeTable dataset={dataset} running={running.nr} />
+      </section>
     </div>
   )
 }

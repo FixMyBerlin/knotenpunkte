@@ -1,6 +1,7 @@
 import { Callout } from '@shared/components/ui/callout'
 import { MapFilters } from '@/components/map/MapFilters'
 import { MapSelectionPanel } from '@/components/map/MapSelectionPanel'
+import { ReportNav } from '@/components/report/ReportNav'
 import { useDataset, useReload } from '@/data/use-data'
 import type { AppView } from '@/routing/search-schema'
 import { formatCount, formatStamp } from '@/stats/format'
@@ -14,6 +15,8 @@ export function FortschrittSidebar({ view }: { view: AppView }) {
   const reload = useReload()
   return (
     <div className="flex h-full flex-col gap-4 overflow-y-auto p-4 text-sm">
+      <ReportNav />
+      <hr className="border-white/10" />
       {view === 'karte' && dataset ? (
         <>
           <MapFilters dataset={dataset} />

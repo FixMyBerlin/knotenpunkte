@@ -6,9 +6,12 @@ Dev server: [http://127.0.0.1:33481](http://127.0.0.1:33481) (`bun run dev-forts
 
 ## Views
 
-- **Überblick** (default): tiles for the running delivery (% done, km, against the Soll line, pace, forecast, weeks left) and the whole project; a burn-up (Gesamt / Lieferung 2 / Lieferung 3, km or %); the Bezirke in plan order.
-- **Personen**: per account the rest in the running delivery, needed km/week, the average of the last 2 weeks and an Ampel; km already done in the later delivery; km marked in other accounts' areas; km per week as small column charts; "Für Gespräch kopieren" puts a text summary on the clipboard.
-- **Karte**: Gebiete per account, edges red (open) or green (done, via `feature-state`), filters Lieferung / Bezirk / Account in the URL; a click on a Gebiet or an edge shows its numbers and the editor link.
+The left sidebar lists the parts and sections of the report and highlights the one in view; below it the map. `umfang` (Gesamt / Lieferung N, absent is the running delivery) is shared by the burn-up, Personen and the map.
+
+- **Report** (default, one scrolling page):
+  - **Überblick**: tiles for the running delivery (% done, km, against the Soll line, pace, forecast, weeks left) and the whole project; a burn-up (km or %); the Bezirke in plan order.
+  - **Personen**: per account the rest in the chosen Umfang, needed km/week, the average of the last 2 weeks and the pace status ("im Plan", "fast im Plan", "braucht mehr Tempo"); km already done in later deliveries; km marked in other accounts' areas; km per week as small column charts; "Für Gespräch kopieren" puts a text summary on the clipboard. `view=personen` (older links) opens the report at Personen.
+- **Karte** (`view=karte`): edges red/green (done via `feature-state`) with finished Gebiete filled green, or `farbe=mapper` with the account colours; filters Umfang / Bezirk / Account in the URL; a click on a Gebiet or an edge shows its numbers, a TILDA link with the assignment layers and the editor link.
 
 ## Data
 

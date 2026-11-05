@@ -13,6 +13,7 @@ import { useState } from 'react'
 import { WeeklyColumns } from '@/components/charts/WeeklyColumns'
 import { accountColor } from '@/components/colors'
 import { AmpelText } from '@/components/people/AmpelText'
+import { PartHeading } from '@/components/report/PartHeading'
 import { Toggle } from '@/components/Toggle'
 import { useUpdateSearch } from '@/components/use-fortschritt-nav'
 import { paceWindowDays } from '@/config/plan.const'
@@ -56,13 +57,14 @@ export function PeopleView({ dataset }: { dataset: Dataset }) {
   }
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="mx-auto max-w-5xl space-y-6 p-4 sm:p-6">
+    <div className="space-y-6">
+      <PartHeading id="personen">Personen</PartHeading>
+      <section id="tempo" aria-label="Tempo je Account" className="scroll-mt-4 space-y-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold text-zinc-100">
+            <h3 className="text-base font-semibold text-zinc-100">
               {scope.label}: Tempo je Account
-            </h2>
+            </h3>
             <p className="text-sm text-zinc-400">
               Deadline Mapping {formatDay(scope.end)}, noch{' '}
               {formatWeeks(Math.max(0, (scope.end - now) / 7))}.
@@ -199,30 +201,30 @@ export function PeopleView({ dataset }: { dataset: Dataset }) {
             </p>
           ) : null}
         </div>
+      </section>
 
-        <section aria-labelledby="weekly-heading" className="space-y-3">
-          <h2 id="weekly-heading" className="text-base font-semibold text-zinc-100">
-            km je Woche, {scope.label}
-          </h2>
-          <p className="text-xs text-zinc-400">
-            Kalenderwochen ab Montag. Die laufende Woche ist heller. Die Linie ist das Nötige je
-            Woche ab jetzt.
-          </p>
-          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {rows.map((row) => (
-              <li key={row.account} className="rounded-lg bg-zinc-900 p-3 ring-1 ring-white/10">
-                <h3 className="mb-1 text-sm font-medium text-zinc-200">{row.account}</h3>
-                <WeeklyColumns
-                  weeks={row.weeks}
-                  neededPerWeek={row.neededPerWeek}
-                  color={accountColor(dataset.accounts, row.account)}
-                  account={row.account}
-                />
-              </li>
-            ))}
-          </ul>
-        </section>
-      </div>
+      <section id="wochen" aria-labelledby="weekly-heading" className="scroll-mt-4 space-y-3">
+        <h3 id="weekly-heading" className="text-base font-semibold text-zinc-100">
+          km je Woche, {scope.label}
+        </h3>
+        <p className="text-xs text-zinc-400">
+          Kalenderwochen ab Montag. Die laufende Woche ist heller. Die Linie ist das Nötige je Woche
+          ab jetzt.
+        </p>
+        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {rows.map((row) => (
+            <li key={row.account} className="rounded-lg bg-zinc-900 p-3 ring-1 ring-white/10">
+              <h4 className="mb-1 text-sm font-medium text-zinc-200">{row.account}</h4>
+              <WeeklyColumns
+                weeks={row.weeks}
+                neededPerWeek={row.neededPerWeek}
+                color={accountColor(dataset.accounts, row.account)}
+                account={row.account}
+              />
+            </li>
+          ))}
+        </ul>
+      </section>
     </div>
   )
 }

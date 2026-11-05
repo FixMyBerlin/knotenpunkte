@@ -4,25 +4,24 @@ import { MapProvider } from 'react-map-gl/maplibre'
 import { DataGate } from '@/components/DataGate'
 import { FortschrittSidebar } from '@/components/FortschrittSidebar'
 import { FortschrittMap } from '@/components/map/FortschrittMap'
-import { OverviewView } from '@/components/overview/OverviewView'
-import { PeopleView } from '@/components/people/PeopleView'
 import { ReloadButton } from '@/components/ReloadButton'
+import { ReportView } from '@/components/report/ReportView'
 import { useFortschrittNav } from '@/components/use-fortschritt-nav'
 import { appTitle } from '@/config/app.const'
 
-/** Überblick and Personen only show data info in the sidebar, so it can be narrow. */
-const narrowSidebarWidth = 220
+/** The report only has the navigation and data info in the sidebar, so it can be narrow. */
+const narrowSidebarWidth = 240
 
 export function FortschrittShell() {
-  const { current, steps, goToView } = useFortschrittNav()
+  const { current } = useFortschrittNav()
   return (
     <MapProvider>
       <SidebarLayout
         header={({ onOpenSidebar }) => (
           <AppHeader
             title={appTitle}
-            steps={steps}
-            onSelect={goToView}
+            steps={[]}
+            onSelect={() => undefined}
             onOpenSidebar={onOpenSidebar}
             actions={<ReloadButton />}
             showLogin={false}
@@ -34,10 +33,8 @@ export function FortschrittShell() {
         <DataGate>
           {(dataset) => {
             switch (current) {
-              case 'ueberblick':
-                return <OverviewView dataset={dataset} />
-              case 'personen':
-                return <PeopleView dataset={dataset} />
+              case 'bericht':
+                return <ReportView dataset={dataset} />
               case 'karte':
                 return <FortschrittMap dataset={dataset} />
             }

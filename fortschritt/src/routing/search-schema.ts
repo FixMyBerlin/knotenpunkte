@@ -2,14 +2,8 @@ import { berlinMapFallback } from '@shared/config/shared.const'
 import { parseMapParam, serializeMapParam, type MapParam } from '@shared/map/map-param'
 import { z } from 'zod'
 
-export const appViews = ['ueberblick', 'personen', 'karte'] as const
-export type AppView = (typeof appViews)[number]
-
-export const appViewLabels: Record<AppView, string> = {
-  ueberblick: 'Überblick',
-  personen: 'Personen',
-  karte: 'Karte',
-}
+/** The report (Überblick and Personen on one page) or the map. */
+export type AppView = 'bericht' | 'karte'
 
 const optionalString = z
   .union([z.string(), z.number()])
@@ -29,7 +23,7 @@ function oneOf<const T extends readonly string[]>(values: T) {
 const fortschrittMapFallback = { ...berlinMapFallback, zoom: 10.2, lat: 52.505, lng: 13.41 }
 
 export const indexSearchSchema = z.object({
-  /** Absent is the Überblick. */
+  /** Absent is the report; `personen` (older links) opens it at Personen. */
   view: oneOf(['personen', 'karte'] as const),
   /**
    * Umfang of the burn-up and of Personen: `gesamt` or a delivery number; absent is the
@@ -59,7 +53,7 @@ export const indexSearchSchema = z.object({
 export type IndexSearch = z.infer<typeof indexSearchSchema>
 
 export function resolveView(search: Pick<IndexSearch, 'view'>): AppView {
-  return search.view ?? 'ueberblick'
+  return search.view === 'karte' ? 'karte' : 'bericht'
 }
 
 export function searchMapParam(search: Pick<IndexSearch, 'map'>): MapParam {

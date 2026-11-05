@@ -1,18 +1,12 @@
-import type { StepNavItem } from '@shared/components/StepNav'
 import { useNavigate } from '@tanstack/react-router'
+import { useReportScrollActions } from '@/components/report/report-scroll-store'
+import type { ReportSectionId } from '@/components/report/sections'
 import { useNow } from '@/data/now-store'
 import { useDataset } from '@/data/use-data'
 import { Route } from '@/routes/index'
-import {
-  appViewLabels,
-  appViews,
-  resolveView,
-  type AppView,
-  type IndexSearch,
-} from '@/routing/search-schema'
+import { resolveView, type IndexSearch } from '@/routing/search-schema'
 import { formatPercent } from '@/stats/format'
-import { runningDelivery } from '@/stats/plan'
-import { scopes, scopeStatus } from '@/stats/status'
+import { runningScope, scopeStatus } from '@/stats/status'
 
 /** Search updates of this page; filters and toggles replace the history entry. */
 export function useUpdateSearch() {
@@ -21,42 +15,37 @@ export function useUpdateSearch() {
     void navigate({ search: (previous) => ({ ...previous, ...patch }), replace: true })
 }
 
+/** Sidebar navigation: sections of the report and the map. */
 export function useFortschrittNav() {
   const navigate = useNavigate({ from: Route.fullPath })
   const search = Route.useSearch()
   const current = resolveView(search)
   const { dataset } = useDataset()
   const now = useNow()
+  const { setPending } = useReportScrollActions()
 
-  function description(view: AppView) {
-    if (!dataset) return 'lädt …'
-    switch (view) {
-      case 'ueberblick': {
-        const running = runningDelivery(dataset.deliveries, now)
-        const scope = scopes(dataset).find((item) => item.key === `${running.nr}`)
-        return scope
-          ? `Lieferung ${running.nr}: ${formatPercent(scopeStatus(dataset, scope, now).share)}`
-          : ''
-      }
-      case 'personen':
-        return `${dataset.accounts.length} Accounts`
-      case 'karte':
-        return `${dataset.edges.length.toLocaleString('de-DE')} Kanten`
+  const running = dataset ? runningScope(dataset, now) : null
+  const descriptions = {
+    ueberblick:
+      dataset && running
+        ? `${running.label}: ${formatPercent(scopeStatus(dataset, running, now).share)}`
+        : 'lädt …',
+    personen: dataset ? `${dataset.accounts.length} Accounts` : 'lädt …',
+    karte: dataset ? `${dataset.edges.length.toLocaleString('de-DE')} Kanten` : 'lädt …',
+  }
+
+  function goToSection(id: ReportSectionId) {
+    if (current === 'karte') {
+      setPending(id)
+      void navigate({ search: (previous) => ({ ...previous, view: undefined }) })
+      return
     }
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
-  const steps: StepNavItem<AppView>[] = appViews.map((id) => ({
-    id,
-    label: appViewLabels[id],
-    description: description(id),
-    status: current === id ? 'current' : 'upcoming',
-  }))
-
-  function goToView(view: AppView) {
-    void navigate({
-      search: (previous) => ({ ...previous, view: view === 'ueberblick' ? undefined : view }),
-    })
+  function goToMap() {
+    void navigate({ search: (previous) => ({ ...previous, view: 'karte' }) })
   }
 
-  return { current, steps, goToView }
+  return { current, descriptions, goToSection, goToMap }
 }
