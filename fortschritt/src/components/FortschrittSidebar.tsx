@@ -67,12 +67,15 @@ export function FortschrittSidebar({ view }: { view: AppView }) {
         </p>
       </section>
 
-      <Callout title="Datum einer Erledigung">
-        Das Datum einer Kante ist der Zeitpunkt, an dem sie im Editor als erledigt markiert wurde,
-        nicht der Zeitpunkt der Änderung in OSM. Wird eine Markierung zurückgenommen und neu
-        gesetzt, zählt das neue Datum. Frühere Wochen können sich dadurch nachträglich leicht
-        verschieben.
-      </Callout>
+      <section className="space-y-1 border-t border-zinc-800 pt-4 text-xs text-zinc-400">
+        <h2 className="font-medium text-zinc-300">Datum einer Erledigung</h2>
+        <p>
+          Das Datum einer Kante ist der Zeitpunkt, an dem sie im Editor als erledigt markiert wurde,
+          nicht der Zeitpunkt der Änderung in OSM. Wird eine Markierung zurückgenommen und neu
+          gesetzt, zählt das neue Datum. Frühere Wochen können sich dadurch nachträglich leicht
+          verschieben.
+        </p>
+      </section>
     </div>
   )
 }
