@@ -4,6 +4,7 @@ import { MapProvider } from 'react-map-gl/maplibre'
 import { NetzDataLink } from '@/components/NetzDataLink'
 import { NetzMap } from '@/components/NetzMap'
 import { NetzSidebar } from '@/components/NetzSidebar'
+import { NetzUmzug } from '@/components/NetzUmzug'
 import { useNetzNav } from '@/components/use-netz'
 import { appTitle } from '@/config/app.const'
 
@@ -25,6 +26,7 @@ export function NetzShell() {
       >
         <NetzMap />
       </SidebarLayout>
+      <NetzUmzug />
     </MapProvider>
   )
 }

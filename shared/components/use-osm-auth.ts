@@ -48,6 +48,8 @@ export function useOsmAuth() {
 
   return {
     configured: isOsmLoginConfigured(),
+    /** The login state is known; before that `authenticated` is false although the user may be logged in. */
+    ready: !authQuery.isPending,
     authenticated: loggedIn,
     displayName: meQuery.data?.user.display_name,
     canWrite: meQuery.data?.can_write,

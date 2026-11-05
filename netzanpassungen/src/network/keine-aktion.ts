@@ -84,10 +84,14 @@ export type TransferResult = {
   ignored: number
 }
 
+/** Called with the number of decisions written so far and the number to write, before and after each batch. */
+export type TransferProgress = (done: number, total: number) => void
+
 /** Writes the decisions in batches of 25, without those the database has already. Throws on the first failed batch. */
 export async function transferKeineAktion(
   sink: KeineAktionSink,
   byGebiet: IdRecord,
+  onProgress?: TransferProgress,
 ): Promise<TransferResult> {
   const result: TransferResult = { written: 0, alreadyThere: 0, ignored: 0 }
   const todo: KeineAktionData[] = []
@@ -102,10 +106,12 @@ export async function transferKeineAktion(
       else todo.push({ gebiet, suggestionId })
     }
   }
+  onProgress?.(0, todo.length)
   for (let start = 0; start < todo.length; start += batchSize) {
     const batch = todo.slice(start, start + batchSize)
     await sink.putBatch(batch)
     result.written += batch.length
+    onProgress?.(result.written, todo.length)
   }
   return result
 }
@@ -147,10 +153,11 @@ export function countLocalKeineAktion(storage: StorageLike) {
 export async function takeOverLocalKeineAktion(
   sink: KeineAktionSink,
   storage: StorageLike,
+  onProgress?: TransferProgress,
 ): Promise<TransferResult | null> {
   const local = readLocalKeineAktion(storage)
   if (countIds(local) === 0) return null
-  const result = await transferKeineAktion(sink, local)
+  const result = await transferKeineAktion(sink, local, onProgress)
   storage.removeItem(localKeineAktionKey)
   return result
 }

@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { backupFileSchema, type BackupFile } from '@shared/umzug/backup-file'
 import {
   countIds,
   localKeineAktionKey,
@@ -13,21 +13,8 @@ import {
 
 export const skippedKey = 'na:skipped-suggestions'
 
-/** What the backup script of the old origin writes: the raw localStorage strings, any key may be missing. */
-const backupSchema = z.object({
-  origin: z.string(),
-  exported_at: z.string().optional(),
-  localStorage: z.object({
-    [localKeineAktionKey]: z.string().optional(),
-    [skippedKey]: z.string().optional(),
-    'knotenpunkte-private-rasters': z.string().optional(),
-    'knotenpunkte-background': z.string().optional(),
-    'knotenpunkte-background-favorites': z.string().optional(),
-    'knotenpunkte-sidebar-width': z.string().optional(),
-  }),
-})
-
-export type Backup = z.infer<typeof backupSchema>
+/** What `buildBackupFile` writes on the old origin (`shared/umzug`): the raw localStorage strings, any key may be missing. */
+export type Backup = BackupFile
 
 /** Settings written back to localStorage as they are, when not set yet. Never sent anywhere. */
 const restorableKeys = [
@@ -39,7 +26,7 @@ const restorableKeys = [
 ] as const
 
 const notABackupMessage =
-  'Das ist keine Sicherung. Erwartet wird die Datei „knotenpunkte-einstellungen.json“ aus dem Sicherungs-Skript.'
+  'Das ist keine Sicherung. Erwartet wird die Datei „knotenpunkte-einstellungen.json“ aus den Apps am alten Standort.'
 
 /** Throws an `Error` with a German message when the text is not a backup file. */
 export function parseBackupText(text: string): Backup {
@@ -49,7 +36,7 @@ export function parseBackupText(text: string): Backup {
   } catch {
     throw new Error('Die Datei ist kein JSON. Erwartet wird „knotenpunkte-einstellungen.json“.')
   }
-  const parsed = backupSchema.safeParse(json)
+  const parsed = backupFileSchema.safeParse(json)
   if (!parsed.success) throw new Error(notABackupMessage)
   return parsed.data
 }

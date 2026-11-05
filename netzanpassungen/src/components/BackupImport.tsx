@@ -75,10 +75,10 @@ export function BackupImport() {
     <div className="space-y-3">
       <Subheading>Sicherung einspielen</Subheading>
       <Text>
-        <code>knotenpunkte-einstellungen.json</code> aus dem Sicherungs-Skript am alten Standort.
-        „Keine Aktion nötig“ geht in die Datenbank (mit OSM-Login). Übersprungene Vorschläge,
-        Hintergrundkarten und Favoriten kommen in diesen Browser, soweit dort noch nichts gesetzt
-        ist.
+        <code>knotenpunkte-einstellungen.json</code> aus den Apps am alten Standort („Einstellungen
+        herunterladen“). „Keine Aktion nötig“ geht in die Datenbank (mit OSM-Login). Übersprungene
+        Vorschläge, Hintergrundkarten und Favoriten kommen in diesen Browser, soweit dort noch
+        nichts gesetzt ist.
       </Text>
       <label className={filePickerLabelClassName}>
         {restore.isPending ? 'Spiele ein …' : 'Sicherung wählen'}

@@ -1,3 +1,4 @@
+import { buildBackupFile } from '@shared/umzug/backup-file'
 import { describe, expect, it } from 'vitest'
 import { applyBackup, parseBackupText, restoreSettings } from './backup'
 import {
@@ -74,6 +75,54 @@ describe('parseBackupText', () => {
   it('rejects garbage', () => {
     expect(() => parseBackupText('{not json')).toThrow(/kein JSON/)
     expect(() => parseBackupText('')).toThrow(/kein JSON/)
+  })
+})
+
+describe('buildBackupFile and parseBackupText', () => {
+  it('reads what the writer on the old origin produces', () => {
+    const stored: Record<string, string> = {
+      'na:no-action-suggestions': '{"berlin":["a@1"]}',
+      'na:skipped-suggestions': '{}',
+      'knotenpunkte-private-rasters': secret,
+      'knotenpunkte-background': '"osm"',
+      'knotenpunkte-background-favorites': '[]',
+      'knotenpunkte-sidebar-width': '{"state":{"width":320},"version":0}',
+      __osmAuth: '{"accessToken":"token"}',
+      other: 'x',
+    }
+    const keys = Object.keys(stored)
+    const file = buildBackupFile(
+      {
+        length: keys.length,
+        key: (index) => keys[index] ?? null,
+        getItem: (key) => stored[key] ?? null,
+      },
+      'https://fixmyberlin.github.io',
+      new Date('2026-11-05T10:00:00.000Z'),
+    )
+    const backup = parseBackupText(JSON.stringify(file))
+    expect(backup.origin).toBe('https://fixmyberlin.github.io')
+    expect(backup.exported_at).toBe('2026-11-05T10:00:00.000Z')
+    expect(backup.localStorage).toEqual({
+      'na:no-action-suggestions': '{"berlin":["a@1"]}',
+      'na:skipped-suggestions': '{}',
+      'knotenpunkte-private-rasters': secret,
+      'knotenpunkte-background': '"osm"',
+      'knotenpunkte-background-favorites': '[]',
+      'knotenpunkte-sidebar-width': '{"state":{"width":320},"version":0}',
+    })
+  })
+
+  it('lets the app restore the settings from the written file', () => {
+    const stored: Record<string, string> = { 'knotenpunkte-background': '"osm"' }
+    const file = buildBackupFile(
+      { length: 1, key: () => 'knotenpunkte-background', getItem: (key) => stored[key] ?? null },
+      'https://fixmyberlin.github.io',
+    )
+    const { storage, items } = fakeStorage()
+    const result = restoreSettings(parseBackupText(JSON.stringify(file)), storage)
+    expect(result.map((item) => item.status)).toEqual(['eingespielt'])
+    expect(items.get('knotenpunkte-background')).toBe('"osm"')
   })
 })
 

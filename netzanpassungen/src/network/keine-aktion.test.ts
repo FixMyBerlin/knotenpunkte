@@ -76,6 +76,18 @@ describe('transferKeineAktion', () => {
     expect(result).toEqual({ written: 60, alreadyThere: 0, ignored: 0 })
   })
 
+  it('reports progress after each batch, with the number to write as the total', async () => {
+    const { sink } = fakeSink({ berlin: ['e0@1.5'] })
+    const calls: [number, number][] = []
+    await transferKeineAktion(sink, { berlin: ids(60) }, (done, total) => calls.push([done, total]))
+    expect(calls).toEqual([
+      [0, 59],
+      [25, 59],
+      [50, 59],
+      [59, 59],
+    ])
+  })
+
   it('fills batches across areas', async () => {
     const { sink, batches } = fakeSink()
     await transferKeineAktion(sink, { berlin: ids(20), potsdam: ids(10) })
