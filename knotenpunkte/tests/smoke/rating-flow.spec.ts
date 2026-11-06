@@ -178,6 +178,45 @@ test.describe('rating flow', () => {
     await expect(page.getByTestId('selected-node-id')).toHaveText('Knoten 40530027')
   })
 
+  test('finds a node by id in the Übersicht, shows it and opens it in Bewerten', async ({
+    page,
+  }) => {
+    await page.goto('/')
+    await createProjectAndStageFile(
+      page,
+      'berlin-sample',
+      'knotenpunkte/public/fixtures/berlin-nodes-sample.geojson',
+    )
+    await page.getByTestId('import-dataset').click()
+    for (const attribute of ['KP_HVS-1', 'LSA_KP-0', 'Mar_RVF_KP-keine', 'Furt_rot-keine']) {
+      await page.getByTestId(`attr-${attribute}`).click()
+    }
+    for (const attribute of ['RFS_Mitte-keine', 'Fl_Linksab-keine', 'vorgez_Fl-keine']) {
+      await page.getByTestId(`attr-${attribute}`).click()
+    }
+    await page.getByTestId('save-next').click()
+    await expect(page.getByTestId('progress-summary')).toContainText('1/10 Knoten')
+
+    await page.getByTestId('step-overview').click()
+    await page.getByTestId('status-filter-unrated').click()
+    await expect(page.getByTestId('overview-node-40530022')).toHaveCount(0)
+
+    // The search ignores the status filter and names the status of each hit.
+    await page.getByTestId('overview-search').fill('30022')
+    await expect(page.getByTestId('overview-search-hint')).toContainText('1 Treffer')
+    await expect(page.getByTestId('overview-node-40530022')).toHaveText('40530022 (Bewertet)')
+
+    await page.getByTestId('overview-search').press('Enter')
+    await expect(page).toHaveURL(/node=40530022/)
+    await expect(page).toHaveURL(/step=overview/)
+    await page.getByTestId('overview-search-open').click()
+    await expect(page.getByTestId('selected-node-id')).toHaveText('Knoten 40530022')
+
+    await page.getByTestId('step-overview').click()
+    await page.getByTestId('overview-search').fill('99999')
+    await expect(page.getByText('Kein Knoten mit dieser ID.')).toBeVisible()
+  })
+
   test('imports suggestions and prefills a value', async ({ page }) => {
     await page.goto('/')
     await createProjectAndStageFile(

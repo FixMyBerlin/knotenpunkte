@@ -65,6 +65,8 @@ A save sends the version of the entry it is based on (`If-Match`). If somebody e
 
 The **Übersicht** step sits between Bewerten and Export. The map shows every uploaded node, colored like the Knoten legend: unrated `#f59e0b`, deferred `#ec4899`, complete `#22c55e`, skipped `#6b7280`, virtual `#a855f7`, confirmed darker green stroke, corrected `#38bdf8`. The sidebar is the status filter (`Alle`, `Offen`, `Zurückgestellt`, `Bewertet`, `Bestätigt`, `Korrigiert`) and the matching node list; deferred nodes show their internal note. Choosing a node opens it in Bewerten. Node-id labels from zoom 15.
 
+**Knotenpunkt suchen** above the filter searches the ids of all uploaded nodes as you type (local, ignores the status filter; case, spaces and the kind of dash do not matter; exact match first, then ids that start with the text). Each hit shows its status, `40530022 (Bewertet)`. A click or `Enter` (first hit) marks the node (`node` in the URL) and moves the map to it, at least to zoom 16; the marked node stays on the map even outside the filter. **In Bewerten öffnen** below the marked hit opens it. `Escape` clears the search.
+
 ## Review
 
 **Bestätigen**, or **Problematisch** plus a submitted correction. The node stays complete. History names who set the old values and who corrected them. The original OSM user does not get these actions; names in [`src/config/admins.const.ts`](src/config/admins.const.ts) (`tordans`, `Supaplex030`) do. This is a UI guard only.

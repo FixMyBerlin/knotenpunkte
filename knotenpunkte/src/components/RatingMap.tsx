@@ -114,7 +114,12 @@ export function RatingMap() {
     features: features
       .filter((feature) => overview || matchesStatusFilter(records[feature.properties.id], 'all'))
       .filter((feature) =>
-        overview ? matchesStatusFilter(records[feature.properties.id], statusFilter) : true,
+        // The selected node stays on the overview map, also when a search found it outside
+        // the status filter.
+        overview
+          ? feature.properties.id === workNodeId ||
+            matchesStatusFilter(records[feature.properties.id], statusFilter)
+          : true,
       )
       .map((feature) => {
         const record = records[feature.properties.id]
@@ -135,9 +140,15 @@ export function RatingMap() {
   }
 
   const selectedFeature = features.find((feature) => feature.properties.id === workNodeId)
-  const flyTo = selectedFeature && currentStep === 'work' ? nodeLngLat(selectedFeature) : null
+  // Bewerten and the Übersicht (a found node) move the map to the selected node.
+  const flyTo =
+    selectedFeature && (currentStep === 'work' || currentStep === 'overview')
+      ? nodeLngLat(selectedFeature)
+      : null
   const photoNode =
-    selectedFeature && flyTo ? { id: selectedFeature.properties.id, lngLat: flyTo } : null
+    selectedFeature && flyTo && currentStep === 'work'
+      ? { id: selectedFeature.properties.id, lngLat: flyTo }
+      : null
 
   return (
     <BaseMap
@@ -202,7 +213,13 @@ export function RatingMap() {
         ) : null
       }
     >
-      {flyTo ? <FlyToSelected lng={flyTo[0]} lat={flyTo[1]} /> : null}
+      {flyTo ? (
+        <FlyToSelected
+          lng={flyTo[0]}
+          lat={flyTo[1]}
+          minZoom={currentStep === 'overview' ? overviewNodeZoom : undefined}
+        />
+      ) : null}
       {photosOn ? (
         <MapillaryLayers
           node={photoNode}
@@ -274,15 +291,19 @@ function nodeIdFromEvent(event: MapLayerMouseEvent) {
   return typeof id === 'string' ? id : null
 }
 
-function FlyToSelected({ lng, lat }: { lng: number; lat: number }) {
+/** Zoom the overview goes to at least for a found node: the id labels show from zoom 15. */
+const overviewNodeZoom = 16
+
+function FlyToSelected({ lng, lat, minZoom }: { lng: number; lat: number; minZoom?: number }) {
   const maps = useMap()
   const map = maps[MAIN_MAP_ID]
   useEffect(
     function flyToSelectedNode() {
       if (!map) return
-      map.easeTo({ center: [lng, lat], duration: 400 })
+      const zoom = minZoom === undefined ? undefined : Math.max(map.getZoom(), minZoom)
+      map.easeTo({ center: [lng, lat], zoom, duration: 400 })
     },
-    [map, lng, lat],
+    [map, lng, lat, minZoom],
   )
   return null
 }
